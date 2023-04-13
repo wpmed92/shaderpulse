@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(
-  jasp
+  shaderpulse
   VERSION 0.1
   LANGUAGES CXX
 )
@@ -16,14 +16,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
-add_library(jasp-lib 
+add_library(shaderpulse-lib 
   lib/Lexer/Lexer.cpp 
   lib/Lexer/Token.cpp
   lib/Parser/Parser.cpp
   lib/AST/Util.cpp
 )
 
-target_include_directories(jasp-lib PUBLIC 
+target_include_directories(shaderpulse-lib PUBLIC 
   include/
   utils/)
 
@@ -36,7 +36,7 @@ add_executable(
 )
 target_link_libraries(
   lexer_tests
-  PRIVATE jasp-lib
+  PRIVATE shaderpulse-lib
   GTest::gtest_main
 )
 
@@ -47,7 +47,7 @@ add_executable(
 )
 target_link_libraries(
   parser_tests
-  PRIVATE jasp-lib
+  PRIVATE shaderpulse-lib
   GTest::gtest_main
 )
 
