@@ -19,6 +19,8 @@ FetchContent_MakeAvailable(googletest)
 add_library(jasp-lib 
   lib/Lexer/Lexer.cpp 
   lib/Lexer/Token.cpp
+  lib/Parser/Parser.cpp
+  lib/AST/Util.cpp
 )
 
 target_include_directories(jasp-lib PUBLIC 
@@ -38,5 +40,17 @@ target_link_libraries(
   GTest::gtest_main
 )
 
+# Parser tests
+add_executable(
+  parser_tests
+  unittests/Parser/ParserTest.cpp
+)
+target_link_libraries(
+  parser_tests
+  PRIVATE jasp-lib
+  GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(lexer_tests)
+gtest_discover_tests(parser_tests)
