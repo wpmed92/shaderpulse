@@ -130,8 +130,6 @@ TEST(ParserTest, ParseSwitchStatement) {
 
     EXPECT_TRUE(unit);
 
-    unit->accept(std::make_unique<PrinterASTVisitor>().get());
-
     const auto& stmts = getTestFunctionBody(unit.get())->getStatements();
 
     EXPECT_EQ(stmts.size(), 1);
