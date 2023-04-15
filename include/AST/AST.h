@@ -3,10 +3,13 @@
 #include <string>
 #include <vector>
 #include "AST/Types.h"
+#include "AST/ASTVisitor.h"
 
 namespace shaderpulse {
 
 namespace ast {
+
+class ASTVisitor;
 
 enum UnaryOperator {
     Inc,
@@ -53,7 +56,12 @@ enum AssignmentOperator {
     OrAssign
 };
 
-class Expression {
+class ASTNode {
+public:
+    virtual void accept(ASTVisitor* visitor) = 0;
+};
+
+class Expression : public ASTNode {
 public:
     virtual ~Expression() = default;
 };
@@ -63,6 +71,10 @@ class IntegerConstantExpression : public Expression {
 public:
     IntegerConstantExpression(int32_t val) : val(val) {
 
+    }
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
     }
 
     int32_t getVal() { return val; }
@@ -77,6 +89,10 @@ public:
 
     }
 
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
+
     uint32_t getVal() { return val; }
 private:
     uint32_t val;
@@ -88,6 +104,10 @@ public:
 
     }
 
+     void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
+
     float getVal() const { return val; }
 private:
     float val;
@@ -97,6 +117,10 @@ class DoubleConstantExpression : public Expression {
 public:
     DoubleConstantExpression(double val) : val(val) {
 
+    }
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
     }
 
     double getVal() const { return val; }
@@ -111,6 +135,10 @@ public:
 
     }
 
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
+
     bool getVal() const { return val; }
 private:
     bool val;
@@ -120,6 +148,10 @@ class VariableExpression : public Expression {
 public:
     VariableExpression(const std::string &name) : name(name) {
 
+    }
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
     }
 
     std::string getName() const { return name; }
@@ -142,6 +174,10 @@ public:
 
     }
 
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
+
     const std::string& getFunctionName() const { return functionName; }
     const std::vector<std::unique_ptr<Expression>>& getArguments() const { return arguments; }
 
@@ -157,6 +193,11 @@ public:
     UnaryExpression(UnaryOperator op, std::unique_ptr<Expression> rhs)
         : op(op), rhs(std::move(rhs)) {
 
+    }
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+        rhs->accept(visitor);
     }
 
     UnaryOperator getOp() const { return op; }
@@ -175,6 +216,12 @@ public:
 
         }
 
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+        lhs->accept(visitor);
+        rhs->accept(visitor);
+    }
+
     Expression* getRhs() { return rhs.get(); }
     Expression* getLhs() { return lhs.get(); }
     BinaryOperator getOp() { return op; }
@@ -185,14 +232,14 @@ private:
 
 };
 
-class Statement {
+class Statement : public ASTNode {
 
 public:
     virtual ~Statement() = default;
 };
 
 
-class ExternalDeclaration {
+class ExternalDeclaration : public ASTNode {
 
 public:
     virtual ~ExternalDeclaration() = default;
@@ -209,6 +256,10 @@ public:
 
     const std::vector<std::string>& getIdentifierNames() const { return names; }
     Type* getType() const { return type.get(); }
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
 private:
     std::vector<std::string> names;
     std::unique_ptr<Type> type;
@@ -240,6 +291,12 @@ public:
 
         }
 
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+        expression->accept(visitor);
+        statements->accept(visitor);
+    }
+
     Expression* getExpression() { return expression.get(); }
     Statement* getBody() { return statements.get(); }
 private:
@@ -255,12 +312,19 @@ public:
 
         }
 
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
+
 private:
     std::unique_ptr<Expression> expression;
 };
 
 class DefaultLabel : public Statement {
-
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
 };
 
 class StatementList : public Statement {
@@ -270,6 +334,14 @@ public:
         statements(std::move(statements)) {
 
         }
+
+    void accept(ASTVisitor* visitor) override {
+        for (auto &stmt : statements) {
+            stmt->accept(visitor);
+        }
+
+        visitor->visit(this);
+    }
 
     const std::vector<std::unique_ptr<Statement>>& getStatements() { return statements; }
 
@@ -289,6 +361,12 @@ public:
 
         }
 
+        void accept(ASTVisitor* visitor) override {
+            condition->accept(visitor);
+            body->accept(visitor);
+            visitor->visit(this);
+        }
+
         Expression* getCondition() { return condition.get(); }
         Statement* getBody() { return body.get(); }
 private:
@@ -304,6 +382,12 @@ public:
             body(std::move(body)),
             condition(std::move(condition)) {
 
+        }
+
+         void accept(ASTVisitor* visitor) override {
+            condition->accept(visitor);
+            body->accept(visitor);
+            visitor->visit(this);
         }
 
         Expression* getCondition() { return condition.get(); }
@@ -327,6 +411,13 @@ public:
 
         }
 
+    void accept(ASTVisitor* visitor) override {
+        condition->accept(visitor);
+        truePart->accept(visitor);
+        falsePart->accept(visitor);
+        visitor->visit(this);
+    }
+
     Expression* getCondition() { return condition.get(); }
     Statement* getTruePart() { return truePart.get(); }
     Statement* getFalsePart() { return falsePart.get(); }
@@ -341,8 +432,16 @@ class ReturnStatement : public Statement {
 public:
     ReturnStatement() = default;
     ReturnStatement(std::unique_ptr<Expression> exp) : 
-    exp(std::move(exp)) {
+        exp(std::move(exp)) {
 
+    }
+
+   void accept(ASTVisitor* visitor) override {
+        if (exp) {
+            exp->accept(visitor);
+        }
+
+        visitor->visit(this);
     }
 
     Expression* getExpression() { return exp.get(); }
@@ -351,16 +450,22 @@ private:
 };
 
 class BreakStatement : public Statement {
-
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
 };
 
 class ContinueStatement : public Statement {
-
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
 };
 
 // Fragment shader only
 class DiscardStatement : public Statement {
-
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+    }
 };
 
 class AssignmentExpression : public Statement {
@@ -369,6 +474,11 @@ public:
     AssignmentExpression(const std::string& identifier, AssignmentOperator op, std::unique_ptr<Expression> expression) :
         identifier(identifier), op(op), expression(std::move(expression)) {
 
+        }
+        
+        void accept(ASTVisitor* visitor) override {
+            expression->accept(visitor);
+            visitor->visit(this);
         }
 
         const std::string& getIdentifier() { return identifier; }
@@ -391,6 +501,12 @@ public :
         std::unique_ptr<Statement>  body
     ) : returnType(std::move(returnType)), name(name), params(std::move(params)), body(std::move(body)) { }
 
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+        body->accept(visitor);
+    }
+
     const std::vector<std::unique_ptr<ParameterDeclaration>>& getParams() { return params; }
     Statement* getBody() { return body.get(); }
     Type* getReturnType() { return returnType.get(); }
@@ -403,13 +519,21 @@ private:
     std::unique_ptr<Statement>  body;
 };
 
-class TranslationUnit {
+class TranslationUnit : public ASTNode {
 public:
     TranslationUnit(std::vector<std::unique_ptr<ExternalDeclaration>> externalDeclarations) :
         externalDeclarations(std::move(externalDeclarations)) { }
 
     const std::vector<std::unique_ptr<ExternalDeclaration>>& getExternalDeclarations() { 
         return externalDeclarations; 
+    }
+
+    void accept(ASTVisitor* visitor) override {
+        visitor->visit(this);
+
+        for (auto& extDecl : externalDeclarations) {
+            extDecl->accept(visitor);
+        }
     }
 
 private:

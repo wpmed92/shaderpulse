@@ -21,6 +21,7 @@ add_library(shaderpulse-lib
   lib/Lexer/Token.cpp
   lib/Parser/Parser.cpp
   lib/AST/Util.cpp
+  lib/AST/ASTVisitor.cpp
 )
 
 target_include_directories(shaderpulse-lib PUBLIC 
