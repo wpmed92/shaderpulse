@@ -49,8 +49,8 @@ public:
     int getLength() const { return length; };
 
 private:
-    int length;
     std::unique_ptr<Type> elementType;
+    int length;
 };
 
 class MatrixType : public Type {
@@ -69,9 +69,9 @@ public:
     const Type* getElementType() const { return elementType.get(); }
     
 private:
+    std::unique_ptr<Type> elementType;
     int rows;
     int cols;
-    std::unique_ptr<Type> elementType;
 
 };
 

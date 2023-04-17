@@ -32,7 +32,7 @@ std::map<BinaryOperator, int> Parser::binopPrecedence = {
 std::unique_ptr<TranslationUnit> Parser::parseTranslationUnit() {
     std::vector<std::unique_ptr<ExternalDeclaration>> externalDeclarations;
 
-    while (cursor < tokenStream.size() - 1) {
+    while ((size_t) cursor < tokenStream.size() - 1) {
         // External declaration
         if (auto externalDecl = parseExternalDeclaration()) {
             externalDeclarations.push_back(std::move(externalDecl));
@@ -41,14 +41,14 @@ std::unique_ptr<TranslationUnit> Parser::parseTranslationUnit() {
         }
     }
 
-    return std::move(std::make_unique<TranslationUnit>(std::move(externalDeclarations)));
+    return std::make_unique<TranslationUnit>(std::move(externalDeclarations));
 }
 
 std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
     if (auto funcDecl = parseFunctionDeclaration()) {
-        return std::move(funcDecl);
+        return funcDecl;
     } else if (auto decl = parseDeclaration()) {
-        return std::move(decl);
+        return decl;
     } else {
         return nullptr;
     }
@@ -67,7 +67,7 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
 
         advanceToken(); // eat lparen
 
-        auto params = std::move(parseFunctionParameters());
+        auto params = parseFunctionParameters();
 
         if (!curToken->is(TokenKind::rParen)) {
             std::cout << "Expected a ')' after function parameter declaration." << std::endl;
@@ -77,7 +77,7 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
         advanceToken();
 
         if (auto body = parseStatement()) {
-            return std::move(std::make_unique<FunctionDeclaration>(std::move(returnType), functionName, std::move(params), std::move(body)));
+            return std::make_unique<FunctionDeclaration>(std::move(returnType), functionName, std::move(params), std::move(body));
         } else {
             return nullptr;
         }
@@ -91,7 +91,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
         advanceToken();
 
         if (curToken->is(TokenKind::semiColon)) {
-            return std::move(std::make_unique<ValueDeclaration>(std::move(*type), std::vector<std::string>()));
+            return std::make_unique<ValueDeclaration>(std::move(*type), std::vector<std::string>());
         }
 
         std::vector<std::string> names;
@@ -102,7 +102,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
 
         if (curToken->is(TokenKind::semiColon)) {
             advanceToken();
-            return std::move(std::make_unique<ValueDeclaration>(std::move(*type), std::move(names)));
+            return std::make_unique<ValueDeclaration>(std::move(*type), std::move(names));
         } else if (curToken->is(TokenKind::comma)) {
             while (curToken->is(TokenKind::comma)) {
                 advanceToken();
@@ -111,7 +111,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
             }
 
             advanceToken();
-            return std::move(std::make_unique<ValueDeclaration>(std::move(*type), std::move(names)));
+            return std::make_unique<ValueDeclaration>(std::move(*type), std::move(names));
         } else {
             return nullptr;
         }
@@ -276,114 +276,114 @@ std::optional<std::unique_ptr<shaderpulse::Type>> Parser::getTypeFromTokenKind(T
     switch (kind) {
         // Sclar types
         case TokenKind::kw_int:
-            return std::move(std::make_unique<shaderpulse::Type>(TypeKind::Integer));
+            return std::make_unique<shaderpulse::Type>(TypeKind::Integer);
         case TokenKind::kw_bool:
-            return std::move(std::make_unique<shaderpulse::Type>(TypeKind::Bool));
+            return std::make_unique<shaderpulse::Type>(TypeKind::Bool);
         case TokenKind::kw_uint:
-            return std::move(std::make_unique<shaderpulse::Type>(TypeKind::UnsignedInteger));
+            return std::make_unique<shaderpulse::Type>(TypeKind::UnsignedInteger);
         case TokenKind::kw_float:
-            return std::move(std::make_unique<shaderpulse::Type>(TypeKind::Float));
+            return std::make_unique<shaderpulse::Type>(TypeKind::Float);
         case TokenKind::kw_double:
-            return std::move(std::make_unique<shaderpulse::Type>(TypeKind::Double));
+            return std::make_unique<shaderpulse::Type>(TypeKind::Double);
         case TokenKind::kw_void:
-            return std::move(std::make_unique<shaderpulse::Type>(TypeKind::Void));
+            return std::make_unique<shaderpulse::Type>(TypeKind::Void);
 
         // Vector types
         case TokenKind::kw_vec2:
-            return std::move(makeVectorType(TypeKind::Float, 2));
+            return makeVectorType(TypeKind::Float, 2);
         case TokenKind::kw_vec3:
-            return std::move(makeVectorType(TypeKind::Float, 3));
+            return makeVectorType(TypeKind::Float, 3);
         case TokenKind::kw_vec4:
-            return std::move(makeVectorType(TypeKind::Float, 4));
+            return makeVectorType(TypeKind::Float, 4);
 
         case TokenKind::kw_bvec2:
-            return std::move(makeVectorType(TypeKind::Bool, 2));
+            return makeVectorType(TypeKind::Bool, 2);
         case TokenKind::kw_bvec3:
-            return std::move(makeVectorType(TypeKind::Bool, 3));
+            return makeVectorType(TypeKind::Bool, 3);
         case TokenKind::kw_bvec4:
-            return std::move(makeVectorType(TypeKind::Bool, 4));
+            return makeVectorType(TypeKind::Bool, 4);
 
         case TokenKind::kw_ivec2:
-            return std::move(makeVectorType(TypeKind::Integer, 2));
+            return makeVectorType(TypeKind::Integer, 2);
         case TokenKind::kw_ivec3:
-            return std::move(makeVectorType(TypeKind::Integer, 3));
+            return makeVectorType(TypeKind::Integer, 3);
         case TokenKind::kw_ivec4:
-            return std::move(makeVectorType(TypeKind::Integer, 4));
+            return makeVectorType(TypeKind::Integer, 4);
 
         case TokenKind::kw_uvec2:
-            return std::move(makeVectorType(TypeKind::UnsignedInteger, 2));
+            return makeVectorType(TypeKind::UnsignedInteger, 2);
         case TokenKind::kw_uvec3:
-            return std::move(makeVectorType(TypeKind::UnsignedInteger, 3));
+            return makeVectorType(TypeKind::UnsignedInteger, 3);
         case TokenKind::kw_uvec4:
-            return std::move(makeVectorType(TypeKind::UnsignedInteger, 4));
+            return makeVectorType(TypeKind::UnsignedInteger, 4);
         
         case TokenKind::kw_dvec2:
-            return std::move(makeVectorType(TypeKind::Double, 2));
+            return makeVectorType(TypeKind::Double, 2);
         case TokenKind::kw_dvec3:
-            return std::move(makeVectorType(TypeKind::Double, 3));
+            return makeVectorType(TypeKind::Double, 3);
         case TokenKind::kw_dvec4:
-            return std::move(makeVectorType(TypeKind::Double, 4));
+            return makeVectorType(TypeKind::Double, 4);
 
         // Matrix types
         case TokenKind::kw_mat2:
         case TokenKind::kw_mat2x2:
-            return std::move(makeMatrixType(TypeKind::Float, 2, 2));
+            return makeMatrixType(TypeKind::Float, 2, 2);
 
         case TokenKind::kw_mat3:
         case TokenKind::kw_mat3x3:
-            return std::move(makeMatrixType(TypeKind::Float, 3, 3));
+            return makeMatrixType(TypeKind::Float, 3, 3);
 
         case TokenKind::kw_mat4:
         case TokenKind::kw_mat4x4:
-            return std::move(makeMatrixType(TypeKind::Float, 4, 4));
+            return makeMatrixType(TypeKind::Float, 4, 4);
 
         case TokenKind::kw_dmat2:
         case TokenKind::kw_dmat2x2:
-            return std::move(makeMatrixType(TypeKind::Double, 2, 2));
+            return makeMatrixType(TypeKind::Double, 2, 2);
 
         case TokenKind::kw_dmat3:
         case TokenKind::kw_dmat3x3:
-            return std::move(makeMatrixType(TypeKind::Double, 3, 3));
+            return makeMatrixType(TypeKind::Double, 3, 3);
 
         case TokenKind::kw_dmat4:
         case TokenKind::kw_dmat4x4:
-            return std::move(makeMatrixType(TypeKind::Double, 4, 4));
+            return makeMatrixType(TypeKind::Double, 4, 4);
 
         case TokenKind::kw_mat2x3:
-            return std::move(makeMatrixType(TypeKind::Float, 2, 3));
+            return makeMatrixType(TypeKind::Float, 2, 3);
         
         case TokenKind::kw_mat2x4:
-            return std::move(makeMatrixType(TypeKind::Float, 2, 4));
+            return makeMatrixType(TypeKind::Float, 2, 4);
 
         case TokenKind::kw_mat3x2:
-            return std::move(makeMatrixType(TypeKind::Float, 3, 2));
+            return makeMatrixType(TypeKind::Float, 3, 2);
 
         case TokenKind::kw_mat3x4:
-            return std::move(makeMatrixType(TypeKind::Float, 3, 4));
+            return makeMatrixType(TypeKind::Float, 3, 4);
         
         case TokenKind::kw_mat4x2:
-            return std::move(makeMatrixType(TypeKind::Float, 4, 2));
+            return makeMatrixType(TypeKind::Float, 4, 2);
 
         case TokenKind::kw_mat4x3:
-            return std::move(makeMatrixType(TypeKind::Float, 4, 3));
+            return makeMatrixType(TypeKind::Float, 4, 3);
 
         case TokenKind::kw_dmat2x3:
-            return std::move(makeMatrixType(TypeKind::Double, 2, 3));
+            return makeMatrixType(TypeKind::Double, 2, 3);
         
         case TokenKind::kw_dmat2x4:
-            return std::move(makeMatrixType(TypeKind::Double, 2, 4));
+            return makeMatrixType(TypeKind::Double, 2, 4);
 
         case TokenKind::kw_dmat3x2:
-            return std::move(makeMatrixType(TypeKind::Double, 3, 2));
+            return makeMatrixType(TypeKind::Double, 3, 2);
 
         case TokenKind::kw_dmat3x4:
-            return std::move(makeMatrixType(TypeKind::Double, 3, 4));
+            return makeMatrixType(TypeKind::Double, 3, 4);
         
         case TokenKind::kw_dmat4x2:
-            return std::move(makeMatrixType(TypeKind::Double, 4, 2));
+            return makeMatrixType(TypeKind::Double, 4, 2);
 
         case TokenKind::kw_dmat4x3:
-            return std::move(makeMatrixType(TypeKind::Double, 4, 3));
+            return makeMatrixType(TypeKind::Double, 4, 3);
 
         default:
             // Ignore
@@ -391,22 +391,25 @@ std::optional<std::unique_ptr<shaderpulse::Type>> Parser::getTypeFromTokenKind(T
     }
 
     if (kind >= TokenKind::kw_sampler1D && kind <= TokenKind::kw_uimageBuffer) {
-        return std::move(std::make_unique<shaderpulse::Type>(TypeKind::Opaque));
+        return std::make_unique<shaderpulse::Type>(TypeKind::Opaque);
     }
 
     return std::nullopt;
 };
 
 std::unique_ptr<shaderpulse::VectorType> Parser::makeVectorType(TypeKind kind, int length) {
-    return std::move(std::make_unique<shaderpulse::VectorType>(
-        std::move(std::make_unique<shaderpulse::Type>(kind))
-        , length));
+    return std::make_unique<shaderpulse::VectorType>(
+        std::make_unique<shaderpulse::Type>(kind), 
+        length
+    );
 }
 
 std::unique_ptr<shaderpulse::MatrixType> Parser::makeMatrixType(TypeKind kind, int rows, int cols) {
-    return std::move(std::make_unique<shaderpulse::MatrixType>(
-        std::move(std::make_unique<shaderpulse::Type>(kind))
-        ,rows, cols));
+    return std::make_unique<shaderpulse::MatrixType>(
+        std::make_unique<shaderpulse::Type>(kind), 
+        rows, 
+        cols
+    );
 }
 
 std::vector<std::unique_ptr<ParameterDeclaration>> Parser::parseFunctionParameters() {
@@ -430,7 +433,7 @@ std::vector<std::unique_ptr<ParameterDeclaration>> Parser::parseFunctionParamete
 
     } while(curToken->is(TokenKind::comma));
 
-    return std::move(params);
+    return params;
 }
 
 std::unique_ptr<ForStatement> Parser::parseForLoop() {
@@ -484,7 +487,7 @@ std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
         return nullptr;
     }
 
-    return std::move(std::make_unique<SwitchStatement>(std::move(exp), std::move(stmt)));
+    return std::make_unique<SwitchStatement>(std::move(exp), std::move(stmt));
 }
 
 std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
@@ -511,7 +514,7 @@ std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
     advanceToken();
 
     if (auto stmt = parseStatement()) {
-        return std::move(std::make_unique<WhileStatement>(std::move(exp), std::move(stmt)));
+        return std::make_unique<WhileStatement>(std::move(exp), std::move(stmt));
     } else {
         return nullptr;
     }
@@ -555,7 +558,7 @@ std::unique_ptr<DoStatement> Parser::parseDoStatement() {
 
         advanceToken();
 
-        return std::move(std::make_unique<DoStatement>(std::move(stmt), std::move(exp)));
+        return std::make_unique<DoStatement>(std::move(stmt), std::move(exp));
     } else {
         return nullptr;
     }
@@ -604,10 +607,10 @@ std::unique_ptr<IfStatement> Parser::parseIfStatement() {
             return nullptr;
         }
 
-        return std::move(std::make_unique<IfStatement>(std::move(exp), std::move(truePart), std::move(falsePart)));
+        return std::make_unique<IfStatement>(std::move(exp), std::move(truePart), std::move(falsePart));
 
     } else {
-        return std::move(std::make_unique<IfStatement>(std::move(exp), std::move(truePart), nullptr));
+        return std::make_unique<IfStatement>(std::move(exp), std::move(truePart), nullptr);
     }
 }
 
@@ -631,7 +634,7 @@ std::unique_ptr<CaseLabel> Parser::parseCaseLabel() {
 
     advanceToken();
 
-    return std::move(std::make_unique<CaseLabel>(std::move(exp)));
+    return std::make_unique<CaseLabel>(std::move(exp));
 }
 
 std::unique_ptr<DefaultLabel> Parser::parseDefaultLabel() {
@@ -648,14 +651,14 @@ std::unique_ptr<DefaultLabel> Parser::parseDefaultLabel() {
 
     advanceToken();
 
-    return std::move(std::make_unique<DefaultLabel>());
+    return std::make_unique<DefaultLabel>();
 }
 
 std::unique_ptr<Statement> Parser::parseStatement() {
     if (auto stmt = parseSimpleStatement()) {
-        return std::move(stmt);
+        return stmt;
     } else if (auto compStmt = parseCompoundStatement()) {
-        return std::move(compStmt);
+        return compStmt;
     } else {
         return nullptr;
     }
@@ -692,7 +695,7 @@ std::unique_ptr<StatementList> Parser::parseStatementList() {
         }
     }
 
-    return std::move(std::make_unique<StatementList>(std::move(statements)));
+    return std::make_unique<StatementList>(std::move(statements));
 }
 
 std::unique_ptr<Statement> Parser::parseSimpleStatement() {
@@ -733,7 +736,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
     advanceToken();
 
     if (curToken->is(TokenKind::semiColon)) {
-        return std::move(std::make_unique<ReturnStatement>());
+        return std::make_unique<ReturnStatement>();
     }
 
     auto exp = parseExpression();
@@ -745,7 +748,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
 
     advanceToken();
 
-    return std::move(std::make_unique<ReturnStatement>(std::move(exp)));
+    return std::make_unique<ReturnStatement>(std::move(exp));
 }
 
 std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
@@ -769,7 +772,7 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
 
     advanceToken();
 
-    return std::move(std::make_unique<AssignmentExpression>(name, *op, std::move(exp)));
+    return std::make_unique<AssignmentExpression>(name, *op, std::move(exp));
 }
 
 
@@ -787,7 +790,7 @@ std::unique_ptr<DiscardStatement> Parser::parseDiscard() {
 
     advanceToken();
 
-    return std::move(std::make_unique<DiscardStatement>());
+    return std::make_unique<DiscardStatement>();
 }
 
 std::unique_ptr<BreakStatement> Parser::parseBreak() {
@@ -804,7 +807,7 @@ std::unique_ptr<BreakStatement> Parser::parseBreak() {
 
     advanceToken();
 
-    return std::move(std::make_unique<BreakStatement>());
+    return std::make_unique<BreakStatement>();
 }
 
 std::unique_ptr<ContinueStatement> Parser::parseContinue() {
@@ -821,32 +824,32 @@ std::unique_ptr<ContinueStatement> Parser::parseContinue() {
 
     advanceToken();
 
-    return std::move(std::make_unique<ContinueStatement>());
+    return std::make_unique<ContinueStatement>();
 }
 
 std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
     if (auto callExp = parseCallExpression()) {
-        return std::move(callExp);
+        return callExp;
     } else if (curToken->is(TokenKind::Identifier)) {
-        return std::move(std::make_unique<VariableExpression>(curToken->getIdentifierName()));
+        return std::make_unique<VariableExpression>(curToken->getIdentifierName());
     } else if (curToken->is(TokenKind::IntegerConstant)) {
         auto int_const = dynamic_cast<IntegerLiteral*>(curToken->getLiteralData());
 
-        return std::move(std::make_unique<IntegerConstantExpression>(int_const->getVal()));
+        return std::make_unique<IntegerConstantExpression>(int_const->getVal());
     } else if (curToken->is(TokenKind::UnsignedIntegerConstant)) {
         auto uint_const = dynamic_cast<UnsignedIntegerLiteral*>(curToken->getLiteralData());
 
-        return std::move(std::make_unique<UnsignedIntegerConstantExpression>(uint_const->getVal()));
+        return std::make_unique<UnsignedIntegerConstantExpression>(uint_const->getVal());
     } else if (curToken->is(TokenKind::FloatConstant)) {
         auto float_const = dynamic_cast<FloatLiteral*>(curToken->getLiteralData());
 
-        return std::move(std::make_unique<FloatConstantExpression>(float_const->getVal()));
+        return std::make_unique<FloatConstantExpression>(float_const->getVal());
     } else if (curToken->is(TokenKind::DoubleConstant)) {
         auto double_const = dynamic_cast<DoubleLiteral*>(curToken->getLiteralData());
 
-        return std::move(std::make_unique<DoubleConstantExpression>(double_const->getVal()));
+        return std::make_unique<DoubleConstantExpression>(double_const->getVal());
     } else if (curToken->is(TokenKind::kw_true) || curToken->is(TokenKind::kw_false)) {
-        return std::move(std::make_unique<BoolConstantExpression>(curToken->is(TokenKind::kw_true)));
+        return std::make_unique<BoolConstantExpression>(curToken->is(TokenKind::kw_true));
     } else if (curToken->is(TokenKind::lParen)) {
         advanceToken();
         auto exp = parseExpression();
@@ -860,7 +863,7 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
             return nullptr;
         }
         
-        return std::move(exp);
+        return exp;
     }
 
     return nullptr;
@@ -871,27 +874,27 @@ std::unique_ptr<Expression> Parser::parseUnaryExpression() {
         advanceToken();
         auto unaryOp = UnaryOperator::Inc;
 
-        return std::move(std::make_unique<UnaryExpression>(unaryOp, std::move(parseUnaryExpression())));
+        return std::make_unique<UnaryExpression>(unaryOp, parseUnaryExpression());
     } else if (curToken->is(TokenKind::decrement)) {
         advanceToken();
 
         auto unaryOp = UnaryOperator::Dec;
 
-        return std::move(std::make_unique<UnaryExpression>(unaryOp, std::move(parseUnaryExpression())));
+        return std::make_unique<UnaryExpression>(unaryOp, parseUnaryExpression());
     } else if (auto unop = Parser::getUnaryOperatorFromTokenKind(curToken->getTokenKind())) {
         advanceToken();
 
-        return std::move(std::make_unique<UnaryExpression>(*unop, std::move(parseUnaryExpression())));
+        return std::make_unique<UnaryExpression>(*unop, parseUnaryExpression());
     } else {
-        return std::move(parsePostfixExpression());
+        return parsePostfixExpression();
     }
 }
 
 std::unique_ptr<Expression> Parser::parsePostfixExpression() {
     if (auto callExpr = parseCallExpression()) {
-        return std::move(callExpr);
+        return callExpr;
     } else if (auto primary = parsePrimaryExpression()) {
-        return std::move(primary);
+        return primary;
     } else {
         return nullptr;
     }
@@ -908,7 +911,7 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
     advanceToken();
 
     if (curToken->is(TokenKind::rParen)) {
-        return std::move(std::make_unique<CallExpression>(name));
+        return std::make_unique<CallExpression>(name);
     }
 
     std::vector<std::unique_ptr<Expression>> arguments;
@@ -934,7 +937,7 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
         return nullptr;
     }
 
-    return std::move(std::make_unique<CallExpression>(name, std::move(arguments)));
+    return std::make_unique<CallExpression>(name, std::move(arguments));
 }
 
 void Parser::advanceToken() {
@@ -942,7 +945,7 @@ void Parser::advanceToken() {
 }
 
 const Token* Parser::peek(int k) {
-    if ((cursor + k) >= tokenStream.size()) {
+    if ((size_t)(cursor + k) >= tokenStream.size()) {
         auto tok = std::make_unique<Token>();
         tok->setTokenKind(TokenKind::Eof);
         tokenStream.push_back(std::move(tok));

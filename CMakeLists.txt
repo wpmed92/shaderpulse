@@ -1,57 +1,77 @@
 cmake_minimum_required(VERSION 3.25)
 
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+
+if(POLICY CMP0068)
+  cmake_policy(SET CMP0068 NEW)
+  set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
+endif()
+
+if(POLICY CMP0075)
+  cmake_policy(SET CMP0075 NEW)
+endif()
+
+if(POLICY CMP0077)
+  cmake_policy(SET CMP0077 NEW)
+endif()
+
 project(
   shaderpulse
   VERSION 0.1
-  LANGUAGES CXX
+  LANGUAGES CXX C
 )
 
-set (CMAKE_CXX_STANDARD 17)
+# MLIR specific
+find_package(MLIR REQUIRED CONFIG)
 
+message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-)
-FetchContent_MakeAvailable(googletest)
+set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
+set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
+set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
-add_library(shaderpulse-lib 
-  lib/Lexer/Lexer.cpp 
+list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+
+add_executable(shaderpulse-standalone
+  standalone/shaderpulse.cpp
+  lib/Lexer/Lexer.cpp
   lib/Lexer/Token.cpp
   lib/Parser/Parser.cpp
-  lib/AST/Util.cpp
   lib/AST/ASTVisitor.cpp
+  lib/AST/Util.cpp
+  lib/CodeGen/MLIRCodeGen.cpp
 )
 
-target_include_directories(shaderpulse-lib PUBLIC 
-  include/
-  utils/)
+include(TableGen)
+include(AddLLVM)
+include(AddMLIR)
+include(HandleLLVMOptions)
 
-enable_testing()
+include_directories(${LLVM_INCLUDE_DIRS})
+include_directories(${MLIR_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_BINARY_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/utils/include)
+link_directories(${LLVM_BUILD_LIBRARY_DIR})
+add_definitions(${LLVM_DEFINITIONS})
 
-# Lexer tests
-add_executable(
-  lexer_tests
-  unittests/Lexer/LexerTest.cpp
+target_link_libraries(shaderpulse-standalone
+  PRIVATE
+    ${dialect_libs}
+    ${conversion_libs}
+    MLIRAnalysis
+    MLIRCallInterfaces
+    MLIRCastInterfaces
+    MLIRIR
+    MLIRLLVMCommonConversion
+    MLIRLLVMToLLVMIRTranslation
+    MLIRMemRefDialect
+    MLIRSPIRVDialect
+    MLIRParser
+    MLIRPass
+    MLIRSideEffectInterfaces
+    MLIRTargetLLVMIRExport
+    MLIRTransforms
 )
-target_link_libraries(
-  lexer_tests
-  PRIVATE shaderpulse-lib
-  GTest::gtest_main
-)
-
-# Parser tests
-add_executable(
-  parser_tests
-  unittests/Parser/ParserTest.cpp
-)
-target_link_libraries(
-  parser_tests
-  PRIVATE shaderpulse-lib
-  GTest::gtest_main
-)
-
-include(GoogleTest)
-gtest_discover_tests(lexer_tests)
-gtest_discover_tests(parser_tests)

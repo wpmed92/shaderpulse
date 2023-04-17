@@ -50,13 +50,12 @@ public:
     std::unique_ptr<ast::Expression> parseUnaryExpression();
     std::unique_ptr<ast::Expression> parsePostfixExpression();
 
-
 private:
+    std::vector<std::unique_ptr<Token>>& tokenStream;
+    int cursor;
     Token* curToken;
     void advanceToken();
-    std::vector<std::unique_ptr<Token>>& tokenStream;
     const Token* peek(int);
-    int cursor;
 
     // TODO: move these to ast helpers
     static std::map<ast::BinaryOperator, int> binopPrecedence;

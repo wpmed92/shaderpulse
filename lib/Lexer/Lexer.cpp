@@ -17,7 +17,7 @@ tl::expected<std::reference_wrapper<std::vector<std::unique_ptr<Token>>>, Error>
     std::string token;
     Error error;
 
-    while (curCharPos < characters.size()) {
+    while ((size_t) curCharPos < characters.size()) {
         if (handleIdentifier(error)) ;
         else if (handleHexLiteral(error)) ;
         else if (handleOctalLiteral(error)) ;
@@ -216,9 +216,6 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
         hasDigit = true;
     }
 
-    // Parse fractional part of floating point literal
-    bool foundExponentPart = false;
-
     // Handle 1e-14 form
     if (hasDigit && handleExponentialForm(literalConstant, error)) 
         return true;
@@ -260,8 +257,6 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
 }
 
 bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
-    bool foundSign = false;
-
     if (!isExponentFlag(getCurChar())) {
         return false;
     }
@@ -526,7 +521,7 @@ void Lexer::addToken(TokenKind kind) {
 }
 
 void Lexer::skipWhiteSpaces() {
-    while (isWhiteSpace(getCurChar()) && curCharPos < characters.size()) {
+    while (isWhiteSpace(getCurChar()) && (size_t) curCharPos < characters.size()) {
         curCharPos++;
     }
 }
@@ -602,6 +597,7 @@ std::string Lexer::getSpelling(TokenKind kind) {
         case TokenKind::FloatConstant : return "float literal";
         case TokenKind::DoubleConstant : return "double literal";
         case TokenKind::UnsignedIntegerConstant : return "unsigned integer literal";
+        case TokenKind::Eof : return "eof";
     }
 
     return "";

@@ -58,6 +58,7 @@ enum AssignmentOperator {
 
 class ASTNode {
 public:
+    virtual ~ASTNode() = default;
     virtual void accept(ASTVisitor* visitor) = 0;
 };
 
@@ -222,13 +223,13 @@ public:
         rhs->accept(visitor);
     }
 
-    Expression* getRhs() { return rhs.get(); }
     Expression* getLhs() { return lhs.get(); }
+    Expression* getRhs() { return rhs.get(); }
     BinaryOperator getOp() { return op; }
 private:
     BinaryOperator op;
-    std::unique_ptr<Expression> rhs;
     std::unique_ptr<Expression> lhs;
+    std::unique_ptr<Expression> rhs;
 
 };
 
@@ -261,8 +262,8 @@ public:
         visitor->visit(this);
     }
 private:
-    std::vector<std::string> names;
     std::unique_ptr<Type> type;
+    std::vector<std::string> names;
 
 };
 

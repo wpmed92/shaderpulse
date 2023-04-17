@@ -43,9 +43,9 @@ class Lexer {
         const std::vector<std::unique_ptr<Token>> &getTokenStream() const;
 
     private:
-        int lineNum;
-        int curCharPos;
         std::string characters;
+        int curCharPos;
+        int lineNum;
         std::vector<std::unique_ptr<Token>> tokenStream;
         char getCurChar() const;
         void advanceChar();
