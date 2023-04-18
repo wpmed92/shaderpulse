@@ -422,7 +422,10 @@ std::vector<std::unique_ptr<ParameterDeclaration>> Parser::parseFunctionParamete
             advanceToken();
 
             if (curToken->is(TokenKind::Identifier)) {
-                auto param = std::make_unique<ParameterDeclaration>(curToken->getIdentifierName());
+                auto param = std::make_unique<ParameterDeclaration>(
+                    curToken->getIdentifierName(),
+                    std::move(*type)
+                );
                 advanceToken();
                 params.push_back(std::move(param));
             }

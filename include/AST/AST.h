@@ -270,14 +270,16 @@ private:
 class ParameterDeclaration {
 
 public:
-    ParameterDeclaration(const std::string& name) : name(name) {
+    ParameterDeclaration(const std::string& name, std::unique_ptr<Type> type) : name(name), type(std::move(type)) {
 
     }
 
     const std::string& getName() { return name; }
+    Type* getType() { return type.get(); }
 
 private:
     std::string name;
+    std::unique_ptr<Type> type;
 };  
 
 class ForStatement : public Statement {

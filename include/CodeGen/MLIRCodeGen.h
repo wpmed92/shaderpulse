@@ -76,7 +76,7 @@ private:
   // Stack used to hold intermediary values while generating code for an expression
   std::vector<Value> expressionStack;
 
-  llvm::StringMap<FunctionDeclaration*> functionMap;
+  llvm::StringMap<spirv::FuncOp> functionMap;
 };
 
 };

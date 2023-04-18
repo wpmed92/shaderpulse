@@ -222,15 +222,19 @@ void MLIRCodeGen::visit(DiscardStatement* discardStmt) {
 }
 
 void MLIRCodeGen::visit(FunctionDeclaration* funcDecl) {
-    /*for (auto argType : enumerate(funcOp.getType().getInputs())) {
-        auto convertedType = typeConverter.convertType(argType.value());
-        signatureConverter.addInputs(argType.index(), convertedType);
+    std::vector<mlir::Type> paramTypes;
+
+    for (auto& param : funcDecl->getParams()) {
+        paramTypes.push_back(convertShaderPulseType(&context, param->getType()));
     }
 
-    auto newFuncOp = builder.create<spirv::FuncOp>(
+    auto funcOp = builder.create<spirv::FuncOp>(
       builder.getUnknownLoc(), funcDecl->getName(),
-      rewriter.getFunctionType(signatureConverter.getConvertedTypes(),
-                               llvm::None));*/
+      builder.getFunctionType(paramTypes,
+                               llvm::None)
+    );
+
+    functionMap.insert({funcDecl->getName(), funcOp});
 }
 
 void MLIRCodeGen::visit(DefaultLabel* defaultLabel) {

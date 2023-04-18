@@ -9,7 +9,8 @@ R"(
     uint c;
     vec3 d;
     mat2x2 e;
-    void myFunc() {
+
+    void myFunc(vec2 arg1, bool arg2) {
     }
 )";
 
