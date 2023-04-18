@@ -56,7 +56,7 @@ std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
 
 std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
     if (auto type = Parser::getTypeFromTokenKind(curToken->getTokenKind())) {
-        if (!peek(1)->is(TokenKind::Identifier) && !peek(2)->is(TokenKind::lParen)) {
+        if (!(peek(1)->is(TokenKind::Identifier) && peek(2)->is(TokenKind::lParen))) {
             return nullptr;
         }
 

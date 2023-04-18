@@ -3,7 +3,10 @@
 #include "Parser/Parser.h"
 
 static std::string functionDeclarationTestString = 
-R"(
+R"( 
+    float a;
+    int b;
+    uint c;
     void myFunc() {
     }
 )";
@@ -27,4 +30,5 @@ int main(int argc, char** argv) {
     auto mlirCodeGen = std::make_unique<codegen::MLIRCodeGen>();
     
     translationUnit->accept(mlirCodeGen.get());
+    mlirCodeGen->dump();
 }

@@ -41,6 +41,7 @@ add_executable(shaderpulse-standalone
   lib/Parser/Parser.cpp
   lib/AST/ASTVisitor.cpp
   lib/AST/Util.cpp
+  lib/CodeGen/TypeConversion.cpp
   lib/CodeGen/MLIRCodeGen.cpp
 )
 
