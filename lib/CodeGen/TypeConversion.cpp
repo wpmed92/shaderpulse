@@ -19,12 +19,19 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext* ctx, Type* shaderPulseType)
             return mlir::FloatType::getF32(ctx);
         case TypeKind::Double:
             return mlir::FloatType::getF64(ctx);
-        case TypeKind::Vector:
-            // TODO:
-            break;
-        case TypeKind::Matrix:
-            // TODO: 
-            break;
+        case TypeKind::Vector: {
+            auto vecType = dynamic_cast<shaderpulse::VectorType*>(shaderPulseType);
+            llvm::SmallVector<int64_t, 1> shape;
+            shape.push_back(vecType->getLength());
+            return mlir::VectorType::get(shape, convertShaderPulseType(ctx, vecType->getElementType()));
+        }
+        case TypeKind::Matrix: {
+            auto matrixType = dynamic_cast<shaderpulse::MatrixType*>(shaderPulseType);
+            llvm::SmallVector<int64_t, 2> shape;
+            shape.push_back(matrixType->getRows());
+            shape.push_back(matrixType->getCols());
+            return mlir::VectorType::get(shape, convertShaderPulseType(ctx, matrixType->getElementType()));
+        }
     }
 }
 

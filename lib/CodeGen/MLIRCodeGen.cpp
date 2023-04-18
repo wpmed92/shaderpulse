@@ -138,7 +138,7 @@ void MLIRCodeGen::visit(UnaryExpression* unExp) {
 }
 
 void MLIRCodeGen::visit(ValueDeclaration* valDecl) {
-    builder.setInsertionPointToStart(spirvModule.getBody());
+    builder.setInsertionPointToEnd(spirvModule.getBody());
     std::cout << "Value declaration: " << valDecl->getIdentifierNames()[0] << std::endl;
     auto ptrType = spirv::PointerType::get(convertShaderPulseType(&context, valDecl->getType()), spirv::StorageClass::Uniform);
     builder.create<spirv::GlobalVariableOp>(
@@ -222,6 +222,15 @@ void MLIRCodeGen::visit(DiscardStatement* discardStmt) {
 }
 
 void MLIRCodeGen::visit(FunctionDeclaration* funcDecl) {
+    /*for (auto argType : enumerate(funcOp.getType().getInputs())) {
+        auto convertedType = typeConverter.convertType(argType.value());
+        signatureConverter.addInputs(argType.index(), convertedType);
+    }
+
+    auto newFuncOp = builder.create<spirv::FuncOp>(
+      builder.getUnknownLoc(), funcDecl->getName(),
+      rewriter.getFunctionType(signatureConverter.getConvertedTypes(),
+                               llvm::None));*/
 }
 
 void MLIRCodeGen::visit(DefaultLabel* defaultLabel) {

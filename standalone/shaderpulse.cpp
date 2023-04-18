@@ -7,6 +7,8 @@ R"(
     float a;
     int b;
     uint c;
+    vec3 d;
+    mat2x2 e;
     void myFunc() {
     }
 )";
