@@ -197,8 +197,8 @@ public:
     }
 
     void accept(ASTVisitor* visitor) override {
-        visitor->visit(this);
         rhs->accept(visitor);
+        visitor->visit(this);
     }
 
     UnaryOperator getOp() const { return op; }
@@ -218,9 +218,9 @@ public:
         }
 
     void accept(ASTVisitor* visitor) override {
-        visitor->visit(this);
         lhs->accept(visitor);
         rhs->accept(visitor);
+        visitor->visit(this);
     }
 
     Expression* getLhs() { return lhs.get(); }
@@ -507,7 +507,7 @@ public :
 
     void accept(ASTVisitor* visitor) override {
         visitor->visit(this);
-        body->accept(visitor);
+        // body->accept(visitor);
     }
 
     const std::vector<std::unique_ptr<ParameterDeclaration>>& getParams() { return params; }

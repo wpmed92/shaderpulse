@@ -8,6 +8,9 @@
 #include "mlir/IR/Verifier.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
+
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/ScopedHashTable.h"
 #include <vector>
 
 namespace shaderpulse {
@@ -77,6 +80,16 @@ private:
   std::vector<Value> expressionStack;
 
   llvm::StringMap<spirv::FuncOp> functionMap;
+  bool inGlobalScope = true;
+
+  llvm::ScopedHashTable<llvm::StringRef, std::pair<mlir::Value, ValueDeclaration *>>
+      symbolTable;
+  using SymbolTableScopeT =
+      llvm::ScopedHashTableScope<StringRef,
+                                 std::pair<mlir::Value, ValueDeclaration *>>;
+
+    void declare(ValueDeclaration*, mlir::Value);
+    mlir::Value popExpressionStack();
 };
 
 };

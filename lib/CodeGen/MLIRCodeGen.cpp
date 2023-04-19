@@ -14,8 +14,8 @@ void MLIRCodeGen::dump() {
 }
 
 void MLIRCodeGen::visit(TranslationUnit* unit) {
-    spirvModule.verify();
-    
+    std::cout << "Visiting translation" << std::endl;
+
     if (failed(mlir::verify(spirvModule))) {
       std::cout << "Verify failed" << std::endl;
     } else {
@@ -23,94 +23,107 @@ void MLIRCodeGen::visit(TranslationUnit* unit) {
     }
 }
 
+Value MLIRCodeGen::popExpressionStack() {
+    Value val = expressionStack.back();
+    expressionStack.pop_back();
+    return val;
+}
+
 void MLIRCodeGen::visit(BinaryExpression* binExp) {
-   /* Value rhs = expressionStack.pop_back();
-    Value lhs = expressionStack.pop_back();
+    Value rhs = popExpressionStack();
+    Value lhs = popExpressionStack();
 
     // TODO: handle other types than float. Need to figure out the expression this BinaryExpression is
     // part of to know what kind of spirv op to use. (float, int?)
 
+    // TODO: implement source location
+    auto loc = builder.getUnknownLoc();
+    Value val;
+
     switch (binExp->getOp()) {
         case BinaryOperator::Add:
-            Value val = builder.create<spirv::FAddOp>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FAddOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Sub:
-            Value val = builder.create<spirv::FSubOp>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FSubOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Mul:
-            Value val = builder.create<spirv::FMulOp>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FMulOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Div:
-            Value val = builder.create<spirv::FDivOp>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FDivOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Mod:
-            Value val = builder.create<spirv::FRemOp>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FRemOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::ShiftLeft:
-            Value val = builder.create<spirv::ShiftLeftLogical>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::ShiftLeftLogicalOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::ShiftRight:
-            Value val = builder.create<spirv::ShiftRightLogical>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::ShiftRightLogicalOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Lt:
-            Value val = builder.create<spirv::FOrdLessThan>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FOrdLessThanOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Gt:
-            Value val = builder.create<spirv::FOrdGreaterThan>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FOrdGreaterThanOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::LtEq:
-            Value val = builder.create<spirv::FOrdLessThanEqual>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FOrdLessThanEqualOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::GtEq:
-            Value val = builder.create<spirv::FOrdGreaterThanEqual>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FOrdGreaterThanEqualOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Eq:
-            Value val = builder.create<spirv::FOrdEqual>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FOrdEqualOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::Neq:
-            Value val = builder.create<spirv::FOrdNotEqual>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::FOrdNotEqualOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::BitAnd:
-            Value val = builder.create<spirv::BitwiseAnd>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::BitwiseAndOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::BitXor:
-            Value val = builder.create<spirv::BitwiseXor>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::BitwiseXorOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::BitIor:
-            Value val = builder.create<spirv::BitwiseOr>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::BitwiseOrOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::LogAnd:
-            Value val = builder.create<spirv::LogicalAnd>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::LogicalAndOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
         case BinaryOperator::LogXor:
             // TODO: not implemented in current spirv dialect
             break;
         case BinaryOperator::LogOr:
-            Value val = builder.create<spirv::LogicalOr>(loc, resultTypes, {lhs, rhs});
+            val = builder.create<spirv::LogicalOrOp>(loc, lhs, rhs);
             expressionStack.push_back(val);
             break;
-    }*/
+    }
 }
 
 void MLIRCodeGen::visit(UnaryExpression* unExp) {
-    /*Value rhs = expressionStack.pop_back();
+    Value rhs = popExpressionStack();
+
+    auto loc = builder.getUnknownLoc();
+    Value val;
 
     switch (unExp->getOp()) {
         case UnaryOperator::Inc:
@@ -123,27 +136,45 @@ void MLIRCodeGen::visit(UnaryExpression* unExp) {
             expressionStack.push_back(rhs);
             break;
         case UnaryOperator::Dash:
-            Value val = builder.create<spirv::FNegate>(loc, resultTypes, rhs);
+            val = builder.create<spirv::FNegateOp>(loc, rhs);
             expressionStack.push_back(val);
             break;
         case UnaryOperator::Bang:
-            Value val = builder.create<spirv::LogicalNot>(loc, resultTypes, rhs);
+            val = builder.create<spirv::LogicalNotOp>(loc, rhs);
             expressionStack.push_back(val);
             break;
         case UnaryOperator::Tilde:
-            Value val = builder.create<spirv::Not>(loc, resultTypes, rhs);
+            val = builder.create<spirv::NotOp>(loc, rhs);
             expressionStack.push_back(val);
             break;
-    }*/
+    }
+}
+
+void MLIRCodeGen::declare(ValueDeclaration* valDecl, mlir::Value value) {
+    if (symbolTable.count(valDecl->getIdentifierNames()[0]))
+      return;
+
+    symbolTable.insert(valDecl->getIdentifierNames()[0], {value, valDecl});
 }
 
 void MLIRCodeGen::visit(ValueDeclaration* valDecl) {
-    builder.setInsertionPointToEnd(spirvModule.getBody());
-    std::cout << "Value declaration: " << valDecl->getIdentifierNames()[0] << std::endl;
-    auto ptrType = spirv::PointerType::get(convertShaderPulseType(&context, valDecl->getType()), spirv::StorageClass::Uniform);
-    builder.create<spirv::GlobalVariableOp>(
-        UnknownLoc::get(&context), TypeAttr::get(ptrType),
-        builder.getStringAttr(valDecl->getIdentifierNames()[0]), nullptr);
+    std::cout << "Visitng val decl: " << valDecl->getIdentifierNames()[0] << std::endl;
+    if (inGlobalScope) {
+        builder.setInsertionPointToEnd(spirvModule.getBody());
+        auto ptrType = spirv::PointerType::get(convertShaderPulseType(&context, valDecl->getType()), spirv::StorageClass::Uniform);
+        auto var = builder.create<spirv::GlobalVariableOp>(
+            UnknownLoc::get(&context), TypeAttr::get(ptrType),
+            builder.getStringAttr(valDecl->getIdentifierNames()[0]), nullptr);
+    } else {
+       auto var = builder.create<spirv::VariableOp>(
+          builder.getUnknownLoc(), 
+          convertShaderPulseType(&context, valDecl->getType()), 
+          spirv::StorageClass::Function,
+          nullptr
+        );
+
+        declare(valDecl, var);
+    }
 }
 
 void MLIRCodeGen::visit(SwitchStatement* switchStmt) {
@@ -159,6 +190,15 @@ void MLIRCodeGen::visit(IfStatement* ifStmt) {
 }
 
 void MLIRCodeGen::visit(AssignmentExpression* assignmentExp) {
+    std::cout << "Visiting assignment expression" << std::endl;
+    auto varIt = symbolTable.lookup(assignmentExp->getIdentifier());
+    Value val = popExpressionStack();
+
+    if (varIt.first) {
+        std::cout << "Variable found in symbol table and pushed to expr stack." << std::endl;
+        builder.create<spirv::StoreOp>(builder.getUnknownLoc(), varIt.first, val);
+        std::cout << "Store success" << std::endl;
+    }
 }
 
 void MLIRCodeGen::visit(StatementList* stmtList) {
@@ -168,45 +208,55 @@ void MLIRCodeGen::visit(CallExpression* callExp) {
 }
 
 void MLIRCodeGen::visit(VariableExpression* varExp) {
+    std::cout << "Visiting varexp" << std::endl;
+    auto varIt = symbolTable.lookup(varExp->getName());
 
+    if (varIt.first) {
+        std::cout << "Variable found in symbol table and pushed to expr stack." << std::endl;
+        expressionStack.push_back(varIt.first);
+    }
 }
 
 void MLIRCodeGen::visit(IntegerConstantExpression* intConstExp) {
-    /*auto type = IntegerType();
+    auto type = builder.getIntegerType(32);
     Value val = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(), type, builder.getIntegerAttr(type, APInt(32, intConstExp->getVal(), true)));
+        builder.getUnknownLoc(), type, IntegerAttr::get(type, APInt(32, intConstExp->getVal(), true)));
 
-    expressionStack.push_back(val);*/
+    expressionStack.push_back(val);
 }
 
 void MLIRCodeGen::visit(UnsignedIntegerConstantExpression* uintConstExp) {
-    /*auto type = IntegerType();
+    auto type = builder.getIntegerType(32);
     Value val = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(), type, builder.getIntegerAttr(type, APInt(32, intConstExp->getVal(), false)));
+        builder.getUnknownLoc(), type, IntegerAttr::get(type, APInt(32, uintConstExp->getVal(), false)));
 
-    expressionStack.push_back(val);*/
+    expressionStack.push_back(val);
 }
 
 void MLIRCodeGen::visit(FloatConstantExpression* floatConstExp) {
-    /*auto type = FloatType();
+    std::cout << "Visiting float constant" << std::endl;
+    auto type = builder.getF32Type();
     Value val = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(), type, builder.getIntegerAttr(type, APFloat(floatConstExp->getVal())));
+        builder.getUnknownLoc(), type, FloatAttr::get(type, APFloat(floatConstExp->getVal())));
 
-    expressionStack.push_back(val);*/
+    std::cout << "Visiting float constant after" << std::endl;
+    expressionStack.push_back(val);
 }
 
 void MLIRCodeGen::visit(DoubleConstantExpression* doubleConstExp) {
-    /*auto type = FloatType();
+    auto type = builder.getF64Type();
     Value val = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(), type, builder.getIntegerAttr(type, APFloat(doubleConstExp->getVal())));
+        builder.getUnknownLoc(), type, FloatAttr::get(type, APFloat(doubleConstExp->getVal())));
 
-    expressionStack.push_back(val);*/
+    expressionStack.push_back(val);
 }
 
 void MLIRCodeGen::visit(BoolConstantExpression* boolConstExp) {
-    /*auto type = IntegerType();
+    auto type = builder.getIntegerType(1);
     Value val = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(), type, builder.getIntegerAttr(type, APInt(1, boolConstExp->getVal())));*/
+        builder.getUnknownLoc(), type, IntegerAttr::get(type, APInt(1, boolConstExp->getVal())));
+
+    expressionStack.push_back(val);
 }
 
 void MLIRCodeGen::visit(ReturnStatement* returnStmt) {
@@ -222,17 +272,29 @@ void MLIRCodeGen::visit(DiscardStatement* discardStmt) {
 }
 
 void MLIRCodeGen::visit(FunctionDeclaration* funcDecl) {
+    SymbolTableScopeT varScope(symbolTable);
     std::vector<mlir::Type> paramTypes;
 
     for (auto& param : funcDecl->getParams()) {
         paramTypes.push_back(convertShaderPulseType(&context, param->getType()));
     }
 
+    builder.setInsertionPointToEnd(spirvModule.getBody());
+    
     auto funcOp = builder.create<spirv::FuncOp>(
       builder.getUnknownLoc(), funcDecl->getName(),
       builder.getFunctionType(paramTypes,
-                               llvm::None)
+                               std::nullopt)
     );
+
+    inGlobalScope = false;
+
+    auto entryBlock = funcOp.addEntryBlock();
+    builder.setInsertionPointToStart(entryBlock);
+
+    funcDecl->getBody()->accept(this);
+
+    inGlobalScope = true;
 
     functionMap.insert({funcDecl->getName(), funcOp});
 }
