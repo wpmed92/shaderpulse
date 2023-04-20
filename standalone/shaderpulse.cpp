@@ -16,6 +16,7 @@ R"(
         float g;
         f = 1.0;
         g = f + 2.0;
+        return g;
     }
 )";
 

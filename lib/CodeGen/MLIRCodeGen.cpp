@@ -260,6 +260,12 @@ void MLIRCodeGen::visit(BoolConstantExpression* boolConstExp) {
 }
 
 void MLIRCodeGen::visit(ReturnStatement* returnStmt) {
+    if (expressionStack.empty()) {
+        builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+    } else {
+        Value val = popExpressionStack();
+        builder.create<spirv::ReturnValueOp>(builder.getUnknownLoc(), val);
+    }
 }
 
 void MLIRCodeGen::visit(BreakStatement* breakStmt) {

@@ -745,6 +745,8 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
     advanceToken();
 
     if (curToken->is(TokenKind::semiColon)) {
+        std::cout << "Found return statement" << std::endl;
+        advanceToken();
         return std::make_unique<ReturnStatement>();
     }
 
@@ -761,10 +763,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
 }
 
 std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
-    std::cout << "Checking if assignment expression: " << cursor << std::endl;
-
     if (!(curToken->is(TokenKind::Identifier) && Parser::getAssignmentOperatorFromTokenKind(peek(1)->getTokenKind()))) {
-        std::cout << "Not assignment " << cursor << std::endl;
         return nullptr;
     }
 
