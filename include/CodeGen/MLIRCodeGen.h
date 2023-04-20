@@ -45,6 +45,7 @@ public:
     }
 
     void dump();
+    bool verify();
     void visit(TranslationUnit*) override;
     void visit(BinaryExpression*) override;;
     void visit(UnaryExpression*) override;;

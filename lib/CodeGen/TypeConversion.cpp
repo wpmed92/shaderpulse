@@ -7,8 +7,7 @@ namespace codegen {
 mlir::Type convertShaderPulseType(mlir::MLIRContext* ctx, Type* shaderPulseType) {
     switch (shaderPulseType->getKind()) {
         case TypeKind::Void:
-            // Conversion not available
-            break;
+            return  mlir::NoneType::get(ctx);
         case TypeKind::Bool:
             return mlir::IntegerType::get(ctx, 1);
         case TypeKind::Integer:

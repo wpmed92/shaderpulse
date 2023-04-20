@@ -11,12 +11,16 @@ R"(
     vec3 d;
     mat2x2 e;
 
-    void myFunc(vec2 arg1, bool arg2) {
+    float foo() {
+        return 1.0;
+    }
+
+    float myFunc(vec2 arg1, bool arg2) {
         float f;
         float g;
         f = 1.0;
         g = f + 2.0;
-        return g;
+        return g + foo();
     }
 )";
 
@@ -39,4 +43,8 @@ int main(int argc, char** argv) {
     
     translationUnit->accept(mlirCodeGen.get());
     mlirCodeGen->dump();
+    
+    if (mlirCodeGen->verify()) {
+        std::cout << "SPIR-V module verified" << std::endl;
+    }
 }

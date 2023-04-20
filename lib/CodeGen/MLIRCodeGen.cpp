@@ -13,14 +13,11 @@ void MLIRCodeGen::dump() {
     spirvModule.dump();
 }
 
-void MLIRCodeGen::visit(TranslationUnit* unit) {
-    std::cout << "Visiting translation" << std::endl;
+bool MLIRCodeGen::verify() {
+    return !failed(mlir::verify(spirvModule));
+}
 
-    if (failed(mlir::verify(spirvModule))) {
-      std::cout << "Verify failed" << std::endl;
-    } else {
-        std::cout << "Verification success" << std::endl;
-    }
+void MLIRCodeGen::visit(TranslationUnit* unit) {
 }
 
 Value MLIRCodeGen::popExpressionStack() {
@@ -158,7 +155,6 @@ void MLIRCodeGen::declare(ValueDeclaration* valDecl, mlir::Value value) {
 }
 
 void MLIRCodeGen::visit(ValueDeclaration* valDecl) {
-    std::cout << "Visitng val decl: " << valDecl->getIdentifierNames()[0] << std::endl;
     if (inGlobalScope) {
         builder.setInsertionPointToEnd(spirvModule.getBody());
         auto ptrType = spirv::PointerType::get(convertShaderPulseType(&context, valDecl->getType()), spirv::StorageClass::Uniform);
@@ -166,11 +162,11 @@ void MLIRCodeGen::visit(ValueDeclaration* valDecl) {
             UnknownLoc::get(&context), TypeAttr::get(ptrType),
             builder.getStringAttr(valDecl->getIdentifierNames()[0]), nullptr);
     } else {
-       auto var = builder.create<spirv::VariableOp>(
-          builder.getUnknownLoc(), 
-          convertShaderPulseType(&context, valDecl->getType()), 
-          spirv::StorageClass::Function,
-          nullptr
+        auto ptrType = spirv::PointerType::get(convertShaderPulseType(&context, valDecl->getType()), spirv::StorageClass::Function);
+        auto var = builder.create<spirv::VariableOp>(
+            builder.getUnknownLoc(), 
+            ptrType, spirv::StorageClass::Function,
+            nullptr
         );
 
         declare(valDecl, var);
@@ -190,14 +186,11 @@ void MLIRCodeGen::visit(IfStatement* ifStmt) {
 }
 
 void MLIRCodeGen::visit(AssignmentExpression* assignmentExp) {
-    std::cout << "Visiting assignment expression" << std::endl;
     auto varIt = symbolTable.lookup(assignmentExp->getIdentifier());
     Value val = popExpressionStack();
 
     if (varIt.first) {
-        std::cout << "Variable found in symbol table and pushed to expr stack." << std::endl;
         builder.create<spirv::StoreOp>(builder.getUnknownLoc(), varIt.first, val);
-        std::cout << "Store success" << std::endl;
     }
 }
 
@@ -205,15 +198,36 @@ void MLIRCodeGen::visit(StatementList* stmtList) {
 }
 
 void MLIRCodeGen::visit(CallExpression* callExp) {
+    auto calledFuncIt = functionMap.find(callExp->getFunctionName());
+
+    if (calledFuncIt != functionMap.end()) {
+        std::vector<mlir::Value> operands;
+
+        if (callExp->getArguments().size() > 0) {
+            for (auto& arg : callExp->getArguments()) {
+                arg->accept(this);
+                operands.push_back(popExpressionStack());
+            }
+        }
+
+        spirv::FuncOp calledFunc = calledFuncIt->second;
+
+        spirv::FunctionCallOp funcCall = builder.create<spirv::FunctionCallOp>(
+            builder.getUnknownLoc(), calledFunc.getFunctionType().getResults(), SymbolRefAttr::get(&context, calledFunc.getSymName()), operands
+        );
+
+        expressionStack.push_back(funcCall.getResult(0));
+    } else {
+        std::cout << "Function not found." << callExp->getFunctionName() << std::endl;
+    }
 }
 
 void MLIRCodeGen::visit(VariableExpression* varExp) {
-    std::cout << "Visiting varexp" << std::endl;
     auto varIt = symbolTable.lookup(varExp->getName());
 
     if (varIt.first) {
-        std::cout << "Variable found in symbol table and pushed to expr stack." << std::endl;
-        expressionStack.push_back(varIt.first);
+        Value val = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), varIt.first);
+        expressionStack.push_back(val);
     }
 }
 
@@ -234,12 +248,10 @@ void MLIRCodeGen::visit(UnsignedIntegerConstantExpression* uintConstExp) {
 }
 
 void MLIRCodeGen::visit(FloatConstantExpression* floatConstExp) {
-    std::cout << "Visiting float constant" << std::endl;
     auto type = builder.getF32Type();
     Value val = builder.create<spirv::ConstantOp>(
         builder.getUnknownLoc(), type, FloatAttr::get(type, APFloat(floatConstExp->getVal())));
 
-    std::cout << "Visiting float constant after" << std::endl;
     expressionStack.push_back(val);
 }
 
@@ -285,12 +297,9 @@ void MLIRCodeGen::visit(FunctionDeclaration* funcDecl) {
         paramTypes.push_back(convertShaderPulseType(&context, param->getType()));
     }
 
-    builder.setInsertionPointToEnd(spirvModule.getBody());
-    
     auto funcOp = builder.create<spirv::FuncOp>(
       builder.getUnknownLoc(), funcDecl->getName(),
-      builder.getFunctionType(paramTypes,
-                               std::nullopt)
+      builder.getFunctionType(paramTypes, convertShaderPulseType(&context, funcDecl->getReturnType()))
     );
 
     inGlobalScope = false;
@@ -303,6 +312,8 @@ void MLIRCodeGen::visit(FunctionDeclaration* funcDecl) {
     inGlobalScope = true;
 
     functionMap.insert({funcDecl->getName(), funcOp});
+
+    builder.setInsertionPointToEnd(spirvModule.getBody());
 }
 
 void MLIRCodeGen::visit(DefaultLabel* defaultLabel) {

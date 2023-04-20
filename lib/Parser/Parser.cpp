@@ -268,8 +268,6 @@ std::optional<ast::AssignmentOperator> Parser::getAssignmentOperatorFromTokenKin
         case TokenKind::lorAssign:
             return AssignmentOperator::OrAssign;
         default:
-
-            std::cout << "not Found eq: " << kind << std::endl;
             return std::nullopt;
     }
 }
@@ -599,7 +597,6 @@ std::unique_ptr<IfStatement> Parser::parseIfStatement() {
     auto truePart = parseStatement();
 
     if (!truePart) {
-        std::cout << "If statement is null" << std::endl;
         return nullptr;
     }
 
@@ -681,7 +678,6 @@ std::unique_ptr<Statement> Parser::parseCompoundStatement() {
             std::cout << "Expected '}' after statement list." << cursor << std::endl;
             return nullptr;
         } else {
-            std::cout << "Found STATEMENT LIST" << std::endl;
             advanceToken();
             return std::move(stmtList);
         }
@@ -695,10 +691,8 @@ std::unique_ptr<StatementList> Parser::parseStatementList() {
 
     while (true) {
         if (auto stmt = parseStatement()) {
-            std::cout << "Found statement" << std::endl;
             statements.push_back(std::move(stmt));
         } else {
-            std::cout << "Break from stmt list parsing." << std::endl;
             break;
         }
     }
@@ -732,7 +726,6 @@ std::unique_ptr<Statement> Parser::parseSimpleStatement() {
     } else if (auto discardStmt = parseDiscard()) {
         return std::move(discardStmt);
     } else {
-        std::cout << "Statement NOT found." << std::endl;
         return nullptr;
     }
 }
@@ -745,7 +738,6 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
     advanceToken();
 
     if (curToken->is(TokenKind::semiColon)) {
-        std::cout << "Found return statement" << std::endl;
         advanceToken();
         return std::make_unique<ReturnStatement>();
     }
@@ -766,9 +758,6 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
     if (!(curToken->is(TokenKind::Identifier) && Parser::getAssignmentOperatorFromTokenKind(peek(1)->getTokenKind()))) {
         return nullptr;
     }
-
-
-    std::cout << "Found assignment expression " << cursor << std::endl;
 
     auto name = curToken->getIdentifierName();
 
@@ -960,7 +949,6 @@ void Parser::advanceToken() {
         tok->setTokenKind(TokenKind::Eof);
         tokenStream.push_back(std::move(tok));
         curToken = tokenStream.back().get();
-        std::cout << "OUT of bounds" << std::endl;
     } else {
         curToken = tokenStream[++cursor].get();
     }
