@@ -58,6 +58,7 @@ enum AssignmentOperator {
 
 class ASTNode {
 public:
+    virtual ~ASTNode() = default;
     virtual void accept(ASTVisitor* visitor) = 0;
 };
 
@@ -196,8 +197,8 @@ public:
     }
 
     void accept(ASTVisitor* visitor) override {
-        visitor->visit(this);
         rhs->accept(visitor);
+        visitor->visit(this);
     }
 
     UnaryOperator getOp() const { return op; }
@@ -217,18 +218,18 @@ public:
         }
 
     void accept(ASTVisitor* visitor) override {
-        visitor->visit(this);
         lhs->accept(visitor);
         rhs->accept(visitor);
+        visitor->visit(this);
     }
 
-    Expression* getRhs() { return rhs.get(); }
     Expression* getLhs() { return lhs.get(); }
+    Expression* getRhs() { return rhs.get(); }
     BinaryOperator getOp() { return op; }
 private:
     BinaryOperator op;
-    std::unique_ptr<Expression> rhs;
     std::unique_ptr<Expression> lhs;
+    std::unique_ptr<Expression> rhs;
 
 };
 
@@ -261,22 +262,24 @@ public:
         visitor->visit(this);
     }
 private:
-    std::vector<std::string> names;
     std::unique_ptr<Type> type;
+    std::vector<std::string> names;
 
 };
 
 class ParameterDeclaration {
 
 public:
-    ParameterDeclaration(const std::string& name) : name(name) {
+    ParameterDeclaration(const std::string& name, std::unique_ptr<Type> type) : name(name), type(std::move(type)) {
 
     }
 
     const std::string& getName() { return name; }
+    Type* getType() { return type.get(); }
 
 private:
     std::string name;
+    std::unique_ptr<Type> type;
 };  
 
 class ForStatement : public Statement {
@@ -504,7 +507,7 @@ public :
 
     void accept(ASTVisitor* visitor) override {
         visitor->visit(this);
-        body->accept(visitor);
+        // body->accept(visitor);
     }
 
     const std::vector<std::unique_ptr<ParameterDeclaration>>& getParams() { return params; }

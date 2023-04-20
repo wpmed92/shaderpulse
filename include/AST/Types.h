@@ -45,12 +45,12 @@ public:
         assert(this->elementType->isScalar());
     }
 
-    const Type* getElementType() const { return elementType.get(); };
+    Type* getElementType() const { return elementType.get(); };
     int getLength() const { return length; };
 
 private:
-    int length;
     std::unique_ptr<Type> elementType;
+    int length;
 };
 
 class MatrixType : public Type {
@@ -65,13 +65,13 @@ public:
         }
 
     int getRows() const { return rows; }
-    int getColrs() const { return cols; }
-    const Type* getElementType() const { return elementType.get(); }
+    int getCols() const { return cols; }
+    Type* getElementType() const { return elementType.get(); }
     
 private:
+    std::unique_ptr<Type> elementType;
     int rows;
     int cols;
-    std::unique_ptr<Type> elementType;
 
 };
 
