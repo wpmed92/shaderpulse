@@ -34,6 +34,30 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext* ctx, Type* shaderPulseType)
     }
 }
 
+
+std::optional<mlir::spirv::StorageClass> getSpirvStorageClass(TypeQualifier* typeQualifier) {
+    if (!typeQualifier) {
+        return std::nullopt;
+    }
+
+    if (typeQualifier->getKind() == TypeQualifierKind::Storage) {
+        auto storageQualifier = dynamic_cast<StorageQualifier*>(typeQualifier);
+
+        switch (storageQualifier->getKind()) {
+            case StorageQualifierKind::Uniform:
+                return mlir::spirv::StorageClass::Uniform;
+            case StorageQualifierKind::In:
+                return mlir::spirv::StorageClass::Input;
+            case StorageQualifierKind::Out:
+                return mlir::spirv::StorageClass::Output;
+            default:
+                std::nullopt;
+        }
+    }
+    
+    return std::nullopt;
+}
+
 };
 
 };

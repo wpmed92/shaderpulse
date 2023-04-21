@@ -49,6 +49,9 @@ public:
     std::unique_ptr<ast::CallExpression> parseCallExpression();
     std::unique_ptr<ast::Expression> parseUnaryExpression();
     std::unique_ptr<ast::Expression> parsePostfixExpression();
+    std::vector<std::unique_ptr<TypeQualifier>> parseQualifiers();
+    std::unique_ptr<TypeQualifier> parseQualifier();
+    std::unique_ptr<Type> parseType();
 
 private:
     std::vector<std::unique_ptr<Token>>& tokenStream;
@@ -62,9 +65,9 @@ private:
     static std::optional<ast::BinaryOperator> getBinaryOperatorFromTokenKind(TokenKind);
     static std::optional<ast::UnaryOperator> getUnaryOperatorFromTokenKind(TokenKind);
     static std::optional<ast::AssignmentOperator> getAssignmentOperatorFromTokenKind(TokenKind);
-    static std::optional<std::unique_ptr<shaderpulse::Type>> getTypeFromTokenKind(TokenKind);
-    static std::unique_ptr<shaderpulse::VectorType> makeVectorType(TypeKind, int);
-    static std::unique_ptr<shaderpulse::MatrixType> makeMatrixType(TypeKind, int, int);
+    static std::unique_ptr<shaderpulse::Type> getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>, TokenKind);
+    static std::unique_ptr<shaderpulse::VectorType> makeVectorType(std::vector<std::unique_ptr<TypeQualifier>>, TypeKind, int);
+    static std::unique_ptr<shaderpulse::MatrixType> makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>>, TypeKind, int, int);
 };
 
 } // namespace shaderpulse
