@@ -156,8 +156,19 @@ void MLIRCodeGen::declare(ValueDeclaration* valDecl, mlir::Value value) {
 
 void MLIRCodeGen::visit(ValueDeclaration* valDecl) {
     if (inGlobalScope) {
+        spirv::StorageClass storageClass;
+        
+        if (auto st = getSpirvStorageClass(valDecl->getType()->getQualifier(TypeQualifierKind::Storage))) {
+            storageClass = *st;
+        } else {
+            storageClass = spirv::StorageClass::Private;
+        }
+
         builder.setInsertionPointToEnd(spirvModule.getBody());
-        auto ptrType = spirv::PointerType::get(convertShaderPulseType(&context, valDecl->getType()), spirv::StorageClass::Uniform);
+        auto ptrType = spirv::PointerType::get(
+                convertShaderPulseType(&context, valDecl->getType()), 
+                storageClass
+            );
         auto var = builder.create<spirv::GlobalVariableOp>(
             UnknownLoc::get(&context), TypeAttr::get(ptrType),
             builder.getStringAttr(valDecl->getIdentifierNames()[0]), nullptr);

@@ -5,8 +5,8 @@
 
 static std::string functionDeclarationTestString = 
 R"( 
-    float a;
-    int b;
+    uniform highp float a;
+    uniform int b;
     uint c;
     vec3 d;
     mat2x2 e;

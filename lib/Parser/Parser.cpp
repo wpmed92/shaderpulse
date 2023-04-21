@@ -55,14 +55,18 @@ std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
 }
 
 std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
-    if (auto type = Parser::getTypeFromTokenKind(curToken->getTokenKind())) {
+    if (parseQualifier()) {
+        return nullptr;
+    }
+
+    if (auto type = parseType()) {
         if (!(peek(1)->is(TokenKind::Identifier) && peek(2)->is(TokenKind::lParen))) {
             return nullptr;
         }
 
         advanceToken();
 
-        auto returnType = std::move(*type);
+        auto returnType = std::move(type);
         const std::string& functionName = curToken->getIdentifierName();
 
         advanceToken(); // eat lparen
@@ -87,11 +91,11 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
 }
 
 std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
-    if (auto type = Parser::getTypeFromTokenKind(curToken->getTokenKind())) {
+    if (auto type = parseType()) {
         advanceToken();
 
         if (curToken->is(TokenKind::semiColon)) {
-            return std::make_unique<ValueDeclaration>(std::move(*type), std::vector<std::string>());
+            return std::make_unique<ValueDeclaration>(std::move(type), std::vector<std::string>());
         }
 
         std::vector<std::string> names;
@@ -102,7 +106,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
 
         if (curToken->is(TokenKind::semiColon)) {
             advanceToken();
-            return std::make_unique<ValueDeclaration>(std::move(*type), std::move(names));
+            return std::make_unique<ValueDeclaration>(std::move(type), std::move(names));
         } else if (curToken->is(TokenKind::comma)) {
             while (curToken->is(TokenKind::comma)) {
                 advanceToken();
@@ -111,7 +115,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
             }
 
             advanceToken();
-            return std::make_unique<ValueDeclaration>(std::move(*type), std::move(names));
+            return std::make_unique<ValueDeclaration>(std::move(type), std::move(names));
         } else {
             return nullptr;
         }
@@ -243,6 +247,91 @@ std::optional<ast::UnaryOperator> Parser::getUnaryOperatorFromTokenKind(TokenKin
     }
 }
 
+
+std::unique_ptr<TypeQualifier> Parser::parseQualifier() {
+    switch (curToken->getTokenKind()) {
+        // Storage
+        case TokenKind::kw_uniform:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Uniform);
+        case TokenKind::kw_buffer:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Buffer);
+        case TokenKind::kw_const:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Const);
+        case TokenKind::kw_in:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::In);
+        case TokenKind::kw_out:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Out);
+        case TokenKind::kw_inout:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Inout);
+        case TokenKind::kw_centroid:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Centroid);
+        case TokenKind::kw_patch:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Patch);
+        case TokenKind::kw_sample:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Sample);
+        case TokenKind::kw_shared:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Shared);
+        case TokenKind::kw_coherent:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Coherent);
+        case TokenKind::kw_volatile:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Volatile);
+        case TokenKind::kw_restrict:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Restrict);
+        case TokenKind::kw_readonly:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Readonly);
+        case TokenKind::kw_writeonly:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Writeonly);
+        case TokenKind::kw_subroutine:
+            return std::make_unique<StorageQualifier>(StorageQualifierKind::Subroutine);
+
+        // Precision
+        case TokenKind::kw_highp:
+            return std::make_unique<PrecisionQualifier>(PrecisionQualifierKind::High);
+        case TokenKind::kw_mediump:
+            return std::make_unique<PrecisionQualifier>(PrecisionQualifierKind::Medium);
+        case TokenKind::kw_lowp:
+            return std::make_unique<PrecisionQualifier>(PrecisionQualifierKind::Low);
+
+        // Interpolation
+        case TokenKind::kw_smooth:
+            return std::make_unique<InterpolationQualifier>(InterpolationQualifierKind::Smooth);
+        case TokenKind::kw_flat:
+            return std::make_unique<InterpolationQualifier>(InterpolationQualifierKind::Flat);
+        case TokenKind::kw_noperspective:
+            return std::make_unique<InterpolationQualifier>(InterpolationQualifierKind::Noperspective);
+
+        // Precise
+        case TokenKind::kw_precise:
+            return std::make_unique<PreciseQualifier>();
+
+        // Invariant
+        case TokenKind::kw_invariant:
+            return std::make_unique<InvariantQualifier>();
+
+        default:
+            return nullptr;
+    }
+}
+
+std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
+    std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
+
+    while (auto qualifier = parseQualifier()) {
+        qualifiers.push_back(std::move(qualifier));
+        advanceToken();
+    }
+
+
+    return qualifiers;
+}
+
+std::unique_ptr<Type> Parser::parseType() {
+    auto qualifiers = parseQualifiers();
+    auto type = Parser::getTypeFromTokenKind(std::move(qualifiers), curToken->getTokenKind());
+
+    return type;
+}
+
 std::optional<ast::AssignmentOperator> Parser::getAssignmentOperatorFromTokenKind(TokenKind kind) {
     switch (kind) {
         case TokenKind::assign:
@@ -272,118 +361,118 @@ std::optional<ast::AssignmentOperator> Parser::getAssignmentOperatorFromTokenKin
     }
 }
 
-std::optional<std::unique_ptr<shaderpulse::Type>> Parser::getTypeFromTokenKind(TokenKind kind) {
+std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>> qualifiers, TokenKind kind) {
     switch (kind) {
         // Sclar types
         case TokenKind::kw_int:
-            return std::make_unique<shaderpulse::Type>(TypeKind::Integer);
+            return std::make_unique<shaderpulse::Type>(TypeKind::Integer, std::move(qualifiers));
         case TokenKind::kw_bool:
-            return std::make_unique<shaderpulse::Type>(TypeKind::Bool);
+            return std::make_unique<shaderpulse::Type>(TypeKind::Bool, std::move(qualifiers));
         case TokenKind::kw_uint:
-            return std::make_unique<shaderpulse::Type>(TypeKind::UnsignedInteger);
+            return std::make_unique<shaderpulse::Type>(TypeKind::UnsignedInteger, std::move(qualifiers));
         case TokenKind::kw_float:
-            return std::make_unique<shaderpulse::Type>(TypeKind::Float);
+            return std::make_unique<shaderpulse::Type>(TypeKind::Float, std::move(qualifiers));
         case TokenKind::kw_double:
-            return std::make_unique<shaderpulse::Type>(TypeKind::Double);
+            return std::make_unique<shaderpulse::Type>(TypeKind::Double, std::move(qualifiers));
         case TokenKind::kw_void:
-            return std::make_unique<shaderpulse::Type>(TypeKind::Void);
+            return std::make_unique<shaderpulse::Type>(TypeKind::Void, std::move(qualifiers));
 
         // Vector types
         case TokenKind::kw_vec2:
-            return makeVectorType(TypeKind::Float, 2);
+            return makeVectorType(std::move(qualifiers), TypeKind::Float, 2);
         case TokenKind::kw_vec3:
-            return makeVectorType(TypeKind::Float, 3);
+            return makeVectorType(std::move(qualifiers), TypeKind::Float, 3);
         case TokenKind::kw_vec4:
-            return makeVectorType(TypeKind::Float, 4);
+            return makeVectorType(std::move(qualifiers), TypeKind::Float, 4);
 
         case TokenKind::kw_bvec2:
-            return makeVectorType(TypeKind::Bool, 2);
+            return makeVectorType(std::move(qualifiers), TypeKind::Bool, 2);
         case TokenKind::kw_bvec3:
-            return makeVectorType(TypeKind::Bool, 3);
+            return makeVectorType(std::move(qualifiers), TypeKind::Bool, 3);
         case TokenKind::kw_bvec4:
-            return makeVectorType(TypeKind::Bool, 4);
+            return makeVectorType(std::move(qualifiers), TypeKind::Bool, 4);
 
         case TokenKind::kw_ivec2:
-            return makeVectorType(TypeKind::Integer, 2);
+            return makeVectorType(std::move(qualifiers), TypeKind::Integer, 2);
         case TokenKind::kw_ivec3:
-            return makeVectorType(TypeKind::Integer, 3);
+            return makeVectorType(std::move(qualifiers), TypeKind::Integer, 3);
         case TokenKind::kw_ivec4:
-            return makeVectorType(TypeKind::Integer, 4);
+            return makeVectorType(std::move(qualifiers), TypeKind::Integer, 4);
 
         case TokenKind::kw_uvec2:
-            return makeVectorType(TypeKind::UnsignedInteger, 2);
+            return makeVectorType(std::move(qualifiers), TypeKind::UnsignedInteger, 2);
         case TokenKind::kw_uvec3:
-            return makeVectorType(TypeKind::UnsignedInteger, 3);
+            return makeVectorType(std::move(qualifiers), TypeKind::UnsignedInteger, 3);
         case TokenKind::kw_uvec4:
-            return makeVectorType(TypeKind::UnsignedInteger, 4);
+            return makeVectorType(std::move(qualifiers), TypeKind::UnsignedInteger, 4);
         
         case TokenKind::kw_dvec2:
-            return makeVectorType(TypeKind::Double, 2);
+            return makeVectorType(std::move(qualifiers), TypeKind::Double, 2);
         case TokenKind::kw_dvec3:
-            return makeVectorType(TypeKind::Double, 3);
+            return makeVectorType(std::move(qualifiers), TypeKind::Double, 3);
         case TokenKind::kw_dvec4:
-            return makeVectorType(TypeKind::Double, 4);
+            return makeVectorType(std::move(qualifiers), TypeKind::Double, 4);
 
         // Matrix types
         case TokenKind::kw_mat2:
         case TokenKind::kw_mat2x2:
-            return makeMatrixType(TypeKind::Float, 2, 2);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 2, 2);
 
         case TokenKind::kw_mat3:
         case TokenKind::kw_mat3x3:
-            return makeMatrixType(TypeKind::Float, 3, 3);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 3, 3);
 
         case TokenKind::kw_mat4:
         case TokenKind::kw_mat4x4:
-            return makeMatrixType(TypeKind::Float, 4, 4);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 4, 4);
 
         case TokenKind::kw_dmat2:
         case TokenKind::kw_dmat2x2:
-            return makeMatrixType(TypeKind::Double, 2, 2);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 2, 2);
 
         case TokenKind::kw_dmat3:
         case TokenKind::kw_dmat3x3:
-            return makeMatrixType(TypeKind::Double, 3, 3);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 3, 3);
 
         case TokenKind::kw_dmat4:
         case TokenKind::kw_dmat4x4:
-            return makeMatrixType(TypeKind::Double, 4, 4);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 4, 4);
 
         case TokenKind::kw_mat2x3:
-            return makeMatrixType(TypeKind::Float, 2, 3);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 2, 3);
         
         case TokenKind::kw_mat2x4:
-            return makeMatrixType(TypeKind::Float, 2, 4);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 2, 4);
 
         case TokenKind::kw_mat3x2:
-            return makeMatrixType(TypeKind::Float, 3, 2);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 3, 2);
 
         case TokenKind::kw_mat3x4:
-            return makeMatrixType(TypeKind::Float, 3, 4);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 3, 4);
         
         case TokenKind::kw_mat4x2:
-            return makeMatrixType(TypeKind::Float, 4, 2);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 4, 2);
 
         case TokenKind::kw_mat4x3:
-            return makeMatrixType(TypeKind::Float, 4, 3);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Float, 4, 3);
 
         case TokenKind::kw_dmat2x3:
-            return makeMatrixType(TypeKind::Double, 2, 3);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 2, 3);
         
         case TokenKind::kw_dmat2x4:
-            return makeMatrixType(TypeKind::Double, 2, 4);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 2, 4);
 
         case TokenKind::kw_dmat3x2:
-            return makeMatrixType(TypeKind::Double, 3, 2);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 3, 2);
 
         case TokenKind::kw_dmat3x4:
-            return makeMatrixType(TypeKind::Double, 3, 4);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 3, 4);
         
         case TokenKind::kw_dmat4x2:
-            return makeMatrixType(TypeKind::Double, 4, 2);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 4, 2);
 
         case TokenKind::kw_dmat4x3:
-            return makeMatrixType(TypeKind::Double, 4, 3);
+            return makeMatrixType(std::move(qualifiers), TypeKind::Double, 4, 3);
 
         default:
             // Ignore
@@ -391,22 +480,24 @@ std::optional<std::unique_ptr<shaderpulse::Type>> Parser::getTypeFromTokenKind(T
     }
 
     if (kind >= TokenKind::kw_sampler1D && kind <= TokenKind::kw_uimageBuffer) {
-        return std::make_unique<shaderpulse::Type>(TypeKind::Opaque);
+        return std::make_unique<shaderpulse::Type>(TypeKind::Opaque, std::move(qualifiers));
     }
 
-    return std::nullopt;
+    return nullptr;
 };
 
-std::unique_ptr<shaderpulse::VectorType> Parser::makeVectorType(TypeKind kind, int length) {
+std::unique_ptr<shaderpulse::VectorType> Parser::makeVectorType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers, TypeKind kind, int length) {
     return std::make_unique<shaderpulse::VectorType>(
-        std::make_unique<shaderpulse::Type>(kind), 
+        std::move(qualifiers),
+        std::make_unique<shaderpulse::Type>(kind, std::vector<std::unique_ptr<TypeQualifier>>()), 
         length
     );
 }
 
-std::unique_ptr<shaderpulse::MatrixType> Parser::makeMatrixType(TypeKind kind, int rows, int cols) {
+std::unique_ptr<shaderpulse::MatrixType> Parser::makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers, TypeKind kind, int rows, int cols) {
     return std::make_unique<shaderpulse::MatrixType>(
-        std::make_unique<shaderpulse::Type>(kind), 
+        std::move(qualifiers),
+        std::make_unique<shaderpulse::Type>(kind, std::vector<std::unique_ptr<TypeQualifier>>()), 
         rows, 
         cols
     );
@@ -418,13 +509,13 @@ std::vector<std::unique_ptr<ParameterDeclaration>> Parser::parseFunctionParamete
     do {
         advanceToken();
 
-        if (auto type = Parser::getTypeFromTokenKind(curToken->getTokenKind())) {
+        if (auto type = parseType()) {
             advanceToken();
 
             if (curToken->is(TokenKind::Identifier)) {
                 auto param = std::make_unique<ParameterDeclaration>(
                     curToken->getIdentifierName(),
-                    std::move(*type)
+                    std::move(type)
                 );
                 advanceToken();
                 params.push_back(std::move(param));
