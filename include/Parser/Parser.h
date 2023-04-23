@@ -25,7 +25,7 @@ public:
   std::unique_ptr<ast::FunctionDeclaration> parseFunctionDeclaration();
   std::vector<std::unique_ptr<ast::ParameterDeclaration>>
   parseFunctionParameters();
-  std::unique_ptr<ast::ValueDeclaration> parseDeclaration();
+  std::unique_ptr<ast::VariableDeclaration> parseDeclaration();
   std::unique_ptr<ast::Expression> parsePrimaryExpression();
   std::unique_ptr<ast::ForStatement> parseForLoop();
   std::unique_ptr<ast::SwitchStatement> parseSwitchStatement();

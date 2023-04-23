@@ -85,12 +85,12 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
   }
 }
 
-std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
+std::unique_ptr<VariableDeclaration> Parser::parseDeclaration() {
   if (auto type = parseType()) {
     advanceToken();
 
     if (curToken->is(TokenKind::semiColon)) {
-      return std::make_unique<ValueDeclaration>(std::move(type),
+      return std::make_unique<VariableDeclaration>(std::move(type),
                                                 std::vector<std::string>());
     }
 
@@ -102,7 +102,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
 
     if (curToken->is(TokenKind::semiColon)) {
       advanceToken();
-      return std::make_unique<ValueDeclaration>(std::move(type),
+      return std::make_unique<VariableDeclaration>(std::move(type),
                                                 std::move(names));
     } else if (curToken->is(TokenKind::comma)) {
       while (curToken->is(TokenKind::comma)) {
@@ -112,7 +112,7 @@ std::unique_ptr<ValueDeclaration> Parser::parseDeclaration() {
       }
 
       advanceToken();
-      return std::make_unique<ValueDeclaration>(std::move(type),
+      return std::make_unique<VariableDeclaration>(std::move(type),
                                                 std::move(names));
     } else {
       return nullptr;

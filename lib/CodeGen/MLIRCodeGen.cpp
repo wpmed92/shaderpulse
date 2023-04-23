@@ -143,19 +143,19 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
   }
 }
 
-void MLIRCodeGen::declare(ValueDeclaration *valDecl, mlir::Value value) {
-  if (symbolTable.count(valDecl->getIdentifierNames()[0]))
+void MLIRCodeGen::declare(VariableDeclaration *varDecl, mlir::Value value) {
+  if (symbolTable.count(varDecl->getIdentifierNames()[0]))
     return;
 
-  symbolTable.insert(valDecl->getIdentifierNames()[0], {value, valDecl});
+  symbolTable.insert(varDecl->getIdentifierNames()[0], {value, varDecl});
 }
 
-void MLIRCodeGen::visit(ValueDeclaration *valDecl) {
+void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
   if (inGlobalScope) {
     spirv::StorageClass storageClass;
 
     if (auto st = getSpirvStorageClass(
-            valDecl->getType()->getQualifier(TypeQualifierKind::Storage))) {
+            varDecl->getType()->getQualifier(TypeQualifierKind::Storage))) {
       storageClass = *st;
     } else {
       storageClass = spirv::StorageClass::Private;
@@ -163,11 +163,11 @@ void MLIRCodeGen::visit(ValueDeclaration *valDecl) {
 
     builder.setInsertionPointToEnd(spirvModule.getBody());
     auto ptrType = spirv::PointerType::get(
-        convertShaderPulseType(&context, valDecl->getType()), storageClass);
+        convertShaderPulseType(&context, varDecl->getType()), storageClass);
 
     auto varOp = builder.create<spirv::GlobalVariableOp>(
         UnknownLoc::get(&context), TypeAttr::get(ptrType),
-        builder.getStringAttr(valDecl->getIdentifierNames()[0]), nullptr);
+        builder.getStringAttr(varDecl->getIdentifierNames()[0]), nullptr);
 
     // Set OpDecorate through attributes
     // example:
@@ -175,13 +175,13 @@ void MLIRCodeGen::visit(ValueDeclaration *valDecl) {
     // builder.getUnitAttr());
   } else {
     auto ptrType = spirv::PointerType::get(
-        convertShaderPulseType(&context, valDecl->getType()),
+        convertShaderPulseType(&context, varDecl->getType()),
         spirv::StorageClass::Function);
     auto var = builder.create<spirv::VariableOp>(
         builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function,
         nullptr);
 
-    declare(valDecl, var);
+    declare(varDecl, var);
   }
 }
 

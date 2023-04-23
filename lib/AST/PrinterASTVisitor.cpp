@@ -1,4 +1,4 @@
-#include "AST/ASTVisitor.h"
+#include "AST/PrinterASTVisitor.h"
 #include <iostream>
 
 namespace shaderpulse {
@@ -17,8 +17,8 @@ void PrinterASTVisitor::visit(UnaryExpression *unExp) {
   std::cout << "Visiting UnaryExpression" << std::endl;
 }
 
-void PrinterASTVisitor::visit(ValueDeclaration *valDecl) {
-  std::cout << "Visiting ValueDeclaration" << std::endl;
+void PrinterASTVisitor::visit(VariableDeclaration *valDecl) {
+  std::cout << "Visiting VariableDeclaration" << std::endl;
 }
 
 void PrinterASTVisitor::visit(SwitchStatement *switchStmt) {

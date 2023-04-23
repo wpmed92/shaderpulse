@@ -9,8 +9,6 @@ namespace shaderpulse {
 
 namespace ast {
 
-class ASTVisitor;
-
 enum UnaryOperator { Inc, Dec, Plus, Dash, Bang, Tilde };
 
 enum BinaryOperator {
@@ -210,10 +208,10 @@ public:
   virtual ~ExternalDeclaration() = default;
 };
 
-class ValueDeclaration : public ExternalDeclaration, public Statement {
+class VariableDeclaration : public ExternalDeclaration, public Statement {
 
 public:
-  ValueDeclaration(std::unique_ptr<Type> type, std::vector<std::string> names)
+  VariableDeclaration(std::unique_ptr<Type> type, std::vector<std::string> names)
       : type(std::move(type)), names(std::move(names)) {}
 
   const std::vector<std::string> &getIdentifierNames() const { return names; }

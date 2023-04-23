@@ -39,7 +39,7 @@ add_executable(shaderpulse-standalone
   lib/Lexer/Lexer.cpp
   lib/Lexer/Token.cpp
   lib/Parser/Parser.cpp
-  lib/AST/ASTVisitor.cpp
+  lib/AST/PrinterASTVisitor.cpp
   lib/AST/Util.cpp
   lib/CodeGen/TypeConversion.cpp
   lib/CodeGen/MLIRCodeGen.cpp

@@ -50,7 +50,7 @@ public:
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
   void visit(UnaryExpression *) override;
-  void visit(ValueDeclaration *) override;
+  void visit(VariableDeclaration *) override;
   void visit(SwitchStatement *) override;
   void visit(WhileStatement *) override;
   void visit(DoStatement *) override;
@@ -86,13 +86,13 @@ private:
   bool inGlobalScope = true;
 
   llvm::ScopedHashTable<llvm::StringRef,
-                        std::pair<mlir::Value, ValueDeclaration *>>
+                        std::pair<mlir::Value, VariableDeclaration *>>
       symbolTable;
   using SymbolTableScopeT =
       llvm::ScopedHashTableScope<StringRef,
-                                 std::pair<mlir::Value, ValueDeclaration *>>;
+                                 std::pair<mlir::Value, VariableDeclaration *>>;
 
-  void declare(ValueDeclaration *, mlir::Value);
+  void declare(VariableDeclaration *, mlir::Value);
   mlir::Value popExpressionStack();
 };
 
