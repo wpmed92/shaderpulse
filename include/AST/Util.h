@@ -7,10 +7,10 @@ namespace ast {
 
 namespace util {
 
-void printExpression(int, Expression*);
+void printExpression(int, Expression *);
 
 };
 
-};
+}; // namespace ast
 
-};
+}; // namespace shaderpulse

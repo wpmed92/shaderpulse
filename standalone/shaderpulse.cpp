@@ -2,6 +2,7 @@
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
 #include <iostream>
+#include <fstream>
 
 static std::string functionDeclarationTestString = 
 R"( 
@@ -30,7 +31,11 @@ using namespace shaderpulse::lexer;
 using namespace shaderpulse::parser;
 
 int main(int argc, char** argv) {
-    auto lexer = Lexer(functionDeclarationTestString);
+    std::ifstream glslIn(argv[1]);
+    std::stringstream shaderCodeBuffer;
+    shaderCodeBuffer << glslIn.rdbuf();
+    
+    auto lexer = Lexer(shaderCodeBuffer.str());
     auto resp = lexer.lexCharacterStream();
     if (!resp.has_value()) {
         return 0;
