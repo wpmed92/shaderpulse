@@ -31,6 +31,11 @@ using namespace shaderpulse::lexer;
 using namespace shaderpulse::parser;
 
 int main(int argc, char** argv) {
+    if (argc < 2) {
+        std::cout << "Missing input file." << std::endl;
+        return -1;
+    }
+    
     std::ifstream glslIn(argv[1]);
     std::stringstream shaderCodeBuffer;
     shaderCodeBuffer << glslIn.rdbuf();
