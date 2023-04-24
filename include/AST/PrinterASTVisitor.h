@@ -34,6 +34,6 @@ public:
   void visit(CaseLabel *) override;
 };
 
-};
+}; // namespace ast
 
-};
+}; // namespace shaderpulse

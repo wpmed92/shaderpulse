@@ -144,18 +144,28 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
 }
 
 void MLIRCodeGen::declare(VariableDeclaration *varDecl, mlir::Value value) {
-  if (symbolTable.count(varDecl->getIdentifierNames()[0]))
+  if (symbolTable.count(varDecl->getIdentifierName()))
     return;
 
-  symbolTable.insert(varDecl->getIdentifierNames()[0], {value, varDecl});
+  symbolTable.insert(varDecl->getIdentifierName(), {value, varDecl});
 }
 
-void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
+void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
+  for (auto &var : varDeclList->getDeclarations()) {
+    var->getInitialzerExpression()->accept(this);
+    createVariable(varDeclList->getType(), var.get());
+  }
+}
+
+void MLIRCodeGen::createVariable(shaderpulse::Type *type,
+                                 VariableDeclaration *varDecl) {
+  shaderpulse::Type *varType = (type) ? type : varDecl->getType();
+
   if (inGlobalScope) {
     spirv::StorageClass storageClass;
 
     if (auto st = getSpirvStorageClass(
-            varDecl->getType()->getQualifier(TypeQualifierKind::Storage))) {
+            varType->getQualifier(TypeQualifierKind::Storage))) {
       storageClass = *st;
     } else {
       storageClass = spirv::StorageClass::Private;
@@ -163,26 +173,44 @@ void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
 
     builder.setInsertionPointToEnd(spirvModule.getBody());
     auto ptrType = spirv::PointerType::get(
-        convertShaderPulseType(&context, varDecl->getType()), storageClass);
+        convertShaderPulseType(&context, varType), storageClass);
+
+    Operation *initializerOp = nullptr;
+
+    if (expressionStack.size() > 0) {
+      Value val = popExpressionStack();
+      initializerOp = val.getDefiningOp();
+    }
 
     auto varOp = builder.create<spirv::GlobalVariableOp>(
         UnknownLoc::get(&context), TypeAttr::get(ptrType),
-        builder.getStringAttr(varDecl->getIdentifierNames()[0]), nullptr);
+        builder.getStringAttr(varDecl->getIdentifierName()),
+        (initializerOp) ? FlatSymbolRefAttr::get(initializerOp) : nullptr);
 
     // Set OpDecorate through attributes
     // example:
     // varOp->setAttr(spirv::stringifyDecoration(spirv::Decoration::Invariant),
     // builder.getUnitAttr());
   } else {
-    auto ptrType = spirv::PointerType::get(
-        convertShaderPulseType(&context, varDecl->getType()),
-        spirv::StorageClass::Function);
+    Value val;
+
+    if (expressionStack.size() > 0) {
+      val = popExpressionStack();
+    }
+
+    auto ptrType =
+        spirv::PointerType::get(convertShaderPulseType(&context, varType),
+                                spirv::StorageClass::Function);
+
     auto var = builder.create<spirv::VariableOp>(
-        builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function,
-        nullptr);
+        builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, val);
 
     declare(varDecl, var);
   }
+}
+
+void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
+  createVariable(nullptr, varDecl);
 }
 
 void MLIRCodeGen::visit(SwitchStatement *switchStmt) {}

@@ -8,6 +8,7 @@ class TranslationUnit;
 class BinaryExpression;
 class UnaryExpression;
 class VariableDeclaration;
+class VariableDeclarationList;
 class SwitchStatement;
 class WhileStatement;
 class DoStatement;
@@ -37,6 +38,7 @@ public:
   virtual void visit(BinaryExpression *) = 0;
   virtual void visit(UnaryExpression *) = 0;
   virtual void visit(VariableDeclaration *) = 0;
+  virtual void visit(VariableDeclarationList *) = 0;
   virtual void visit(SwitchStatement *) = 0;
   virtual void visit(WhileStatement *) = 0;
   virtual void visit(DoStatement *) = 0;

@@ -85,41 +85,99 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
   }
 }
 
-std::unique_ptr<VariableDeclaration> Parser::parseDeclaration() {
+std::unique_ptr<Declaration> Parser::parseDeclaration() {
   if (auto type = parseType()) {
     advanceToken();
 
+    // Only type, no variable name
     if (curToken->is(TokenKind::semiColon)) {
+      advanceToken();
       return std::make_unique<VariableDeclaration>(std::move(type),
-                                                std::vector<std::string>());
+                                                   std::string(), nullptr);
     }
 
-    std::vector<std::string> names;
-
-    names.push_back(curToken->getIdentifierName());
+    const std::string &name = curToken->getIdentifierName();
 
     advanceToken();
 
+    // Type and variable name, no initializer expression
     if (curToken->is(TokenKind::semiColon)) {
       advanceToken();
-      return std::make_unique<VariableDeclaration>(std::move(type),
-                                                std::move(names));
-    } else if (curToken->is(TokenKind::comma)) {
-      while (curToken->is(TokenKind::comma)) {
-        advanceToken();
-        names.push_back(curToken->getIdentifierName());
-        advanceToken();
-      }
-
+      return std::make_unique<VariableDeclaration>(std::move(type), name,
+                                                   nullptr);
+    } else if (curToken->is(TokenKind::assign)) {
+      // Initializer expression
       advanceToken();
-      return std::make_unique<VariableDeclaration>(std::move(type),
-                                                std::move(names));
+
+      auto exp = parseExpression();
+
+      // Declaration list
+      if (curToken->is(TokenKind::comma)) {
+        advanceToken();
+        auto declarations =
+            parseVariableDeclarationList(std::move(type), name, std::move(exp));
+
+        return declarations;
+      } else if (curToken->is(TokenKind::semiColon)) {
+        std::cout << "Found initializer expression" << std::endl;
+        advanceToken();
+        return std::make_unique<VariableDeclaration>(std::move(type), name,
+                                                     std::move(exp));
+      } else {
+        std::cout << "Parser error: unexpected token." << std::endl;
+      }
+    } else if (curToken->is(TokenKind::comma)) {
+      advanceToken();
+      auto declarations =
+          parseVariableDeclarationList(std::move(type), name, nullptr);
+
+      return declarations;
     } else {
       return nullptr;
     }
   }
 
   return nullptr;
+}
+
+std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
+    std::unique_ptr<Type> type, const std::string &identifierName,
+    std::unique_ptr<Expression> initializerExpression) {
+  std::vector<std::unique_ptr<VariableDeclaration>> declarations;
+  declarations.push_back(std::make_unique<VariableDeclaration>(
+      nullptr, identifierName, std::move(initializerExpression)));
+
+  do {
+    if (!curToken->is(TokenKind::Identifier)) {
+      std::cout << "Parser error: expected identifier" << std::endl;
+    }
+
+    const std::string &varName = curToken->getIdentifierName();
+
+    advanceToken();
+
+    if (curToken->is(TokenKind::assign)) {
+      advanceToken();
+
+      auto exp = parseExpression();
+
+      if (!exp) {
+        return nullptr;
+      }
+
+      declarations.push_back(std::make_unique<VariableDeclaration>(
+          nullptr, varName, std::move(exp)));
+    }
+  } while (curToken->is(TokenKind::comma));
+
+  if (!curToken->is(TokenKind::semiColon)) {
+    std::cout << "Expected semicolon after variable declaration list."
+              << std::endl;
+  }
+
+  advanceToken();
+  return std::make_unique<VariableDeclarationList>(std::move(type),
+                                                   std::move(declarations));
 }
 
 std::unique_ptr<ast::Expression> Parser::parseExpression() {

@@ -208,20 +208,56 @@ public:
   virtual ~ExternalDeclaration() = default;
 };
 
-class VariableDeclaration : public ExternalDeclaration, public Statement {
+class Declaration : public ExternalDeclaration, public Statement {
 
 public:
-  VariableDeclaration(std::unique_ptr<Type> type, std::vector<std::string> names)
-      : type(std::move(type)), names(std::move(names)) {}
+  virtual ~Declaration() = default;
+};
 
-  const std::vector<std::string> &getIdentifierNames() const { return names; }
+class VariableDeclaration : public Declaration {
+
+public:
+  VariableDeclaration(std::unique_ptr<Type> type, const std::string &name,
+                      std::unique_ptr<Expression> initializerExpr)
+      : type(std::move(type)), identifierName(name),
+        initializerExpr(std::move(initializerExpr)) {}
+
+  const std::string &getIdentifierName() const { return identifierName; }
   Type *getType() const { return type.get(); }
+  Expression *getInitialzerExpression() { return initializerExpr.get(); }
 
+  void accept(ASTVisitor *visitor) override {
+    if (initializerExpr) {
+      initializerExpr->accept(visitor);
+    }
+
+    visitor->visit(this);
+  }
+
+private:
+  std::unique_ptr<Type> type;
+  std::string identifierName;
+  std::unique_ptr<Expression> initializerExpr;
+};
+
+class VariableDeclarationList : public Declaration {
+
+public:
+  VariableDeclarationList(
+      std::unique_ptr<Type> type,
+      std::vector<std::unique_ptr<VariableDeclaration>> declarations)
+      : type(std::move(type)), declarations(std::move(declarations)) {}
+
+  const std::vector<std::unique_ptr<VariableDeclaration>> &
+  getDeclarations() const {
+    return declarations;
+  }
+  Type *getType() const { return type.get(); }
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
 private:
   std::unique_ptr<Type> type;
-  std::vector<std::string> names;
+  std::vector<std::unique_ptr<VariableDeclaration>> declarations;
 };
 
 class ParameterDeclaration {
