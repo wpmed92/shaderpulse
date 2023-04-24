@@ -7,7 +7,8 @@ namespace ast {
 class TranslationUnit;
 class BinaryExpression;
 class UnaryExpression;
-class ValueDeclaration;
+class VariableDeclaration;
+class VariableDeclarationList;
 class SwitchStatement;
 class WhileStatement;
 class DoStatement;
@@ -36,7 +37,8 @@ public:
   virtual void visit(TranslationUnit *) = 0;
   virtual void visit(BinaryExpression *) = 0;
   virtual void visit(UnaryExpression *) = 0;
-  virtual void visit(ValueDeclaration *) = 0;
+  virtual void visit(VariableDeclaration *) = 0;
+  virtual void visit(VariableDeclarationList *) = 0;
   virtual void visit(SwitchStatement *) = 0;
   virtual void visit(WhileStatement *) = 0;
   virtual void visit(DoStatement *) = 0;
@@ -57,35 +59,6 @@ public:
   virtual void visit(FunctionDeclaration *) = 0;
   virtual void visit(DefaultLabel *) = 0;
   virtual void visit(CaseLabel *) = 0;
-};
-
-class PrinterASTVisitor : public ASTVisitor {
-
-public:
-  void visit(TranslationUnit *) override;
-  void visit(BinaryExpression *) override;
-  void visit(UnaryExpression *) override;
-  void visit(ValueDeclaration *) override;
-  void visit(SwitchStatement *) override;
-  void visit(WhileStatement *) override;
-  void visit(DoStatement *) override;
-  void visit(IfStatement *) override;
-  void visit(AssignmentExpression *) override;
-  void visit(StatementList *) override;
-  void visit(CallExpression *) override;
-  void visit(VariableExpression *) override;
-  void visit(IntegerConstantExpression *) override;
-  void visit(UnsignedIntegerConstantExpression *) override;
-  void visit(FloatConstantExpression *) override;
-  void visit(DoubleConstantExpression *) override;
-  void visit(BoolConstantExpression *) override;
-  void visit(ReturnStatement *) override;
-  void visit(BreakStatement *) override;
-  void visit(ContinueStatement *) override;
-  void visit(DiscardStatement *) override;
-  void visit(FunctionDeclaration *) override;
-  void visit(DefaultLabel *) override;
-  void visit(CaseLabel *) override;
 };
 
 }; // namespace ast

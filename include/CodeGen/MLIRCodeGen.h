@@ -1,5 +1,6 @@
 #pragma once
 #include "AST/ASTVisitor.h"
+#include "AST/Types.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVDialect.h"
 #include "mlir/Dialect/SPIRV/IR/SPIRVOps.h"
 #include "mlir/IR/Attributes.h"
@@ -13,9 +14,10 @@
 #include "llvm/ADT/ScopedHashTable.h"
 #include <vector>
 
+using namespace mlir;
+
 namespace shaderpulse {
 
-using namespace mlir;
 using namespace ast;
 
 namespace codegen {
@@ -50,7 +52,8 @@ public:
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
   void visit(UnaryExpression *) override;
-  void visit(ValueDeclaration *) override;
+  void visit(VariableDeclaration *) override;
+  void visit(VariableDeclarationList *) override;
   void visit(SwitchStatement *) override;
   void visit(WhileStatement *) override;
   void visit(DoStatement *) override;
@@ -86,13 +89,14 @@ private:
   bool inGlobalScope = true;
 
   llvm::ScopedHashTable<llvm::StringRef,
-                        std::pair<mlir::Value, ValueDeclaration *>>
+                        std::pair<mlir::Value, VariableDeclaration *>>
       symbolTable;
   using SymbolTableScopeT =
       llvm::ScopedHashTableScope<StringRef,
-                                 std::pair<mlir::Value, ValueDeclaration *>>;
+                                 std::pair<mlir::Value, VariableDeclaration *>>;
 
-  void declare(ValueDeclaration *, mlir::Value);
+  void declare(VariableDeclaration *, mlir::Value);
+  void createVariable(shaderpulse::Type *, VariableDeclaration *);
   mlir::Value popExpressionStack();
 };
 

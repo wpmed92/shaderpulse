@@ -10,6 +10,8 @@ using namespace shaderpulse::lexer;
 
 namespace shaderpulse {
 
+using namespace ast;
+
 namespace parser {
 
 class Parser {
@@ -20,35 +22,36 @@ public:
     advanceToken();
   }
 
-  std::unique_ptr<ast::TranslationUnit> parseTranslationUnit();
-  std::unique_ptr<ast::ExternalDeclaration> parseExternalDeclaration();
-  std::unique_ptr<ast::FunctionDeclaration> parseFunctionDeclaration();
-  std::vector<std::unique_ptr<ast::ParameterDeclaration>>
-  parseFunctionParameters();
-  std::unique_ptr<ast::ValueDeclaration> parseDeclaration();
-  std::unique_ptr<ast::Expression> parsePrimaryExpression();
-  std::unique_ptr<ast::ForStatement> parseForLoop();
-  std::unique_ptr<ast::SwitchStatement> parseSwitchStatement();
-  std::unique_ptr<ast::WhileStatement> parseWhileStatement();
-  std::unique_ptr<ast::DoStatement> parseDoStatement();
-  std::unique_ptr<ast::IfStatement> parseIfStatement();
-  std::unique_ptr<ast::Expression> parseExpression();
-  std::unique_ptr<ast::Expression> parseRhs(int,
-                                            std::unique_ptr<ast::Expression>);
-  std::unique_ptr<ast::ReturnStatement> parseReturn();
-  std::unique_ptr<ast::BreakStatement> parseBreak();
-  std::unique_ptr<ast::ContinueStatement> parseContinue();
-  std::unique_ptr<ast::DiscardStatement> parseDiscard();
-  std::unique_ptr<ast::AssignmentExpression> parseAssignmentExpression();
-  std::unique_ptr<ast::StatementList> parseStatementList();
-  std::unique_ptr<ast::Statement> parseStatement();
-  std::unique_ptr<ast::Statement> parseSimpleStatement();
-  std::unique_ptr<ast::Statement> parseCompoundStatement();
-  std::unique_ptr<ast::CaseLabel> parseCaseLabel();
-  std::unique_ptr<ast::DefaultLabel> parseDefaultLabel();
-  std::unique_ptr<ast::CallExpression> parseCallExpression();
-  std::unique_ptr<ast::Expression> parseUnaryExpression();
-  std::unique_ptr<ast::Expression> parsePostfixExpression();
+  std::unique_ptr<TranslationUnit> parseTranslationUnit();
+  std::unique_ptr<ExternalDeclaration> parseExternalDeclaration();
+  std::unique_ptr<FunctionDeclaration> parseFunctionDeclaration();
+  std::vector<std::unique_ptr<ParameterDeclaration>> parseFunctionParameters();
+  std::unique_ptr<Declaration> parseDeclaration();
+  std::unique_ptr<VariableDeclarationList>
+  parseVariableDeclarationList(std::unique_ptr<Type>, const std::string &,
+                               std::unique_ptr<Expression>);
+  std::unique_ptr<Expression> parsePrimaryExpression();
+  std::unique_ptr<ForStatement> parseForLoop();
+  std::unique_ptr<SwitchStatement> parseSwitchStatement();
+  std::unique_ptr<WhileStatement> parseWhileStatement();
+  std::unique_ptr<DoStatement> parseDoStatement();
+  std::unique_ptr<IfStatement> parseIfStatement();
+  std::unique_ptr<Expression> parseExpression();
+  std::unique_ptr<Expression> parseRhs(int, std::unique_ptr<Expression>);
+  std::unique_ptr<ReturnStatement> parseReturn();
+  std::unique_ptr<BreakStatement> parseBreak();
+  std::unique_ptr<ContinueStatement> parseContinue();
+  std::unique_ptr<DiscardStatement> parseDiscard();
+  std::unique_ptr<AssignmentExpression> parseAssignmentExpression();
+  std::unique_ptr<StatementList> parseStatementList();
+  std::unique_ptr<Statement> parseStatement();
+  std::unique_ptr<Statement> parseSimpleStatement();
+  std::unique_ptr<Statement> parseCompoundStatement();
+  std::unique_ptr<CaseLabel> parseCaseLabel();
+  std::unique_ptr<DefaultLabel> parseDefaultLabel();
+  std::unique_ptr<CallExpression> parseCallExpression();
+  std::unique_ptr<Expression> parseUnaryExpression();
+  std::unique_ptr<Expression> parsePostfixExpression();
   std::vector<std::unique_ptr<TypeQualifier>> parseQualifiers();
   std::unique_ptr<TypeQualifier> parseQualifier();
   std::unique_ptr<Type> parseType();
@@ -61,12 +64,11 @@ private:
   const Token *peek(int);
 
   // TODO: move these to ast helpers
-  static std::map<ast::BinaryOperator, int> binopPrecedence;
-  static std::optional<ast::BinaryOperator>
+  static std::map<BinaryOperator, int> binopPrecedence;
+  static std::optional<BinaryOperator>
       getBinaryOperatorFromTokenKind(TokenKind);
-  static std::optional<ast::UnaryOperator>
-      getUnaryOperatorFromTokenKind(TokenKind);
-  static std::optional<ast::AssignmentOperator>
+  static std::optional<UnaryOperator> getUnaryOperatorFromTokenKind(TokenKind);
+  static std::optional<AssignmentOperator>
       getAssignmentOperatorFromTokenKind(TokenKind);
   static std::unique_ptr<shaderpulse::Type>
       getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>,
