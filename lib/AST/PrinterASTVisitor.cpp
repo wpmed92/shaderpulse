@@ -1,3 +1,5 @@
+#include "AST/AST.h"
+#include "AST/Util.h"
 #include "AST/PrinterASTVisitor.h"
 #include <iostream>
 
@@ -5,100 +7,215 @@ namespace shaderpulse {
 
 namespace ast {
 
+void PrinterASTVisitor::print(const std::string &text) {
+  for (int i = 0; i < indentationLevel; i++) {
+    if (i == 0)
+      std::cout << "|";
+
+    std::cout << "-";
+  }
+
+  std::cout << text << std::endl;
+}
+
+void PrinterASTVisitor::indent() {
+  prevIndentationLevel = indentationLevel++;
+}
+
+void PrinterASTVisitor::resetIndent() {
+  indentationLevel = prevIndentationLevel;
+}
+
 void PrinterASTVisitor::visit(TranslationUnit *unit) {
-  std::cout << "Visiting TranslationUnit" << std::endl;
+  print("|-TranslationUnit");
+  indent();
+
+  for (auto &extDecl : unit->getExternalDeclarations()) {
+    extDecl->accept(this);
+  }
+
+  resetIndent();
 }
 
-void PrinterASTVisitor::visit(BinaryExpression *binExp) {
-  std::cout << "Visiting BinaryExpression" << std::endl;
-}
 
-void PrinterASTVisitor::visit(UnaryExpression *unExp) {
-  std::cout << "Visiting UnaryExpression" << std::endl;
+void PrinterASTVisitor::visit(VariableDeclarationList *varDeclList) {
+  print("|-VariableDeclarationList");
+  indent();
+
+  for (auto &var : varDeclList->getDeclarations()) {
+    var->accept(this);
+  }
+
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(VariableDeclaration *valDecl) {
-  std::cout << "Visiting VariableDeclaration" << std::endl;
+  print("|-VariableDeclaration: name=" + valDecl->getIdentifierName());
+
+  if (auto exp = valDecl->getInitialzerExpression())
+    exp->accept(this);
 }
 
 void PrinterASTVisitor::visit(SwitchStatement *switchStmt) {
-  std::cout << "Visiting SwitchStatement" << std::endl;
+  print("|-SwitchStatement");
+
+  switchStmt->getExpression()->accept(this);
+  indent();
+  switchStmt->getBody()->accept(this);
 }
 
 void PrinterASTVisitor::visit(WhileStatement *whileStmt) {
-  std::cout << "Visiting WhileStatement" << std::endl;
+  print("|-WhileStatement");
+
+  whileStmt->getCondition()->accept(this);
+  indent();
+  whileStmt->getBody()->accept(this);
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(DoStatement *doStmt) {
-  std::cout << "Visiting DoStatement" << std::endl;
+  print("|-DoStatement");
+
+  doStmt->getCondition()->accept(this);
+  indent();
+  doStmt->getBody()->accept(this);
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(IfStatement *ifStmt) {
-  std::cout << "Visiting IfStatement" << std::endl;
+  print("|-IfStatement");
+
+  ifStmt->getCondition()->accept(this);
+  indent();
+  ifStmt->getTruePart()->accept(this);
+  resetIndent();
+
+  if (auto falsePart = ifStmt->getFalsePart()) {
+    indent();
+    falsePart->accept(this);
+    resetIndent();
+  }
 }
 
 void PrinterASTVisitor::visit(AssignmentExpression *assignmentExp) {
-  std::cout << "Visiting AssignmentExpression" << std::endl;
+  print("|-AssignmentExpression: variable name=" + assignmentExp->getIdentifier());
+  indent();
+  assignmentExp->getExpression()->accept(this);
+  resetIndent();
 }
 
-void PrinterASTVisitor::visit(StatementList *stmtList) {
-  std::cout << "Visiting StatementList" << std::endl;
+void PrinterASTVisitor::visit(StatementList *stmtList) { 
+  print("|-StatementList");
+
+  indent();
+
+  for (auto &stmt : stmtList->getStatements()) {
+    stmt->accept(this);
+  }
+
+  resetIndent();
 }
 
-void PrinterASTVisitor::visit(CallExpression *callExp) {
-  std::cout << "Visiting CallExpression" << std::endl;
+
+void PrinterASTVisitor::visit(UnaryExpression *unExp) {
+  print("-UnaryExpression: op=" + std::to_string(unExp->getOp()));
+
+  indent();
+  unExp->getExpression()->accept(this);
+  resetIndent();
+}
+
+void PrinterASTVisitor::visit(BinaryExpression *binExp) {
+  print("-BinaryExpression: op=" + std::to_string(binExp->getOp()));
+  indent();
+  binExp->getLhs()->accept(this);
+  resetIndent();
+
+  indent();
+  binExp->getRhs()->accept(this);
+  resetIndent();
+}
+
+void PrinterASTVisitor::visit(CallExpression *callee) {
+  print("-CallExpression: name=" + callee->getFunctionName());
+
+  indent();
+
+  for (auto &arg : callee->getArguments()) {
+    arg->accept(this);
+  }
+
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(VariableExpression *varExp) {
-  std::cout << "Visiting VariableExpression" << std::endl;
+  print("-VariableExpression: name=" + varExp->getName());
 }
 
-void PrinterASTVisitor::visit(IntegerConstantExpression *intConstExp) {
-  std::cout << "Visiting IntegerConstantExpression" << std::endl;
+void PrinterASTVisitor::visit(IntegerConstantExpression *intExp) { 
+  print("-IntegerConstantExpression: value=" + std::to_string(intExp->getVal()));
 }
 
-void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintConstExp) {
-  std::cout << "Visiting UnsignedIntegerConstantExpression" << std::endl;
+void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintExp) {
+  print("-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()));
 }
 
-void PrinterASTVisitor::visit(FloatConstantExpression *floatConstExp) {
-  std::cout << "Visiting FloatConstantExpression" << std::endl;
+void PrinterASTVisitor::visit(FloatConstantExpression *floatExp) {
+  print("-FloatConstantExpression: value=" + std::to_string(floatExp->getVal()));
 }
 
-void PrinterASTVisitor::visit(DoubleConstantExpression *doubleConstExp) {
-  std::cout << "Visiting DoubleConstantExpression" << std::endl;
+void PrinterASTVisitor::visit(DoubleConstantExpression *doubleExp) {
+  print("-DoubleConstantExpression: value=" + std::to_string(doubleExp->getVal()));
 }
 
-void PrinterASTVisitor::visit(BoolConstantExpression *boolConstExp) {
-  std::cout << "Visiting BoolConstantExpression" << std::endl;
+void PrinterASTVisitor::visit(BoolConstantExpression *boolExp) {
+  print("-BoolConstantExpression: value=" + std::to_string(boolExp->getVal()));
 }
 
 void PrinterASTVisitor::visit(ReturnStatement *returnStmt) {
-  std::cout << "Visiting ReturnStatement" << std::endl;
+  print("|-ReturnStatement");
+  
+  if (auto exp = returnStmt->getExpression()) {
+    indent();
+    exp->accept(this);
+    resetIndent();
+  }
 }
 
 void PrinterASTVisitor::visit(BreakStatement *breakStmt) {
-  std::cout << "Visiting BreakStatement" << std::endl;
+  print("|-BreakStatement");
 }
 
 void PrinterASTVisitor::visit(ContinueStatement *continueStmt) {
-  std::cout << "Visiting ContinueStatement" << std::endl;
+  print("|-ContinueStatement");
 }
 
 void PrinterASTVisitor::visit(DiscardStatement *discardStmt) {
-  std::cout << "Visiting DiscardStatement" << std::endl;
+  print("|-DiscardStatement");
 }
 
 void PrinterASTVisitor::visit(FunctionDeclaration *funcDecl) {
-  std::cout << "Visiting FunctionDeclaration" << std::endl;
+  print("|-FunctionDeclaration: name=" + funcDecl->getName());
+  indent();
+
+  for (auto &arg : funcDecl->getParams()) {
+    print("Arg: name=" + arg->getName());
+  }
+
+  funcDecl->getBody()->accept(this);
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(DefaultLabel *defaultLabel) {
-  std::cout << "Visiting DefaultLabel" << std::endl;
+  print("|-DefaultLabel");
 }
 
-void PrinterASTVisitor::visit(CaseLabel *defaultLabel) {
-  std::cout << "Visiting CaseLabel" << std::endl;
+void PrinterASTVisitor::visit(CaseLabel *caseLabel) {
+  print("|-CaseLabel");
+
+  indent();
+  caseLabel->getExpression()->accept(this);
+  resetIndent();
 }
 
 } // namespace ast
