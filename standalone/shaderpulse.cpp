@@ -1,4 +1,5 @@
 #include "CodeGen/MLIRCodeGen.h"
+#include "AST/PrinterASTVisitor.h"
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
 #include <iostream>
@@ -57,4 +58,6 @@ int main(int argc, char** argv) {
     if (mlirCodeGen->verify()) {
         std::cout << "SPIR-V module verified" << std::endl;
     }
+
+    translationUnit->accept(std::make_unique<PrinterASTVisitor>().get());
 }

@@ -8,10 +8,12 @@ namespace ast {
 class PrinterASTVisitor : public ASTVisitor {
 
 public:
+  PrinterASTVisitor() : indentationLevel(0) {}
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
   void visit(UnaryExpression *) override;
   void visit(VariableDeclaration *) override;
+  void visit(VariableDeclarationList *) override;
   void visit(SwitchStatement *) override;
   void visit(WhileStatement *) override;
   void visit(DoStatement *) override;
@@ -32,6 +34,13 @@ public:
   void visit(FunctionDeclaration *) override;
   void visit(DefaultLabel *) override;
   void visit(CaseLabel *) override;
+
+private:
+  void indent();
+  void resetIndent();
+  void print(const std::string &text);
+  int indentationLevel = 0;
+  int prevIndentationLevel = 0;
 };
 
 }; // namespace ast

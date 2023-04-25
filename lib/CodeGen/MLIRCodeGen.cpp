@@ -13,7 +13,11 @@ void MLIRCodeGen::dump() { spirvModule.dump(); }
 
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
 
-void MLIRCodeGen::visit(TranslationUnit *unit) {}
+void MLIRCodeGen::visit(TranslationUnit *unit) {
+  for (auto &extDecl : unit->getExternalDeclarations()) {
+    extDecl->accept(this);
+  }
+}
 
 Value MLIRCodeGen::popExpressionStack() {
   Value val = expressionStack.back();
@@ -22,6 +26,9 @@ Value MLIRCodeGen::popExpressionStack() {
 }
 
 void MLIRCodeGen::visit(BinaryExpression *binExp) {
+  binExp->getLhs()->accept(this);
+  binExp->getRhs()->accept(this);
+
   Value rhs = popExpressionStack();
   Value lhs = popExpressionStack();
 
@@ -113,6 +120,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
 }
 
 void MLIRCodeGen::visit(UnaryExpression *unExp) {
+  unExp->getExpression()->accept(this);
   Value rhs = popExpressionStack();
 
   auto loc = builder.getUnknownLoc();
@@ -213,16 +221,25 @@ void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
   createVariable(nullptr, varDecl);
 }
 
-void MLIRCodeGen::visit(SwitchStatement *switchStmt) {}
+void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
 
-void MLIRCodeGen::visit(WhileStatement *whileStmt) {}
+}
 
-void MLIRCodeGen::visit(DoStatement *doStmt) {}
+void MLIRCodeGen::visit(WhileStatement *whileStmt) {
 
-void MLIRCodeGen::visit(IfStatement *ifStmt) {}
+}
+
+void MLIRCodeGen::visit(DoStatement *doStmt) {
+
+}
+
+void MLIRCodeGen::visit(IfStatement *ifStmt) {
+
+}
 
 void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
   auto varIt = symbolTable.lookup(assignmentExp->getIdentifier());
+  assignmentExp->getExpression()->accept(this);
   Value val = popExpressionStack();
 
   if (varIt.first) {
@@ -230,7 +247,11 @@ void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
   }
 }
 
-void MLIRCodeGen::visit(StatementList *stmtList) {}
+void MLIRCodeGen::visit(StatementList *stmtList) {
+  for (auto &stmt : stmtList->getStatements()) {
+    stmt->accept(this);
+  }
+}
 
 void MLIRCodeGen::visit(CallExpression *callExp) {
   auto calledFuncIt = functionMap.find(callExp->getFunctionName());
@@ -314,6 +335,9 @@ void MLIRCodeGen::visit(BoolConstantExpression *boolConstExp) {
 }
 
 void MLIRCodeGen::visit(ReturnStatement *returnStmt) {
+  if (auto retExp = returnStmt->getExpression())
+    returnStmt->getExpression()->accept(this);
+
   if (expressionStack.empty()) {
     builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
   } else {

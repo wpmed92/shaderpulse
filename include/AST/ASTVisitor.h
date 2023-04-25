@@ -34,31 +34,31 @@ class ASTVisitor {
 
 public:
   virtual ~ASTVisitor() = default;
-  virtual void visit(TranslationUnit *) = 0;
-  virtual void visit(BinaryExpression *) = 0;
-  virtual void visit(UnaryExpression *) = 0;
-  virtual void visit(VariableDeclaration *) = 0;
-  virtual void visit(VariableDeclarationList *) = 0;
-  virtual void visit(SwitchStatement *) = 0;
-  virtual void visit(WhileStatement *) = 0;
-  virtual void visit(DoStatement *) = 0;
-  virtual void visit(IfStatement *) = 0;
-  virtual void visit(AssignmentExpression *) = 0;
-  virtual void visit(StatementList *) = 0;
-  virtual void visit(CallExpression *) = 0;
-  virtual void visit(VariableExpression *) = 0;
-  virtual void visit(IntegerConstantExpression *) = 0;
-  virtual void visit(UnsignedIntegerConstantExpression *) = 0;
-  virtual void visit(FloatConstantExpression *) = 0;
-  virtual void visit(DoubleConstantExpression *) = 0;
-  virtual void visit(BoolConstantExpression *) = 0;
-  virtual void visit(ReturnStatement *) = 0;
-  virtual void visit(BreakStatement *) = 0;
-  virtual void visit(ContinueStatement *) = 0;
-  virtual void visit(DiscardStatement *) = 0;
-  virtual void visit(FunctionDeclaration *) = 0;
-  virtual void visit(DefaultLabel *) = 0;
-  virtual void visit(CaseLabel *) = 0;
+  virtual void visit(TranslationUnit *) { };
+  virtual void visit(BinaryExpression *) { };
+  virtual void visit(UnaryExpression *) { };
+  virtual void visit(VariableDeclaration *) { };
+  virtual void visit(VariableDeclarationList *) { };
+  virtual void visit(SwitchStatement *) { };
+  virtual void visit(WhileStatement *) { };
+  virtual void visit(DoStatement *) { };
+  virtual void visit(IfStatement *) { };
+  virtual void visit(AssignmentExpression *) { };
+  virtual void visit(StatementList *) { };
+  virtual void visit(CallExpression *) { };
+  virtual void visit(VariableExpression *) { };
+  virtual void visit(IntegerConstantExpression *) { };
+  virtual void visit(UnsignedIntegerConstantExpression *) { };
+  virtual void visit(FloatConstantExpression *) { };
+  virtual void visit(DoubleConstantExpression *) { };
+  virtual void visit(BoolConstantExpression *) { };
+  virtual void visit(ReturnStatement *) { };
+  virtual void visit(BreakStatement *) { };
+  virtual void visit(ContinueStatement *) { };
+  virtual void visit(DiscardStatement *) { };
+  virtual void visit(FunctionDeclaration *) { };
+  virtual void visit(DefaultLabel *) { };
+  virtual void visit(CaseLabel *) { };
 };
 
 }; // namespace ast

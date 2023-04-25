@@ -76,7 +76,7 @@ class UnsignedIntegerConstantExpression : public Expression {
 public:
   UnsignedIntegerConstantExpression(uint32_t val) : val(val) {}
 
-  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); } 
 
   uint32_t getVal() { return val; }
 
@@ -161,7 +161,6 @@ public:
       : op(op), rhs(std::move(rhs)) {}
 
   void accept(ASTVisitor *visitor) override {
-    rhs->accept(visitor);
     visitor->visit(this);
   }
 
@@ -180,11 +179,7 @@ public:
                    std::unique_ptr<Expression> rhs)
       : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    lhs->accept(visitor);
-    rhs->accept(visitor);
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   Expression *getLhs() { return lhs.get(); }
   Expression *getRhs() { return rhs.get(); }
@@ -196,13 +191,13 @@ private:
   std::unique_ptr<Expression> rhs;
 };
 
-class Statement : public ASTNode {
+class Statement : virtual public ASTNode {
 
 public:
   virtual ~Statement() = default;
 };
 
-class ExternalDeclaration : public ASTNode {
+class ExternalDeclaration : virtual public ASTNode {
 
 public:
   virtual ~ExternalDeclaration() = default;
@@ -226,13 +221,7 @@ public:
   Type *getType() const { return type.get(); }
   Expression *getInitialzerExpression() { return initializerExpr.get(); }
 
-  void accept(ASTVisitor *visitor) override {
-    if (initializerExpr) {
-      initializerExpr->accept(visitor);
-    }
-
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
 private:
   std::unique_ptr<Type> type;
@@ -283,11 +272,7 @@ public:
                   std::unique_ptr<Statement> statements)
       : expression(std::move(expression)), statements(std::move(statements)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    visitor->visit(this);
-    expression->accept(visitor);
-    statements->accept(visitor);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   Expression *getExpression() { return expression.get(); }
   Statement *getBody() { return statements.get(); }
@@ -304,6 +289,7 @@ public:
       : expression(std::move(expression)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+  Expression *getExpression() { return expression.get(); }
 
 private:
   std::unique_ptr<Expression> expression;
@@ -319,13 +305,7 @@ public:
   StatementList(std::vector<std::unique_ptr<Statement>> statements)
       : statements(std::move(statements)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    for (auto &stmt : statements) {
-      stmt->accept(visitor);
-    }
-
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   const std::vector<std::unique_ptr<Statement>> &getStatements() {
     return statements;
@@ -342,11 +322,7 @@ public:
                  std::unique_ptr<Statement> body)
       : condition(std::move(condition)), body(std::move(body)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    condition->accept(visitor);
-    body->accept(visitor);
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   Expression *getCondition() { return condition.get(); }
   Statement *getBody() { return body.get(); }
@@ -363,11 +339,7 @@ public:
               std::unique_ptr<Expression> condition)
       : body(std::move(body)), condition(std::move(condition)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    condition->accept(visitor);
-    body->accept(visitor);
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   Expression *getCondition() { return condition.get(); }
   Statement *getBody() { return body.get(); }
@@ -386,12 +358,7 @@ public:
       : condition(std::move(condition)), truePart(std::move(truePart)),
         falsePart(std::move(falsePart)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    condition->accept(visitor);
-    truePart->accept(visitor);
-    falsePart->accept(visitor);
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   Expression *getCondition() { return condition.get(); }
   Statement *getTruePart() { return truePart.get(); }
@@ -409,13 +376,7 @@ public:
   ReturnStatement() = default;
   ReturnStatement(std::unique_ptr<Expression> exp) : exp(std::move(exp)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    if (exp) {
-      exp->accept(visitor);
-    }
-
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   Expression *getExpression() { return exp.get(); }
 
@@ -443,10 +404,7 @@ public:
                        std::unique_ptr<Expression> expression)
       : identifier(identifier), op(op), expression(std::move(expression)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    expression->accept(visitor);
-    visitor->visit(this);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   const std::string &getIdentifier() { return identifier; }
   AssignmentOperator getOperator() { return op; }
@@ -467,10 +425,7 @@ public:
       : returnType(std::move(returnType)), name(name),
         params(std::move(params)), body(std::move(body)) {}
 
-  void accept(ASTVisitor *visitor) override {
-    visitor->visit(this);
-    // body->accept(visitor);
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   const std::vector<std::unique_ptr<ParameterDeclaration>> &getParams() {
     return params;
@@ -497,13 +452,7 @@ public:
     return externalDeclarations;
   }
 
-  void accept(ASTVisitor *visitor) override {
-    visitor->visit(this);
-
-    for (auto &extDecl : externalDeclarations) {
-      extDecl->accept(visitor);
-    }
-  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
 private:
   std::vector<std::unique_ptr<ExternalDeclaration>> externalDeclarations;
