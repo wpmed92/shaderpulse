@@ -229,7 +229,7 @@ void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
 
 void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   Block *restoreInsertionBlock = builder.getInsertionBlock();
-  
+
   whileStmt->getCondition()->accept(this);
 
   auto conditionOp = popExpressionStack();
@@ -275,7 +275,50 @@ void MLIRCodeGen::visit(DoStatement *doStmt) {
 }
 
 void MLIRCodeGen::visit(IfStatement *ifStmt) {
+  Block *restoreInsertionBlock = builder.getInsertionBlock();
 
+  auto loc = builder.getUnknownLoc();
+
+  ifStmt->getCondition()->accept(this);
+  Value condition = popExpressionStack();
+
+  auto selectionOp = builder.create<spirv::SelectionOp>(loc, spirv::SelectionControl::None);
+  selectionOp.addMergeBlock();
+
+  // Merge
+  auto *mergeBlock = selectionOp.getMergeBlock();
+
+  // Selection header
+  auto *selectionHeaderBlock = new Block();
+  selectionOp.getBody().getBlocks().push_front(selectionHeaderBlock);
+
+  // True part
+  auto *thenBlock = new Block();
+  selectionOp.getBody().getBlocks().insert(std::next(selectionOp.getBody().begin(), 1), thenBlock);
+  builder.setInsertionPointToStart(thenBlock);
+
+  ifStmt->getTruePart()->accept(this);
+  builder.create<spirv::BranchOp>(loc, mergeBlock);
+
+  // False part
+  auto *elseBlock = new Block();
+  selectionOp.getBody().getBlocks().insert(std::next(selectionOp.getBody().begin(), 2), elseBlock);
+
+  builder.setInsertionPointToStart(elseBlock);
+
+  if (ifStmt->getFalsePart()) {
+    ifStmt->getFalsePart()->accept(this);
+  }
+
+  builder.create<spirv::BranchOp>(loc, mergeBlock);
+
+  // Selection header
+  builder.setInsertionPointToEnd(selectionHeaderBlock);
+
+  builder.create<spirv::BranchConditionalOp>(
+      loc, condition, thenBlock, ArrayRef<Value>(), elseBlock, ArrayRef<Value>());
+  
+  builder.setInsertionPointToEnd(restoreInsertionBlock);
 }
 
 void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
