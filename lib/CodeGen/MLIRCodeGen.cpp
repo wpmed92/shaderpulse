@@ -14,6 +14,8 @@ void MLIRCodeGen::dump() { spirvModule.dump(); }
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
 
 void MLIRCodeGen::visit(TranslationUnit *unit) {
+  builder.setInsertionPointToEnd(spirvModule.getBody());
+  
   for (auto &extDecl : unit->getExternalDeclarations()) {
     extDecl->accept(this);
   }
@@ -226,7 +228,46 @@ void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
 }
 
 void MLIRCodeGen::visit(WhileStatement *whileStmt) {
+  Block *restoreInsertionBlock = builder.getInsertionBlock();
+  
+  whileStmt->getCondition()->accept(this);
 
+  auto conditionOp = popExpressionStack();
+
+  auto loc = builder.getUnknownLoc();
+
+  auto loopOp = builder.create<spirv::LoopOp>(loc, spirv::LoopControl::None);
+  loopOp.addEntryAndMergeBlock();
+  auto header = new Block();
+
+  // Insert the header.
+  loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), 1), header);
+
+  // Insert the body.
+  Block *body = new Block();
+  loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), 2), body);
+
+  // Emit the entry code.
+  Block *entry = loopOp.getEntryBlock();
+  builder.setInsertionPointToEnd(entry);
+  builder.create<spirv::BranchOp>(loc, header);
+
+  // Emit the header code.
+  builder.setInsertionPointToEnd(header);
+
+  Block *merge = loopOp.getMergeBlock();
+  builder.create<spirv::BranchConditionalOp>(
+      loc, conditionOp, body, ArrayRef<Value>(), merge, ArrayRef<Value>());
+
+  // Emit the continue/latch block.
+  Block *continueBlock = loopOp.getContinueBlock();
+  builder.setInsertionPointToEnd(continueBlock);
+  builder.create<spirv::BranchOp>(loc, header);
+  builder.setInsertionPointToStart(body);
+
+  whileStmt->getBody()->accept(this);
+
+  builder.setInsertionPointToEnd(restoreInsertionBlock);
 }
 
 void MLIRCodeGen::visit(DoStatement *doStmt) {
