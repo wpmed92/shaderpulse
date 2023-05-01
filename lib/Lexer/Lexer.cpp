@@ -169,7 +169,7 @@ bool Lexer::handleOctalLiteral(Error &error) {
     return false;
   }
 
-  if (getCurChar() != '0') {
+  if (getCurChar() != '0' || peekChar() == '.') {
     return false;
   }
 
