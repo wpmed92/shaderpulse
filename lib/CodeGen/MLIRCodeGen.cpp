@@ -162,7 +162,6 @@ void MLIRCodeGen::declare(VariableDeclaration *varDecl, mlir::Value value) {
 
 void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
   for (auto &var : varDeclList->getDeclarations()) {
-    var->getInitialzerExpression()->accept(this);
     createVariable(varDeclList->getType(), var.get());
   }
 }
@@ -202,6 +201,9 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     // varOp->setAttr(spirv::stringifyDecoration(spirv::Decoration::Invariant),
     // builder.getUnitAttr());
   } else {
+    if (varDecl->getInitialzerExpression())
+      varDecl->getInitialzerExpression()->accept(this);
+
     Value val;
 
     if (expressionStack.size() > 0) {
