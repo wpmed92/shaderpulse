@@ -61,6 +61,7 @@ public:
   void visit(AssignmentExpression *) override;
   void visit(StatementList *) override;
   void visit(CallExpression *) override;
+  void visit(ConstructorExpression *) override;
   void visit(VariableExpression *) override;
   void visit(IntegerConstantExpression *) override;
   void visit(UnsignedIntegerConstantExpression *) override;

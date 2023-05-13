@@ -1002,6 +1002,8 @@ std::unique_ptr<ContinueStatement> Parser::parseContinue() {
 std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
   if (auto callExp = parseCallExpression()) {
     return callExp;
+  } else if (auto constructorExp = parseConstructorExpression()) {
+    return constructorExp;
   } else if (curToken->is(TokenKind::Identifier)) {
     return std::make_unique<VariableExpression>(curToken->getIdentifierName());
   } else if (curToken->is(TokenKind::IntegerConstant)) {
@@ -1076,6 +1078,46 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression() {
   } else {
     return nullptr;
   }
+}
+
+std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
+  if (!(Parser::getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind()) &&
+        peek(1)->is(TokenKind::lParen))) {
+    return nullptr;
+  }
+
+  auto type = Parser::getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind());
+  advanceToken();
+  advanceToken(); // eat lparen
+
+  if (curToken->is(TokenKind::rParen)) {
+    return std::make_unique<ConstructorExpression>(std::move(type));
+  }
+
+  std::vector<std::unique_ptr<Expression>> arguments;
+
+  do {
+    auto exp = parseExpression();
+
+    if (!exp) {
+      return nullptr;
+    }
+
+    arguments.push_back(std::move(exp));
+
+    if (curToken->is(TokenKind::comma)) {
+      advanceToken();
+    } else {
+      break;
+    }
+  } while (true);
+
+  if (!curToken->is(TokenKind::rParen)) {
+    std::cout << "Expected a ')' after parameter list in constructor." << std::endl;
+    return nullptr;
+  }
+
+  return std::make_unique<ConstructorExpression>(std::move(type), std::move(arguments));
 }
 
 std::unique_ptr<CallExpression> Parser::parseCallExpression() {

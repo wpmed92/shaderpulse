@@ -27,12 +27,12 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx,
         shape, convertShaderPulseType(ctx, vecType->getElementType()));
   }
   case TypeKind::Matrix: {
+    // Need to create a spirv::MatrixType here, defined as columns of vectors
     auto matrixType = dynamic_cast<shaderpulse::MatrixType *>(shaderPulseType);
-    llvm::SmallVector<int64_t, 2> shape;
+    llvm::SmallVector<int64_t, 1> shape;
     shape.push_back(matrixType->getRows());
-    shape.push_back(matrixType->getCols());
-    return mlir::VectorType::get(
-        shape, convertShaderPulseType(ctx, matrixType->getElementType()));
+    auto colVectorType = mlir::VectorType::get(shape, convertShaderPulseType(ctx, matrixType->getElementType()));
+    return mlir::spirv::MatrixType::get(colVectorType, matrixType->getCols());
   }
   }
 }

@@ -50,6 +50,7 @@ public:
   std::unique_ptr<CaseLabel> parseCaseLabel();
   std::unique_ptr<DefaultLabel> parseDefaultLabel();
   std::unique_ptr<CallExpression> parseCallExpression();
+  std::unique_ptr<ConstructorExpression> parseConstructorExpression();
   std::unique_ptr<Expression> parseUnaryExpression();
   std::unique_ptr<Expression> parsePostfixExpression();
   std::vector<std::unique_ptr<TypeQualifier>> parseQualifiers();

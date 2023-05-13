@@ -272,6 +272,22 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   builder.setInsertionPointToEnd(restoreInsertionBlock);
 }
 
+void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
+  std::vector<mlir::Value> operands;
+
+  if (constructorExp->getArguments().size() > 0) {
+    for (auto &arg : constructorExp->getArguments()) {
+      arg->accept(this);
+      operands.push_back(popExpressionStack());
+    }
+  }
+
+  mlir::Value val = builder.create<spirv::CompositeConstructOp>(
+        builder.getUnknownLoc(), convertShaderPulseType(&context, constructorExp->getType()), operands);
+
+  expressionStack.push_back(val);
+}
+
 void MLIRCodeGen::visit(DoStatement *doStmt) {
 
 }

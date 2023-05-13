@@ -16,6 +16,7 @@ class IfStatement;
 class AssignmentExpression;
 class StatementList;
 class CallExpression;
+class ConstructorExpression;
 class VariableExpression;
 class IntegerConstantExpression;
 class UnsignedIntegerConstantExpression;
@@ -46,6 +47,7 @@ public:
   virtual void visit(AssignmentExpression *) { };
   virtual void visit(StatementList *) { };
   virtual void visit(CallExpression *) { };
+  virtual void visit(ConstructorExpression *) { };
   virtual void visit(VariableExpression *) { };
   virtual void visit(IntegerConstantExpression *) { };
   virtual void visit(UnsignedIntegerConstantExpression *) { };
