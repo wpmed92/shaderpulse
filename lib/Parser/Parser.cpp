@@ -369,9 +369,57 @@ std::unique_ptr<TypeQualifier> Parser::parseQualifier() {
   case TokenKind::kw_invariant:
     return std::make_unique<InvariantQualifier>();
 
+  // Layout
+  case TokenKind::kw_layout:
+    return parseLayoutQualifier();
+
   default:
     return nullptr;
   }
+}
+
+std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
+  advanceToken();
+
+  if (!curToken->is(TokenKind::lParen)) {
+    return nullptr;
+  }
+
+  std::vector<std::unique_ptr<LayoutQualifierId>> layoutQualifierIds;
+
+  do {
+    advanceToken();
+
+    if (curToken->is(TokenKind::Identifier)) {
+      auto id = curToken->getIdentifierName();
+
+      advanceToken();
+
+      if (curToken->is(TokenKind::assign)) {
+        advanceToken();
+
+        auto exp = parseExpression();
+        layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id, std::move(exp)));
+        advanceToken();
+      } else {
+        layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id));
+      }
+    } else if (curToken->is(TokenKind::kw_shared)) {
+      layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(/*isShared*/ true));
+      advanceToken();
+    } else {
+      // Unexpected Token
+      return nullptr;
+    }
+  } while (curToken->is(TokenKind::comma));
+
+  if (!curToken->is(TokenKind::rParen)) {
+    return nullptr;
+  }
+
+  advanceToken(); // eat rparen
+
+  return std::make_unique<LayoutQualifier>(layoutQualifierIds);
 }
 
 std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
