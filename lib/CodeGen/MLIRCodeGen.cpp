@@ -215,7 +215,9 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
                                 spirv::StorageClass::Function);
 
     auto var = builder.create<spirv::VariableOp>(
-        builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, val);
+        builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, nullptr);
+
+    builder.create<spirv::StoreOp>(builder.getUnknownLoc(), var, val);
 
     declare(varDecl, var);
   }
@@ -270,6 +272,56 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   whileStmt->getBody()->accept(this);
 
   builder.setInsertionPointToEnd(restoreInsertionBlock);
+}
+
+void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
+  auto constructorType = constructorExp->getType();
+  std::vector<mlir::Value> operands;
+
+  if (constructorExp->getArguments().size() > 0) {
+    for (auto &arg : constructorExp->getArguments()) {
+      arg->accept(this);
+      operands.push_back(popExpressionStack());
+    }
+  }
+
+  switch (constructorType->getKind()) {
+    case TypeKind::Vector: {
+      mlir::Value val = builder.create<spirv::CompositeConstructOp>(
+            builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType), operands);
+      expressionStack.push_back(val);
+      break;
+    }
+
+    case TypeKind::Matrix: {
+      auto matrixType = dynamic_cast<shaderpulse::MatrixType *>(constructorType);
+      std::vector<mlir::Value> columnVectors;
+
+      for (int i = 0; i < matrixType->getCols(); i++) {
+        std::vector<mlir::Value> col;
+
+        for (int j = 0; j < matrixType->getRows(); j++) {
+          col.push_back(operands[j*matrixType->getCols() + i]);
+        }
+
+        auto elementType = std::make_unique<Type>(matrixType->getElementType()->getKind());
+        auto vecType = std::make_unique<shaderpulse::VectorType>(std::move(elementType), col.size());
+        mlir::Value val = builder.create<spirv::CompositeConstructOp>(
+          builder.getUnknownLoc(), convertShaderPulseType(&context, vecType.get()), col);
+        columnVectors.push_back(val);
+      }
+
+      mlir::Value val = builder.create<spirv::CompositeConstructOp>(
+        builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType), columnVectors);
+
+      expressionStack.push_back(val);
+      break;
+    }
+
+    default:
+      // Unsupported composite construct
+      break;
+  }
 }
 
 void MLIRCodeGen::visit(DoStatement *doStmt) {

@@ -154,6 +154,35 @@ private:
   std::vector<std::unique_ptr<Expression>> arguments;
 };
 
+class ConstructorExpression : public Expression {
+
+public:
+    ConstructorExpression(std::unique_ptr<Type> type) : 
+      type(std::move(type))  {
+
+    }
+
+  ConstructorExpression(std::unique_ptr<Type> type, 
+    std::vector<std::unique_ptr<Expression>> arguments) : 
+      type(std::move(type)), 
+      arguments(std::move(arguments))  {
+
+    }
+
+  void accept(ASTVisitor *visitor) override {
+    visitor->visit(this);
+  }
+
+  Type *getType() const { return type.get(); }
+  const std::vector<std::unique_ptr<Expression>> &getArguments() const {
+    return arguments;
+  }
+
+private:
+  std::unique_ptr<Type> type;
+  std::vector<std::unique_ptr<Expression>> arguments;
+};
+
 class UnaryExpression : public Expression {
 
 public:
