@@ -110,6 +110,9 @@ private:
 class Type {
 
 public:
+
+  Type(TypeKind kind)
+      : kind(kind), qualifiers(std::vector<std::unique_ptr<TypeQualifier>>()) {}
   Type(TypeKind kind, std::vector<std::unique_ptr<TypeQualifier>> qualifiers)
       : kind(kind), qualifiers(std::move(qualifiers)) {}
 
@@ -154,6 +157,11 @@ private:
 class VectorType : public Type {
 
 public:
+VectorType(std::unique_ptr<Type> elementType, int length)
+      : Type(TypeKind::Vector, std::vector<std::unique_ptr<TypeQualifier>>()),
+        elementType(std::move(elementType)), length(length) {
+    assert(this->elementType->isScalar());
+  }
   VectorType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
              std::unique_ptr<Type> elementType, int length)
       : Type(TypeKind::Vector, std::move(qualifiers)),
