@@ -64,6 +64,7 @@ private:
   Token *curToken;
   void advanceToken();
   const Token *peek(int);
+  int savedPosition;
 
   // TODO: move these to ast helpers
   static std::map<BinaryOperator, int> binopPrecedence;
@@ -80,6 +81,15 @@ private:
   static std::unique_ptr<shaderpulse::MatrixType>
   makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>>, TypeKind, int,
                  int);
+
+  void savePosition() {
+    savedPosition = cursor;
+  }
+
+  void rollbackPosition() {
+    cursor = savedPosition - 1;
+    advanceToken();
+  }
 };
 
 } // namespace parser

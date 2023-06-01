@@ -1,6 +1,6 @@
 #pragma once
-#include "AST/ASTVisitor.h"
 #include "AST/Types.h"
+#include "AST/ASTVisitor.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -488,5 +488,67 @@ private:
 };
 
 }; // namespace ast
+
+class LayoutQualifierId {
+
+public:
+LayoutQualifierId(bool isShared) : 
+    isShared(isShared) {
+
+  }
+
+  LayoutQualifierId(const std::string &identifier) : 
+    identifier(identifier) {
+
+  }
+
+  LayoutQualifierId(const std::string &identifier, std::unique_ptr<ast::Expression> expression) : 
+    identifier(identifier), exp(std::move(expression)) {
+
+  }
+
+  const std::string &getIdentifier() { return identifier; }
+  ast::Expression *getExpression() { return exp.get(); }
+  bool getIsShader() const { return isShared; }
+
+private:
+  bool isShared;
+  std::string identifier;
+  std::unique_ptr<ast::Expression> exp;
+};
+
+class LayoutQualifier : public TypeQualifier {
+
+public:
+  LayoutQualifier(std::vector<std::unique_ptr<LayoutQualifierId>> layoutQualifierIds) :
+     TypeQualifier(TypeQualifierKind::Layout),
+     layoutQualifierIds(std::move(layoutQualifierIds)) {
+
+  }
+
+  const std::vector<std::unique_ptr<LayoutQualifierId>> &getLayoutQualifierIds() { return layoutQualifierIds; }
+
+  LayoutQualifierId *getQualifierId(const std::string &id) {
+    if (id.empty()) {
+      return nullptr;
+    }
+
+    auto it =
+        std::find_if(layoutQualifierIds.begin(), layoutQualifierIds.end(),
+                     [&id](const std::unique_ptr<LayoutQualifierId> &qualifier) {
+                       return qualifier->getIdentifier() == id;
+                     });
+
+    if (it != layoutQualifierIds.end()) {
+      return it->get();
+    } else {
+      return nullptr;
+    }
+  }
+
+private:
+  std::vector<std::unique_ptr<LayoutQualifierId>> layoutQualifierIds;
+};
+
 
 }; // namespace shaderpulse

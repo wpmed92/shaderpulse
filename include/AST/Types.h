@@ -108,43 +108,6 @@ private:
   PrecisionQualifierKind kind;
 };
 
-class LayoutQualifierId {
-
-public:
-LayoutQualifierId(bool isShared) : 
-    isShared(isShared) {
-
-  }
-
-  LayoutQualifierId(const std::string &identifier) : 
-    identifier(identifier) {
-
-  }
-
-  LayoutQualifierId(const std::string &identifier, std::unique_ptr<Expression> expression) : 
-    identifier(identifier), exp(std::move(expression)) {
-
-  }
-
-private:
-  bool isShared;
-  std::string identifier;
-  std::unique_ptr<Expression> exp;
-};
-
-class LayoutQualifier : public TypeQualifier {
-
-public:
-  LayoutQualifier(std::vector<std::unique_ptr<LayoutQualifierId>> layoutQualifierIds) :
-     TypeQualifier(TypeQualifierKind::Layout),
-     layoutQualifierIds(std::move(layoutQualifierIds)) {
-
-  }
-
-private:
-  std::vector<std::unique_ptr<LayoutQualifierId>> layoutQualifierIds;
-};
-
 class Type {
 
 public:

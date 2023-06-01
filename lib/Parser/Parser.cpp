@@ -46,7 +46,10 @@ std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
 }
 
 std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
+  savePosition();
+
   if (parseQualifier()) {
+    rollbackPosition();
     return nullptr;
   }
 
@@ -103,6 +106,7 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
     // Type and variable name, no initializer expression
     if (curToken->is(TokenKind::semiColon)) {
       advanceToken();
+      std::cout << "Found variable " << name << std::endl;
       return std::make_unique<VariableDeclaration>(std::move(type), name,
                                                    nullptr);
     } else if (curToken->is(TokenKind::assign)) {
@@ -316,6 +320,7 @@ std::unique_ptr<TypeQualifier> Parser::parseQualifier() {
   case TokenKind::kw_const:
     return std::make_unique<StorageQualifier>(StorageQualifierKind::Const);
   case TokenKind::kw_in:
+    std::cout << "Found in " << std::endl;
     return std::make_unique<StorageQualifier>(StorageQualifierKind::In);
   case TokenKind::kw_out:
     return std::make_unique<StorageQualifier>(StorageQualifierKind::Out);
@@ -392,15 +397,17 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
 
     if (curToken->is(TokenKind::Identifier)) {
       auto id = curToken->getIdentifierName();
+      
 
       advanceToken();
 
       if (curToken->is(TokenKind::assign)) {
+        
         advanceToken();
 
         auto exp = parseExpression();
+
         layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id, std::move(exp)));
-        advanceToken();
       } else {
         layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id));
       }
@@ -416,16 +423,20 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
   if (!curToken->is(TokenKind::rParen)) {
     return nullptr;
   }
-
-  advanceToken(); // eat rparen
-
-  return std::make_unique<LayoutQualifier>(layoutQualifierIds);
+  
+  return std::make_unique<LayoutQualifier>(std::move(layoutQualifierIds));
 }
 
 std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
   std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
+ 
+  while (true) {
+    auto qualifier = parseQualifier();
 
-  while (auto qualifier = parseQualifier()) {
+    if (!qualifier) {
+      break;
+    }
+
     qualifiers.push_back(std::move(qualifier));
     advanceToken();
   }

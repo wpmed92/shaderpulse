@@ -22,10 +22,17 @@ using namespace ast;
 
 namespace codegen {
 
+struct SymbolTableEntry {
+  mlir::Value value;
+  VariableDeclaration* variable = nullptr;
+  spirv::PointerType ptrType = nullptr;
+  bool isGlobal = false;
+};
+
 class MLIRCodeGen : public ASTVisitor {
 
 public:
-  MLIRCodeGen() : builder(&context) {
+  MLIRCodeGen() : builder(&context), globalScope(symbolTable) {
     context.getOrLoadDialect<spirv::SPIRVDialect>();
     initModuleOp();
   }
@@ -38,10 +45,11 @@ public:
                            spirv::AddressingModel::Logical));
     state.addAttribute("memory_model", builder.getAttr<spirv::MemoryModelAttr>(
                                            spirv::MemoryModel::GLSL450));
+                    
     state.addAttribute("vce_triple",
                        spirv::VerCapExtAttr::get(
                            spirv::Version::V_1_0,
-                           llvm::ArrayRef<spirv::Capability>(),
+                           { spirv::Capability::Shader },
                            llvm::ArrayRef<spirv::Extension>(), &context));
     spirv::ModuleOp::build(builder, state);
     spirvModule = cast<spirv::ModuleOp>(Operation::create(state));
@@ -89,14 +97,15 @@ private:
   llvm::StringMap<spirv::FuncOp> functionMap;
   bool inGlobalScope = true;
 
-  llvm::ScopedHashTable<llvm::StringRef,
-                        std::pair<mlir::Value, VariableDeclaration *>>
+  llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
   using SymbolTableScopeT =
-      llvm::ScopedHashTableScope<StringRef,
-                                 std::pair<mlir::Value, VariableDeclaration *>>;
+      llvm::ScopedHashTableScope<StringRef, SymbolTableEntry>;
 
-  void declare(VariableDeclaration *, mlir::Value);
+  
+  SymbolTableScopeT globalScope;
+
+  void declare(SymbolTableEntry);
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
   mlir::Value popExpressionStack();
 };
