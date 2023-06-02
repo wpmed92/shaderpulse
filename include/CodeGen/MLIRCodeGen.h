@@ -85,6 +85,8 @@ public:
   void visit(CaseLabel *) override;
 
 private:
+  bool insideEntryPoint = false;
+
   /// A "module" matches a Toy source file: containing a list of functions.
   MLIRContext context;
   spirv::ModuleOp spirvModule;
@@ -107,7 +109,10 @@ private:
 
   void declare(SymbolTableEntry);
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
+  void insertEntryPoint();
+  
   mlir::Value popExpressionStack();
+  SmallVector<Attribute, 4> interface;
 };
 
 }; // namespace codegen

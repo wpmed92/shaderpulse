@@ -9,9 +9,18 @@ using namespace ast;
 
 namespace codegen {
 
-void MLIRCodeGen::dump() { spirvModule.dump(); }
+void MLIRCodeGen::dump() {
+  spirvModule.dump();
+}
 
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
+
+void MLIRCodeGen::insertEntryPoint() {
+  builder.setInsertionPointToEnd(spirvModule.getBody());
+  builder.create<spirv::EntryPointOp>(builder.getUnknownLoc(), spirv::ExecutionModelAttr::get(&context, spirv::ExecutionModel::Fragment),
+                                        SymbolRefAttr::get(&context, "main"),
+                                        ArrayAttr::get(&context, interface));
+}
 
 void MLIRCodeGen::visit(TranslationUnit *unit) {
   builder.setInsertionPointToEnd(spirvModule.getBody());
@@ -19,6 +28,8 @@ void MLIRCodeGen::visit(TranslationUnit *unit) {
   for (auto &extDecl : unit->getExternalDeclarations()) {
     extDecl->accept(this);
   }
+
+  insertEntryPoint();
 }
 
 Value MLIRCodeGen::popExpressionStack() {
@@ -206,7 +217,6 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     auto locationOpt = getLocationFromTypeQualifier(&context, varType->getQualifier(TypeQualifierKind::Layout));
 
     if (locationOpt) {
-      std::cout << "Location found" << std::endl;
       varOp->setAttr("location", *locationOpt);
     }
 
@@ -409,6 +419,10 @@ void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
     if (varIt.isGlobal) {
       auto addressOfGlobal = builder.create<mlir::spirv::AddressOfOp>(builder.getUnknownLoc(), varIt.ptrType, varIt.variable->getIdentifierName());
       builder.create<spirv::StoreOp>(builder.getUnknownLoc(), addressOfGlobal, val);
+
+      if (insideEntryPoint) {
+        interface.push_back(SymbolRefAttr::get(&context, varIt.variable->getIdentifierName()));
+      }
     } else {
       builder.create<spirv::StoreOp>(builder.getUnknownLoc(), varIt.value, val);
     }
@@ -458,6 +472,11 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
     if (entry.isGlobal) {
       auto addressOfGlobal = builder.create<mlir::spirv::AddressOfOp>(builder.getUnknownLoc(), entry.ptrType, varExp->getName());
       val = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), addressOfGlobal);
+
+      // If we're inside the entry point function, collect the used global variables
+      if (insideEntryPoint) {
+        interface.push_back(SymbolRefAttr::get(&context, varExp->getName()));
+      }
     } else {
       val = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
     }
@@ -532,7 +551,8 @@ void MLIRCodeGen::visit(ContinueStatement *continueStmt) {}
 void MLIRCodeGen::visit(DiscardStatement *discardStmt) {}
 
 void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
-  std::cout << "Visiting funcDecl" << std::endl;
+  insideEntryPoint = funcDecl->getName() == "main";
+
   SymbolTableScopeT varScope(symbolTable);
   std::vector<mlir::Type> paramTypes;
 
