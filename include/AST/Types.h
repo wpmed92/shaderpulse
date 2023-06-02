@@ -44,7 +44,8 @@ enum TypeQualifierKind {
   Interpolation,
   Precision,
   Invariant,
-  Precise
+  Precise,
+  Layout
 };
 
 class TypeQualifier {

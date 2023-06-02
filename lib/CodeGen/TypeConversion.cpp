@@ -1,4 +1,5 @@
 #include "CodeGen/TypeConversion.h"
+#include <iostream>
 
 namespace shaderpulse {
 
@@ -34,6 +35,8 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx,
     auto colVectorType = mlir::VectorType::get(shape, convertShaderPulseType(ctx, matrixType->getElementType()));
     return mlir::spirv::MatrixType::get(colVectorType, matrixType->getCols());
   }
+  default:
+    return mlir::Type();
   }
 }
 
@@ -58,6 +61,29 @@ getSpirvStorageClass(TypeQualifier *typeQualifier) {
     }
   }
 
+  return std::nullopt;
+}
+
+
+std::optional<mlir::IntegerAttr>
+getLocationFromTypeQualifier(mlir::MLIRContext *ctx, TypeQualifier *typeQualifier) {
+  if (!typeQualifier) {
+    std::cout << "Null typequalifier" << std::endl;
+    return std::nullopt;
+  }
+
+  if (auto layoutQualifier = dynamic_cast<LayoutQualifier *>(typeQualifier)) {
+    if (auto location = layoutQualifier->getQualifierId("location")) {
+      if (!location->getExpression()) {
+        return std::nullopt;
+      } 
+      
+      if (auto integerConstant = dynamic_cast<ast::IntegerConstantExpression *>(location->getExpression())) {
+        return mlir::IntegerAttr::get(mlir::IntegerType::get(ctx, 32, mlir::IntegerType::Signless), integerConstant->getVal());
+      }
+    }
+  }
+  
   return std::nullopt;
 }
 
