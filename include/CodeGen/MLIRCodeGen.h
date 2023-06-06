@@ -13,6 +13,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
 #include <vector>
+#include <map>
 
 using namespace mlir;
 
@@ -70,6 +71,7 @@ public:
   void visit(StatementList *) override;
   void visit(CallExpression *) override;
   void visit(ConstructorExpression *) override;
+  void visit(StructDeclaration *) override;
   void visit(VariableExpression *) override;
   void visit(IntegerConstantExpression *) override;
   void visit(UnsignedIntegerConstantExpression *) override;
@@ -98,6 +100,7 @@ private:
 
   llvm::StringMap<spirv::FuncOp> functionMap;
   bool inGlobalScope = true;
+  std::map<std::string, StructDeclaration*> structDeclarations;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;

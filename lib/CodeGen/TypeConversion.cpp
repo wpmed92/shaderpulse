@@ -5,6 +5,18 @@ namespace shaderpulse {
 
 namespace codegen {
 
+mlir::spirv::StructType convertShaderPulseStruct(mlir::MLIRContext *ctx, ast::StructDeclaration *structDecl) {
+  std::vector<mlir::Type> memberTypes;
+
+  for (auto &member : structDecl->getMembers()) {
+    auto varMember = dynamic_cast<ast::VariableDeclaration*>(member.get());
+    std::cout << "Converting member type: " << varMember->getIdentifierName() << std::endl;
+    memberTypes.push_back(convertShaderPulseType(ctx, varMember->getType()));
+  }
+
+  return mlir::spirv::StructType::get(memberTypes);
+}
+
 mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx,
                                   Type *shaderPulseType) {
   switch (shaderPulseType->getKind()) {

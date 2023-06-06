@@ -57,9 +57,12 @@ public:
   std::unique_ptr<TypeQualifier> parseQualifier();
   std::unique_ptr<Type> parseType();
   std::unique_ptr<LayoutQualifier> parseLayoutQualifier();
+  std::unique_ptr<StructDeclaration> parseStructDeclaration();
 
 private:
   std::vector<std::unique_ptr<Token>> &tokenStream;
+  std::map<std::string, bool> structDeclarations;
+  
   int cursor;
   Token *curToken;
   void advanceToken();
@@ -73,7 +76,7 @@ private:
   static std::optional<UnaryOperator> getUnaryOperatorFromTokenKind(TokenKind);
   static std::optional<AssignmentOperator>
       getAssignmentOperatorFromTokenKind(TokenKind);
-  static std::unique_ptr<shaderpulse::Type>
+  std::unique_ptr<shaderpulse::Type>
       getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>,
                            TokenKind);
   static std::unique_ptr<shaderpulse::VectorType>

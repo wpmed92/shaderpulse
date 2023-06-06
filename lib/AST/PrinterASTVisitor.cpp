@@ -156,6 +156,10 @@ void PrinterASTVisitor::visit(IntegerConstantExpression *intExp) {
   print("-IntegerConstantExpression: value=" + std::to_string(intExp->getVal()));
 }
 
+void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
+  print("-StructDeclaration");
+}
+
 void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintExp) {
   print("-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()));
 }

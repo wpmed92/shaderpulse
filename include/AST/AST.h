@@ -426,6 +426,23 @@ class DiscardStatement : public Statement {
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 };
 
+class StructDeclaration : public Declaration {
+
+public:
+  StructDeclaration(std::unique_ptr<StructType> type, const std::string &name, std::vector<std::unique_ptr<Declaration>> members) 
+      : type(std::move(type)), name(name),
+        members(std::move(members)) {}
+
+  const std::string &getName() const { return name; }
+  const std::vector<std::unique_ptr<Declaration>> &getMembers() const { return members; }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+
+private:
+  std::unique_ptr<StructType> type;
+  std::string name;
+  std::vector<std::unique_ptr<Declaration>> members;
+};
+
 class AssignmentExpression : public Statement {
 
 public:
