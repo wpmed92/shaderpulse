@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
     auto lexer = Lexer(shaderCodeBuffer.str());
     auto resp = lexer.lexCharacterStream();
     if (!resp.has_value()) {
+        std::cout << "Lexer error " << std::endl;
         return 0;
     }
     

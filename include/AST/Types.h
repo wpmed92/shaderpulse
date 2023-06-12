@@ -205,10 +205,11 @@ public:
              const std::string &structName)
       : Type(TypeKind::Struct, std::move(qualifiers)), structName(structName) {}
 
-  const std::string &getStructName() const { return structName; }
+  const std::string &getName() const { return structName; }
 
 private:
   std::string structName;
+
 };
 
 }; // namespace shaderpulse

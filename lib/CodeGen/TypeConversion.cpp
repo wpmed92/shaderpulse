@@ -5,8 +5,7 @@ namespace shaderpulse {
 
 namespace codegen {
 
-mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx,
-                                  Type *shaderPulseType) {
+mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, Type *shaderPulseType, llvm::StringMap<ast::StructDeclaration*> &structDeclarations) {
   switch (shaderPulseType->getKind()) {
   case TypeKind::Void:
     return mlir::NoneType::get(ctx);
@@ -25,14 +24,27 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx,
     llvm::SmallVector<int64_t, 1> shape;
     shape.push_back(vecType->getLength());
     return mlir::VectorType::get(
-        shape, convertShaderPulseType(ctx, vecType->getElementType()));
+        shape, convertShaderPulseType(ctx, vecType->getElementType(), structDeclarations));
+  }
+  case TypeKind::Struct: {
+    auto structType = dynamic_cast<shaderpulse::StructType *>(shaderPulseType);
+    std::vector<mlir::Type> memberTypes;
+    ast::StructDeclaration *structDecl = structDeclarations[structType->getName()];
+
+    for (auto &member : structDecl->getMembers()) {
+      auto varMember = dynamic_cast<ast::VariableDeclaration*>(member.get());
+      std::cout << "Converting member type: " << varMember->getIdentifierName() << std::endl;
+      memberTypes.push_back(convertShaderPulseType(ctx, varMember->getType(), structDeclarations));
+    }
+
+    return mlir::spirv::StructType::get(memberTypes);
   }
   case TypeKind::Matrix: {
     // Need to create a spirv::MatrixType here, defined as columns of vectors
     auto matrixType = dynamic_cast<shaderpulse::MatrixType *>(shaderPulseType);
     llvm::SmallVector<int64_t, 1> shape;
     shape.push_back(matrixType->getRows());
-    auto colVectorType = mlir::VectorType::get(shape, convertShaderPulseType(ctx, matrixType->getElementType()));
+    auto colVectorType = mlir::VectorType::get(shape, convertShaderPulseType(ctx, matrixType->getElementType(), structDeclarations));
     return mlir::spirv::MatrixType::get(colVectorType, matrixType->getCols());
   }
   default:

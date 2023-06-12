@@ -40,6 +40,8 @@ std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
     return funcDecl;
   } else if (auto decl = parseDeclaration()) {
     return decl;
+  } else if (auto structDecl = parseStructDeclaration()) {
+    return structDecl;
   } else {
     return nullptr;
   }
@@ -106,7 +108,6 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
     // Type and variable name, no initializer expression
     if (curToken->is(TokenKind::semiColon)) {
       advanceToken();
-      std::cout << "Found variable " << name << std::endl;
       return std::make_unique<VariableDeclaration>(std::move(type), name,
                                                    nullptr);
     } else if (curToken->is(TokenKind::assign)) {
@@ -123,12 +124,11 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
 
         return declarations;
       } else if (curToken->is(TokenKind::semiColon)) {
-        std::cout << "Found initializer expression" << std::endl;
         advanceToken();
         return std::make_unique<VariableDeclaration>(std::move(type), name,
                                                      std::move(exp));
       } else {
-        std::cout << "Parser error: unexpected token." << std::endl;
+        std::cout << "Parser error: unexpected token." << cursor << std::endl;
       }
     } else if (curToken->is(TokenKind::comma)) {
       advanceToken();
@@ -320,7 +320,6 @@ std::unique_ptr<TypeQualifier> Parser::parseQualifier() {
   case TokenKind::kw_const:
     return std::make_unique<StorageQualifier>(StorageQualifierKind::Const);
   case TokenKind::kw_in:
-    std::cout << "Found in " << std::endl;
     return std::make_unique<StorageQualifier>(StorageQualifierKind::In);
   case TokenKind::kw_out:
     return std::make_unique<StorageQualifier>(StorageQualifierKind::Out);
@@ -446,9 +445,8 @@ std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
 
 std::unique_ptr<Type> Parser::parseType() {
   auto qualifiers = parseQualifiers();
-  auto type = Parser::getTypeFromTokenKind(std::move(qualifiers),
+  auto type = getTypeFromTokenKind(std::move(qualifiers),
                                            curToken->getTokenKind());
-
   return type;
 }
 
@@ -485,6 +483,13 @@ Parser::getAssignmentOperatorFromTokenKind(TokenKind kind) {
 std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(
     std::vector<std::unique_ptr<TypeQualifier>> qualifiers, TokenKind kind) {
   switch (kind) {
+  case TokenKind::Identifier: {
+    if (structDeclarations.find(curToken->getIdentifierName()) != structDeclarations.end()) {
+      return std::make_unique<StructType>(std::move(qualifiers), curToken->getIdentifierName());
+    }
+
+    return nullptr;
+  }
   // Sclar types
   case TokenKind::kw_int:
     return std::make_unique<shaderpulse::Type>(TypeKind::Integer,
@@ -929,6 +934,8 @@ std::unique_ptr<StatementList> Parser::parseStatementList() {
 std::unique_ptr<Statement> Parser::parseSimpleStatement() {
   if (auto decl = parseDeclaration()) {
     return std::move(decl);
+  } else if (auto structDecl = parseStructDeclaration()) {
+    return std::move(structDecl);
   } else if (auto assignment = parseAssignmentExpression()) {
     return std::move(assignment);
   } else if (auto switchStmt = parseSwitchStatement()) {
@@ -1058,11 +1065,35 @@ std::unique_ptr<ContinueStatement> Parser::parseContinue() {
   return std::make_unique<ContinueStatement>();
 }
 
+std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseMemberAccessChain() {
+  if (peek(1)->is(TokenKind::dot)) {
+    advanceToken();
+    std::vector<std::unique_ptr<Expression>> members;
+
+    do {
+      advanceToken();
+
+      if (auto member = parsePostfixExpression(/*parsingMemberAccess*/ true)) {
+        members.push_back(std::move(member));
+        advanceToken();
+      }
+    } while (curToken->is(TokenKind::dot));
+
+    cursor = cursor - 1;
+
+    std::cout << "Cursor: " << cursor << std::endl;
+    std::cout << "Member count: " << members.size() << std::endl;
+    return std::move(members);
+  }
+
+  return std::nullopt;
+}
+
 std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
-  if (auto callExp = parseCallExpression()) {
-    return callExp;
-  } else if (auto constructorExp = parseConstructorExpression()) {
+   if (auto constructorExp = parseConstructorExpression()) {
     return constructorExp;
+  } else if (auto callExp = parseCallExpression()) {
+    return callExp;
   } else if (curToken->is(TokenKind::Identifier)) {
     return std::make_unique<VariableExpression>(curToken->getIdentifierName());
   } else if (curToken->is(TokenKind::IntegerConstant)) {
@@ -1129,23 +1160,31 @@ std::unique_ptr<Expression> Parser::parseUnaryExpression() {
   }
 }
 
-std::unique_ptr<Expression> Parser::parsePostfixExpression() {
-  if (auto callExpr = parseCallExpression()) {
-    return callExpr;
-  } else if (auto primary = parsePrimaryExpression()) {
-    return primary;
-  } else {
-    return nullptr;
+std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAccess) {
+  if (auto primary = parsePrimaryExpression()) {
+    if (!parsingMemberAccess) {
+      if (auto members = parseMemberAccessChain()) {
+        std::cout << "Found member access chain: " << cursor << std::endl;
+        return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members));
+      } else {
+        return primary;
+      }
+    } else {
+      return primary;
+    }
   }
+
+  return nullptr;
 }
 
 std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
-  if (!(Parser::getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind()) &&
+  if (!(getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind()) &&
         peek(1)->is(TokenKind::lParen))) {
     return nullptr;
   }
 
-  auto type = Parser::getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind());
+  auto type = getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind());
+
   advanceToken();
   advanceToken(); // eat lparen
 
@@ -1177,6 +1216,50 @@ std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
   }
 
   return std::make_unique<ConstructorExpression>(std::move(type), std::move(arguments));
+}
+
+std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
+  if (!curToken->is(TokenKind::kw_struct)) {
+    return nullptr;
+  }
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::Identifier)) {
+    std::cout << "Expect an identifier after struct keyword" << std::endl;
+    return nullptr;
+  }
+
+  auto structName = curToken->getIdentifierName();
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::lCurly)) {
+    std::cout << "Expected '{' after struct name." << std::endl;
+    return nullptr;
+  }
+
+  advanceToken();
+
+  std::vector<std::unique_ptr<Declaration>> memberDeclarations;
+
+  while (auto memberDecl = parseDeclaration()) {
+    memberDeclarations.push_back(std::move(memberDecl));
+  }
+
+  if (!curToken->is(TokenKind::rCurly)) {
+    std::cout << "Expected a '}' after struct member declaration.";
+    return nullptr;
+  }
+
+  advanceToken();
+  advanceToken();
+
+  if (structDeclarations.find(structName) == structDeclarations.end()) {
+    structDeclarations.insert({structName, true});
+  }
+
+  return std::make_unique<StructDeclaration>(nullptr, structName, std::move(memberDeclarations));
 }
 
 std::unique_ptr<CallExpression> Parser::parseCallExpression() {

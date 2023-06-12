@@ -132,6 +132,23 @@ private:
   std::string name;
 };
 
+class MemberAccessExpression : public Expression {
+  
+public:
+  MemberAccessExpression(std::unique_ptr<Expression> baseComposite, std::vector<std::unique_ptr<Expression>> members) :
+     baseComposite(std::move(baseComposite)), members(std::move(members)) {
+
+  }
+
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+  const std::vector<std::unique_ptr<Expression>> &getMembers() { return members; }
+  Expression* getBaseComposite() const { return baseComposite.get(); }
+
+private:
+  std::unique_ptr<Expression> baseComposite;
+  std::vector<std::unique_ptr<Expression>> members;
+};
+
 class CallExpression : public Expression {
 
 public:
@@ -424,6 +441,35 @@ class ContinueStatement : public Statement {
 // Fragment shader only
 class DiscardStatement : public Statement {
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+};
+
+class StructDeclaration : public Declaration {
+
+public:
+  StructDeclaration(std::unique_ptr<StructType> type, const std::string &name, std::vector<std::unique_ptr<Declaration>> members) 
+      : type(std::move(type)), name(name),
+        members(std::move(members)) {}
+
+  const std::string &getName() const { return name; }
+  const std::vector<std::unique_ptr<Declaration>> &getMembers() const { return members; }
+  std::pair<int, VariableDeclaration*> getMemberWithIndex(const std::string &memberName) {
+    auto it = std::find_if(members.begin(), members.end(), 
+      [&memberName](const std::unique_ptr<Declaration> &decl) { 
+        return dynamic_cast<VariableDeclaration*>(decl.get())->getIdentifierName() == memberName;
+      });
+
+    if (it != members.end()) {
+      return { std::distance(members.begin(), it), dynamic_cast<VariableDeclaration*>(it->get()) };
+    } else {
+      return { -1, nullptr };;
+    }
+  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+
+private:
+  std::unique_ptr<StructType> type;
+  std::string name;
+  std::vector<std::unique_ptr<Declaration>> members;
 };
 
 class AssignmentExpression : public Statement {

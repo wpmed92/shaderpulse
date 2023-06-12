@@ -97,6 +97,7 @@ bool Lexer::handleIdentifier(Error &error) {
     advanceChar();
   }
 
+
   auto tok = std::make_unique<Token>();
   tok->setIdentifierName(token);
   auto kwKind = getKwTokenKindFromString(token);
@@ -229,7 +230,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
   if (hasDigit && handleExponentialForm(literalConstant, error))
     return true;
   // Handle fractional part digit . fractional exp, . fractional exp
-  else if (getCurChar() == '.') {
+  else if (getCurChar() == '.' && !isStartOfIdentifier(peekChar())) {
     literalConstant += getCurChar();
     advanceChar();
 
