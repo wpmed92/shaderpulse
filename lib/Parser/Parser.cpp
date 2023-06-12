@@ -114,7 +114,6 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
       // Initializer expression
       advanceToken();
 
-      std::cout << "initializer: " << curToken->getIdentifierName() << std::endl;
       auto exp = parseExpression();
 
       // Declaration list
@@ -125,12 +124,11 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
 
         return declarations;
       } else if (curToken->is(TokenKind::semiColon)) {
-        std::cout << "Found initializer expression" << std::endl;
         advanceToken();
         return std::make_unique<VariableDeclaration>(std::move(type), name,
                                                      std::move(exp));
       } else {
-        std::cout << "Parser error: unexpected token." << std::endl;
+        std::cout << "Parser error: unexpected token." << cursor << std::endl;
       }
     } else if (curToken->is(TokenKind::comma)) {
       advanceToken();
@@ -322,7 +320,6 @@ std::unique_ptr<TypeQualifier> Parser::parseQualifier() {
   case TokenKind::kw_const:
     return std::make_unique<StorageQualifier>(StorageQualifierKind::Const);
   case TokenKind::kw_in:
-    std::cout << "Found in " << std::endl;
     return std::make_unique<StorageQualifier>(StorageQualifierKind::In);
   case TokenKind::kw_out:
     return std::make_unique<StorageQualifier>(StorageQualifierKind::Out);
@@ -1068,6 +1065,30 @@ std::unique_ptr<ContinueStatement> Parser::parseContinue() {
   return std::make_unique<ContinueStatement>();
 }
 
+std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseMemberAccessChain() {
+  if (peek(1)->is(TokenKind::dot)) {
+    advanceToken();
+    std::vector<std::unique_ptr<Expression>> members;
+
+    do {
+      advanceToken();
+
+      if (auto member = parsePostfixExpression(/*parsingMemberAccess*/ true)) {
+        members.push_back(std::move(member));
+        advanceToken();
+      }
+    } while (curToken->is(TokenKind::dot));
+
+    cursor = cursor - 1;
+
+    std::cout << "Cursor: " << cursor << std::endl;
+    std::cout << "Member count: " << members.size() << std::endl;
+    return std::move(members);
+  }
+
+  return std::nullopt;
+}
+
 std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
    if (auto constructorExp = parseConstructorExpression()) {
     return constructorExp;
@@ -1139,12 +1160,21 @@ std::unique_ptr<Expression> Parser::parseUnaryExpression() {
   }
 }
 
-std::unique_ptr<Expression> Parser::parsePostfixExpression() {
+std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAccess) {
   if (auto primary = parsePrimaryExpression()) {
-    return primary;
-  } else {
-    return nullptr;
+    if (!parsingMemberAccess) {
+      if (auto members = parseMemberAccessChain()) {
+        std::cout << "Found member access chain: " << cursor << std::endl;
+        return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members));
+      } else {
+        return primary;
+      }
+    } else {
+      return primary;
+    }
   }
+
+  return nullptr;
 }
 
 std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {

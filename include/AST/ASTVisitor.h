@@ -31,6 +31,7 @@ class DiscardStatement;
 class FunctionDeclaration;
 class DefaultLabel;
 class CaseLabel;
+class MemberAccessExpression;
 
 class ASTVisitor {
 
@@ -50,6 +51,7 @@ public:
   virtual void visit(StatementList *) { };
   virtual void visit(CallExpression *) { };
   virtual void visit(ConstructorExpression *) { };
+  virtual void visit(MemberAccessExpression *) { };
   virtual void visit(VariableExpression *) { };
   virtual void visit(IntegerConstantExpression *) { };
   virtual void visit(UnsignedIntegerConstantExpression *) { };

@@ -195,21 +195,9 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     }
 
     builder.setInsertionPointToEnd(spirvModule.getBody());
-    spirv::PointerType ptrType;
-     
-    if (varType->getKind() == TypeKind::Struct) {
-      auto structName = dynamic_cast<StructType*>(varType)->getName();
-      std::cout << "Found a struct variable: " << structName << std::endl;
-
-      if (structDeclarations.find(structName) != structDeclarations.end()) {
-        std::cout << "Found a struct declaration" << std::endl;
-        ptrType = spirv::PointerType::get(
-          convertShaderPulseStruct(&context, structDeclarations[structName]), storageClass);
-      }
-    } else {
-      ptrType = spirv::PointerType::get(
-        convertShaderPulseType(&context, varType), storageClass);
-    }
+  
+    spirv::PointerType ptrType = spirv::PointerType::get(
+      convertShaderPulseType(&context, varType, structDeclarations), storageClass);
 
     Operation *initializerOp = nullptr;
 
@@ -245,19 +233,8 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
       val = popExpressionStack();
     }
 
-    spirv::PointerType ptrType;
-     
-    if (varType->getKind() == TypeKind::Struct) {
-      auto structName = dynamic_cast<StructType*>(varType)->getName();
-
-      if (structDeclarations.find(structName) != structDeclarations.end()) {
-        ptrType = spirv::PointerType::get(
-          convertShaderPulseStruct(&context, structDeclarations[structName]), spirv::StorageClass::Function);
-      }
-    } else {
-      ptrType = spirv::PointerType::get(
-        convertShaderPulseType(&context, varType), spirv::StorageClass::Function);
-    }
+    spirv::PointerType ptrType = spirv::PointerType::get(
+        convertShaderPulseType(&context, varType, structDeclarations), spirv::StorageClass::Function);
 
     auto var = builder.create<spirv::VariableOp>(
         builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, nullptr);
@@ -339,7 +316,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 
       if (structDeclarations.find(structName) != structDeclarations.end()) {
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
-              builder.getUnknownLoc(), convertShaderPulseStruct(&context, structDeclarations[structName]), operands);
+              builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
         expressionStack.push_back(val);
         std::cout << "Expression stack size: " << expressionStack.size() << std::endl;
         std::cout << "Creating struct" << std::endl;
@@ -350,7 +327,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 
     case TypeKind::Vector: {
       mlir::Value val = builder.create<spirv::CompositeConstructOp>(
-            builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType), operands);
+            builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
       expressionStack.push_back(val);
       std::cout << "Creating vector" << std::endl;
       break;
@@ -370,12 +347,12 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
         auto elementType = std::make_unique<Type>(matrixType->getElementType()->getKind());
         auto vecType = std::make_unique<shaderpulse::VectorType>(std::move(elementType), col.size());
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
-          builder.getUnknownLoc(), convertShaderPulseType(&context, vecType.get()), col);
+          builder.getUnknownLoc(), convertShaderPulseType(&context, vecType.get(), structDeclarations), col);
         columnVectors.push_back(val);
       }
 
       mlir::Value val = builder.create<spirv::CompositeConstructOp>(
-        builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType), columnVectors);
+        builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), columnVectors);
 
       expressionStack.push_back(val);
       break;
@@ -384,6 +361,43 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
     default:
       // Unsupported composite construct
       break;
+  }
+}
+
+void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
+  auto baseComposite = memberAccess->getBaseComposite();
+  baseComposite->accept(this);
+
+  Value baseCompositeValue = popExpressionStack();
+
+  std::vector<int> memberIndices;
+
+  if (currentBaseComposite) {
+    std::cout << "Found base composite" << std::endl;
+
+    for (auto &member : memberAccess->getMembers()) {
+        std::cout << "Members count: " << memberAccess->getMembers().size() << std::endl;
+        if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
+          std::cout << "Found member variable" << std::endl;
+          auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
+          memberIndices.push_back(memberIndexPair.first);
+          std::cout << "Index: " << memberIndexPair.first << std::endl;
+
+          if (memberIndexPair.second->getType()->getKind() == TypeKind::Struct) {
+            auto structName = dynamic_cast<StructType*>(memberIndexPair.second->getType())->getName();
+
+            if (structDeclarations.find(structName) != structDeclarations.end()) {
+              currentBaseComposite = structDeclarations[structName];
+            }
+          }
+        }
+      }
+
+      Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
+
+      expressionStack.push_back(compositeElement);
+
+      std::cout << "Composite extract with " << memberIndices.size() << " index values" << std::endl;
   }
 }
 
@@ -523,6 +537,14 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
       val = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
     }
 
+    if (entry.variable->getType()->getKind() == TypeKind::Struct) {
+      auto structName = dynamic_cast<StructType*>(entry.variable->getType())->getName();
+
+      if (structDeclarations.find(structName) != structDeclarations.end()) {
+        currentBaseComposite = structDeclarations[structName];
+      }
+    }
+
     expressionStack.push_back(val);
   } else {
     std::cout << "Unable to find variable: " << varExp->getName() << std::endl;
@@ -599,12 +621,12 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   std::vector<mlir::Type> paramTypes;
 
   for (auto &param : funcDecl->getParams()) {
-    paramTypes.push_back(convertShaderPulseType(&context, param->getType()));
+    paramTypes.push_back(convertShaderPulseType(&context, param->getType(), structDeclarations));
   }
 
   TypeRange resultTypeRange;
   
-  if (auto resultType = convertShaderPulseType(&context, funcDecl->getReturnType())) {
+  if (auto resultType = convertShaderPulseType(&context, funcDecl->getReturnType(), structDeclarations)) {
     if (!resultType.isa<NoneType>()) {
       resultTypeRange = { resultType };
     }

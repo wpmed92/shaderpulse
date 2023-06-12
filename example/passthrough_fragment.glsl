@@ -1,20 +1,20 @@
 layout(location = 0) out vec4 outColor;
 
-struct Light
-{
-  vec3 eyePosOrDir;
-  bool isDirectional;
-  vec3 intensity;
-  float attenuation;
+struct B {
+  float d;
+  float e;
 };
 
-struct Test {
-  float a;
-  float b;
+struct A {
+  float x;
+  float y;
+  float z;
+  B b;
 };
 
 void main() {
-  Light light = Light(vec3(1.0, 1.0, 1.0), false, vec3(0.2, 0.3, 0.4), 0.5);
-  outColor = vec4(1.0, 0.0, 0.0, 1.0);
+  A a = A(1.0, 2.0, 3.0, B(1.2, 1.3));
+  float test = a.b.d;
+  outColor = vec4(test, 0.0, 0.0, 1.0);
   return;
 }

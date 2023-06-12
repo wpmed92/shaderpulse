@@ -132,6 +132,23 @@ private:
   std::string name;
 };
 
+class MemberAccessExpression : public Expression {
+  
+public:
+  MemberAccessExpression(std::unique_ptr<Expression> baseComposite, std::vector<std::unique_ptr<Expression>> members) :
+     baseComposite(std::move(baseComposite)), members(std::move(members)) {
+
+  }
+
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+  const std::vector<std::unique_ptr<Expression>> &getMembers() { return members; }
+  Expression* getBaseComposite() const { return baseComposite.get(); }
+
+private:
+  std::unique_ptr<Expression> baseComposite;
+  std::vector<std::unique_ptr<Expression>> members;
+};
+
 class CallExpression : public Expression {
 
 public:
@@ -435,6 +452,18 @@ public:
 
   const std::string &getName() const { return name; }
   const std::vector<std::unique_ptr<Declaration>> &getMembers() const { return members; }
+  std::pair<int, VariableDeclaration*> getMemberWithIndex(const std::string &memberName) {
+    auto it = std::find_if(members.begin(), members.end(), 
+      [&memberName](const std::unique_ptr<Declaration> &decl) { 
+        return dynamic_cast<VariableDeclaration*>(decl.get())->getIdentifierName() == memberName;
+      });
+
+    if (it != members.end()) {
+      return { std::distance(members.begin(), it), dynamic_cast<VariableDeclaration*>(it->get()) };
+    } else {
+      return { -1, nullptr };;
+    }
+  }
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
 private:

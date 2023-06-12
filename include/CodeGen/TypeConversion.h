@@ -8,8 +8,7 @@ namespace shaderpulse {
 
 namespace codegen {
 
-mlir::Type convertShaderPulseType(mlir::MLIRContext *, Type *);
-mlir::spirv::StructType convertShaderPulseStruct(mlir::MLIRContext *, ast::StructDeclaration *);
+mlir::Type convertShaderPulseType(mlir::MLIRContext *, Type *, llvm::StringMap<ast::StructDeclaration*> &);
 std::optional<mlir::spirv::StorageClass> getSpirvStorageClass(TypeQualifier *);
 std::optional<mlir::IntegerAttr> getLocationFromTypeQualifier(mlir::MLIRContext *ctx, TypeQualifier *);
 

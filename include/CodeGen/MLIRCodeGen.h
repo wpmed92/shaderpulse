@@ -71,6 +71,7 @@ public:
   void visit(StatementList *) override;
   void visit(CallExpression *) override;
   void visit(ConstructorExpression *) override;
+  void visit(MemberAccessExpression *) override;
   void visit(StructDeclaration *) override;
   void visit(VariableExpression *) override;
   void visit(IntegerConstantExpression *) override;
@@ -89,33 +90,29 @@ public:
 private:
   bool insideEntryPoint = false;
 
-  /// A "module" matches a Toy source file: containing a list of functions.
   MLIRContext context;
   spirv::ModuleOp spirvModule;
   OpBuilder builder;
 
-  // Stack used to hold intermediary values while generating code for an
-  // expression
-  std::vector<Value> expressionStack;
-
-  llvm::StringMap<spirv::FuncOp> functionMap;
   bool inGlobalScope = true;
-  std::map<std::string, StructDeclaration*> structDeclarations;
+  llvm::StringMap<spirv::FuncOp> functionMap;
+  llvm::StringMap<StructDeclaration*> structDeclarations;
+  std::vector<Value> expressionStack;
+  StructDeclaration* currentBaseComposite = nullptr;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
   using SymbolTableScopeT =
       llvm::ScopedHashTableScope<StringRef, SymbolTableEntry>;
 
-  
   SymbolTableScopeT globalScope;
+  SmallVector<Attribute, 4> interface;
 
   void declare(SymbolTableEntry);
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
   
   mlir::Value popExpressionStack();
-  SmallVector<Attribute, 4> interface;
 };
 
 }; // namespace codegen
