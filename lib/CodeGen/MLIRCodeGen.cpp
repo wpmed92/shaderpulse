@@ -372,18 +372,23 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
 
   std::vector<int> memberIndices;
 
+  std::vector<mlir::Value> memberIndicesAcc;
+
   if (currentBaseComposite) {
     std::cout << "Found base composite" << std::endl;
 
     for (auto &member : memberAccess->getMembers()) {
         std::cout << "Members count: " << memberAccess->getMembers().size() << std::endl;
         if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
-          std::cout << "Found member variable" << std::endl;
+          std::cout << "Found member variable: " << var->getName() << std::endl;
           auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
           memberIndices.push_back(memberIndexPair.first);
+          memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
           std::cout << "Index: " << memberIndexPair.first << std::endl;
+          std::cout << "index pair second: " <<  memberIndexPair.second->getType()->getKind() << std::endl;
 
           if (memberIndexPair.second->getType()->getKind() == TypeKind::Struct) {
+            std::cout << "struct stuff" << std::endl;
             auto structName = dynamic_cast<StructType*>(memberIndexPair.second->getType())->getName();
 
             if (structDeclarations.find(structName) != structDeclarations.end()) {
@@ -393,9 +398,13 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
         }
       }
 
-      Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
-
-      expressionStack.push_back(compositeElement);
+      if (memberAccess->isLhs()) {
+        Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
+        expressionStack.push_back(accessChain);
+      } else {
+        Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
+        expressionStack.push_back(compositeElement);
+      }
 
       std::cout << "Composite extract with " << memberIndices.size() << " index values" << std::endl;
   }
@@ -462,16 +471,18 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
 void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
   std::cout << "Visiting assignment " << std::endl;
 
-  std::cout << "Looking up " << assignmentExp->getIdentifier() << std::endl;
-  auto varIt = symbolTable.lookup(assignmentExp->getIdentifier());
+  //std::cout << "Looking up " << assignmentExp->getIdentifier() << std::endl;
+  //auto varIt = symbolTable.lookup(assignmentExp->getIdentifier());
+  assignmentExp->getUnaryExpression()->accept(this);
 
-  std::cout << "Looked up " << assignmentExp->getIdentifier() << std::endl;
   assignmentExp->getExpression()->accept(this);
 
   std::cout << "getExpression() accepted" << std::endl;
   Value val = popExpressionStack();
 
-  if (varIt.variable) {
+  Value ptr = popExpressionStack();
+
+  /*if (varIt.variable) {
     if (varIt.isGlobal) {
       auto addressOfGlobal = builder.create<mlir::spirv::AddressOfOp>(builder.getUnknownLoc(), varIt.ptrType, varIt.variable->getIdentifierName());
       builder.create<spirv::StoreOp>(builder.getUnknownLoc(), addressOfGlobal, val);
@@ -479,10 +490,10 @@ void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
       if (insideEntryPoint) {
         interface.push_back(SymbolRefAttr::get(&context, varIt.variable->getIdentifierName()));
       }
-    } else {
-      builder.create<spirv::StoreOp>(builder.getUnknownLoc(), varIt.value, val);
-    }
-  }
+    } else {*/
+      builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptr, val);
+    /*}
+  }*/
 }
 
 void MLIRCodeGen::visit(StatementList *stmtList) {
@@ -527,14 +538,14 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
 
     if (entry.isGlobal) {
       auto addressOfGlobal = builder.create<mlir::spirv::AddressOfOp>(builder.getUnknownLoc(), entry.ptrType, varExp->getName());
-      val = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), addressOfGlobal);
+      val = varExp->isLhs() ? addressOfGlobal->getResult(0) : builder.create<spirv::LoadOp>(builder.getUnknownLoc(), addressOfGlobal)->getResult(0);
 
       // If we're inside the entry point function, collect the used global variables
       if (insideEntryPoint) {
         interface.push_back(SymbolRefAttr::get(&context, varExp->getName()));
       }
     } else {
-      val = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
+      val = (varExp->isLhs()) ? entry.value : builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
     }
 
     if (entry.variable->getType()->getKind() == TypeKind::Struct) {

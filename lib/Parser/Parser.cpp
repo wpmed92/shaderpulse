@@ -936,8 +936,6 @@ std::unique_ptr<Statement> Parser::parseSimpleStatement() {
     return std::move(decl);
   } else if (auto structDecl = parseStructDeclaration()) {
     return std::move(structDecl);
-  } else if (auto assignment = parseAssignmentExpression()) {
-    return std::move(assignment);
   } else if (auto switchStmt = parseSwitchStatement()) {
     return std::move(switchStmt);
   } else if (auto caseLabelStmt = parseCaseLabel()) {
@@ -958,6 +956,8 @@ std::unique_ptr<Statement> Parser::parseSimpleStatement() {
     return std::move(continueStmt);
   } else if (auto discardStmt = parseDiscard()) {
     return std::move(discardStmt);
+  } else if (auto assignment = parseAssignmentExpression()) {
+    return std::move(assignment);
   } else {
     return nullptr;
   }
@@ -988,21 +988,31 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
 }
 
 std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
-  if (!(curToken->is(TokenKind::Identifier) &&
-        Parser::getAssignmentOperatorFromTokenKind(peek(1)->getTokenKind()))) {
+  parsingLhsExpression = true;
+  savePosition();
+  auto unaryExpression = parseUnaryExpression();
+
+  advanceToken();
+  if (!curToken->is(TokenKind::assign)) {
+    rollbackPosition();
+    parsingLhsExpression = false;
     return nullptr;
   }
 
-  auto name = curToken->getIdentifierName();
+  parsingLhsExpression = false;
+
+
+  if (!unaryExpression) {
+    return nullptr;
+  }
+
+  auto op = Parser::getAssignmentOperatorFromTokenKind(curToken->getTokenKind());
 
   advanceToken();
 
-  auto op =
-      Parser::getAssignmentOperatorFromTokenKind(curToken->getTokenKind());
-
-  advanceToken();
-
+  std::cout << "Before assign expr" << cursor << std::endl;
   auto exp = parseExpression();
+  std::cout << "After assign expr" << cursor << std::endl;
 
   if (!curToken->is(TokenKind::semiColon)) {
     std::cout << "Expected a semicolon after assignment expression." << cursor
@@ -1011,7 +1021,7 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
 
   advanceToken();
 
-  return std::make_unique<AssignmentExpression>(name, *op, std::move(exp));
+  return std::make_unique<AssignmentExpression>(std::move(unaryExpression), *op, std::move(exp));
 }
 
 std::unique_ptr<DiscardStatement> Parser::parseDiscard() {
@@ -1095,7 +1105,8 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
   } else if (auto callExp = parseCallExpression()) {
     return callExp;
   } else if (curToken->is(TokenKind::Identifier)) {
-    return std::make_unique<VariableExpression>(curToken->getIdentifierName());
+    
+    return std::make_unique<VariableExpression>(curToken->getIdentifierName(), parsingLhsExpression);
   } else if (curToken->is(TokenKind::IntegerConstant)) {
     auto int_const = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
 
@@ -1165,7 +1176,7 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAcc
     if (!parsingMemberAccess) {
       if (auto members = parseMemberAccessChain()) {
         std::cout << "Found member access chain: " << cursor << std::endl;
-        return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members));
+        return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members), parsingLhsExpression);
       } else {
         return primary;
       }

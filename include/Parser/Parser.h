@@ -18,7 +18,7 @@ class Parser {
 
 public:
   Parser(std::vector<std::unique_ptr<Token>> &tokens)
-      : tokenStream(tokens), cursor(-1), curToken(nullptr) {
+      : tokenStream(tokens), cursor(-1), curToken(nullptr), parsingLhsExpression(false) {
     advanceToken();
   }
 
@@ -69,6 +69,7 @@ private:
   void advanceToken();
   const Token *peek(int);
   int savedPosition;
+  bool parsingLhsExpression;
 
   // TODO: move these to ast helpers
   static std::map<BinaryOperator, int> binopPrecedence;

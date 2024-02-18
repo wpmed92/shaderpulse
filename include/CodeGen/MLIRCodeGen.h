@@ -113,6 +113,7 @@ private:
   void insertEntryPoint();
   
   mlir::Value popExpressionStack();
+  mlir::Value currentBasePointer;
 };
 
 }; // namespace codegen
