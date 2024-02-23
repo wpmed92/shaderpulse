@@ -98,7 +98,7 @@ void PrinterASTVisitor::visit(IfStatement *ifStmt) {
 }
 
 void PrinterASTVisitor::visit(AssignmentExpression *assignmentExp) {
-  print("|-AssignmentExpression: variable name=" + assignmentExp->getIdentifier());
+  //print("|-AssignmentExpression: variable name=" + assignmentExp->getIdentifier());
   indent();
   assignmentExp->getExpression()->accept(this);
   resetIndent();

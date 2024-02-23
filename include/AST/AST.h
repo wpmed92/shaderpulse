@@ -55,7 +55,14 @@ public:
 
 class Expression : public ASTNode {
 public:
+  Expression(bool lhs = false) : lhs(lhs) { }
   virtual ~Expression() = default;
+  bool isRhs() const { return !lhs; }
+  bool isLhs() const { return lhs; }
+
+
+private:
+  bool lhs;
 };
 
 class IntegerConstantExpression : public Expression {
@@ -122,7 +129,7 @@ private:
 
 class VariableExpression : public Expression {
 public:
-  VariableExpression(const std::string &name) : name(name) {}
+  VariableExpression(const std::string &name, bool isLhs = false) : Expression(isLhs), name(name) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -135,8 +142,8 @@ private:
 class MemberAccessExpression : public Expression {
   
 public:
-  MemberAccessExpression(std::unique_ptr<Expression> baseComposite, std::vector<std::unique_ptr<Expression>> members) :
-     baseComposite(std::move(baseComposite)), members(std::move(members)) {
+  MemberAccessExpression(std::unique_ptr<Expression> baseComposite, std::vector<std::unique_ptr<Expression>> members, bool lhs = false) :
+     Expression(lhs), baseComposite(std::move(baseComposite)), members(std::move(members)) {
 
   }
 
@@ -475,18 +482,18 @@ private:
 class AssignmentExpression : public Statement {
 
 public:
-  AssignmentExpression(const std::string &identifier, AssignmentOperator op,
+  AssignmentExpression(std::unique_ptr<Expression> unaryExpression, AssignmentOperator op,
                        std::unique_ptr<Expression> expression)
-      : identifier(identifier), op(op), expression(std::move(expression)) {}
+      : unaryExpression(std::move(unaryExpression)), op(op), expression(std::move(expression)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
-  const std::string &getIdentifier() { return identifier; }
+  Expression *getUnaryExpression() { return unaryExpression.get(); }
   AssignmentOperator getOperator() { return op; }
   Expression *getExpression() { return expression.get(); }
 
 private:
-  std::string identifier;
+  std::unique_ptr<Expression> unaryExpression;
   AssignmentOperator op;
   std::unique_ptr<Expression> expression;
 };
