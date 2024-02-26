@@ -85,11 +85,14 @@ public:
   void setLiteralData(std::unique_ptr<NumericLiteral>);
   void setSourceLocation(SourceLocation loc);
   SourceLocation getSourceLocation() const;
+  void setRawData(const std::string&);
+  std::string getRawData() const;
 
 private:
   TokenKind tokenKind;
   SourceLocation sourceLoc;
   std::string identifierName;
+  std::string rawData;
   std::unique_ptr<NumericLiteral> literalData;
 };
 

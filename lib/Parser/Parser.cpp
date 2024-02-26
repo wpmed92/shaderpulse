@@ -128,7 +128,7 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
         return std::make_unique<VariableDeclaration>(std::move(type), name,
                                                      std::move(exp));
       } else {
-        std::cout << "Parser error: unexpected token." << cursor << std::endl;
+        std::cout << "Parser error: unexpected token '" << curToken->getRawData() << "' at line " << curToken->getSourceLocation().line << ", col: " <<  curToken->getSourceLocation().col << std::endl;
       }
     } else if (curToken->is(TokenKind::comma)) {
       advanceToken();

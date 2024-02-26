@@ -48,6 +48,14 @@ SourceLocation Token::getSourceLocation() const {
   return sourceLoc;
 }
 
+void Token::setRawData(const std::string& rawData) {
+  this->rawData = rawData;
+}
+
+std::string Token::getRawData() const {
+  return rawData;
+}
+
 }; // namespace lexer
 
 }; // namespace shaderpulse
