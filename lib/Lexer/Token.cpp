@@ -40,6 +40,14 @@ void Token::setLiteralData(std::unique_ptr<NumericLiteral> literalData) {
   this->literalData = std::move(literalData);
 }
 
+void Token::setSourceLocation(SourceLocation loc) {
+  sourceLoc = loc;
+}
+
+SourceLocation Token::getSourceLocation() const {
+  return sourceLoc;
+}
+
 }; // namespace lexer
 
 }; // namespace shaderpulse

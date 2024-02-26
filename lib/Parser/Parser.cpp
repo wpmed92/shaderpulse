@@ -1322,6 +1322,7 @@ void Parser::advanceToken() {
     curToken = tokenStream.back().get();
   } else {
     curToken = tokenStream[++cursor].get();
+    std::cout << "Cur token is at line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
   }
 }
 

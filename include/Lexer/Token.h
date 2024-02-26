@@ -6,6 +6,13 @@ namespace shaderpulse {
 
 namespace lexer {
 
+struct SourceLocation {
+  SourceLocation() = default;
+  SourceLocation(int line, int col) : line(line), col(col) { }
+  int line;
+  int col;
+};
+
 class NumericLiteral {
 public:
   virtual ~NumericLiteral() = 0;
@@ -76,9 +83,12 @@ public:
   bool isDoubleConstant() const;
   NumericLiteral *getLiteralData() const;
   void setLiteralData(std::unique_ptr<NumericLiteral>);
+  void setSourceLocation(SourceLocation loc);
+  SourceLocation getSourceLocation() const;
 
 private:
   TokenKind tokenKind;
+  SourceLocation sourceLoc;
   std::string identifierName;
   std::unique_ptr<NumericLiteral> literalData;
 };

@@ -67,6 +67,7 @@ bool Lexer::handleNewLine(Error &error) {
   if (isNewLine(getCurChar())) {
     lineNum++;
     advanceChar();
+    col = 1;
     return true;
   }
 
@@ -83,6 +84,7 @@ bool Lexer::handleIdentifier(Error &error) {
   }
 
   std::string token;
+  int startCol = col;
 
   while (!isStopCharacter(getCurChar())) {
     if (!isAlphaNumeric(getCurChar())) {
@@ -97,7 +99,6 @@ bool Lexer::handleIdentifier(Error &error) {
     advanceChar();
   }
 
-
   auto tok = std::make_unique<Token>();
   tok->setIdentifierName(token);
   auto kwKind = getKwTokenKindFromString(token);
@@ -108,6 +109,7 @@ bool Lexer::handleIdentifier(Error &error) {
     tok->setTokenKind(TokenKind::Identifier);
   }
 
+  tok->setSourceLocation(SourceLocation(lineNum, startCol));
   tokenStream.push_back(std::move(tok));
 
   return true;
@@ -125,7 +127,7 @@ bool Lexer::handleHexLiteral(Error &error) {
 
   bool hasDigit = false;
   std::string literalConstant;
-
+  int startCol = col;
   literalConstant += getCurChar();
   advanceChar();
   literalConstant += getCurChar();
@@ -153,6 +155,7 @@ bool Lexer::handleHexLiteral(Error &error) {
 
     tok->setTokenKind(isUnsigned ? TokenKind::UnsignedIntegerConstant
                                  : TokenKind::IntegerConstant);
+    tok->setSourceLocation(SourceLocation(lineNum, startCol));
     tokenStream.push_back(std::move(tok));
 
     return true;
@@ -176,6 +179,7 @@ bool Lexer::handleOctalLiteral(Error &error) {
 
   std::string literalConstant;
   bool hasDigit = false;
+  int startCol = col;
 
   while (!isStopCharacter(getCurChar()) && isOctalDigit(getCurChar())) {
     literalConstant += getCurChar();
@@ -199,6 +203,8 @@ bool Lexer::handleOctalLiteral(Error &error) {
 
     tok->setTokenKind(isUnsigned ? TokenKind::UnsignedIntegerConstant
                                  : TokenKind::IntegerConstant);
+
+    tok->setSourceLocation(SourceLocation(lineNum, startCol));
     tokenStream.push_back(std::move(tok));
 
     return true;
@@ -218,6 +224,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
 
   bool hasDigit = false;
   std::string literalConstant;
+  int startCol = col;
 
   // Parse decimal literal constant
   while (!isStopCharacter(getCurChar()) && isDecimalDigit(getCurChar())) {
@@ -246,6 +253,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
       tok->setLiteralData(
           std::make_unique<FloatLiteral>(std::stof(literalConstant)));
       tok->setTokenKind(TokenKind::FloatConstant);
+      tok->setSourceLocation(SourceLocation(lineNum, startCol));
       tokenStream.push_back(std::move(tok));
       return true;
     }
@@ -263,6 +271,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
       tok->setTokenKind(TokenKind::IntegerConstant);
     }
 
+    tok->setSourceLocation(SourceLocation(lineNum, startCol));
     tokenStream.push_back(std::move(tok));
     return true;
   } else {
@@ -277,6 +286,7 @@ bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
 
   literalConstant += getCurChar();
   advanceChar();
+  int startCol = col;
 
   if (isSign(getCurChar())) {
     literalConstant += getCurChar();
@@ -305,6 +315,7 @@ bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
     tok->setLiteralData(
         std::make_unique<FloatLiteral>(std::stof(literalConstant)));
     tok->setTokenKind(TokenKind::FloatConstant);
+    tok->setSourceLocation(SourceLocation(lineNum, startCol));
     tokenStream.push_back(std::move(tok));
 
     return true;
@@ -522,25 +533,25 @@ bool Lexer::handlePunctuator(Error &error) {
   return true;
 }
 
-bool Lexer::isPrecisionSubfix(char curChar, char nextChar) const {}
-
 void Lexer::addToken(TokenKind kind) {
   auto tok = std::make_unique<Token>();
   tok->setTokenKind(kind);
+  tok->setSourceLocation(SourceLocation(lineNum, col));
   tokenStream.push_back(std::move(tok));
 }
 
 void Lexer::skipWhiteSpaces() {
   while (isWhiteSpace(getCurChar()) && (size_t)curCharPos < characters.size()) {
     curCharPos++;
+    col++;
   }
 }
 
 // Helpers
 
-bool Lexer::isNewLine(char c) const { return c == '\n' || c == '\r'; }
+bool Lexer::isNewLine(char c) const { return c == '\n' || c == '\r' || c == '\t'; }
 
-bool Lexer::isWhiteSpace(char c) const { return c == ' ' || c == '\t'; }
+bool Lexer::isWhiteSpace(char c) const { return c == ' '; }
 
 bool Lexer::isSign(char c) const { return (c == '+') || (c == '-'); }
 
@@ -665,7 +676,7 @@ Lexer::getKwTokenKindFromString(const std::string &kw) const {
   return std::nullopt;
 }
 
-void Lexer::advanceChar() { curCharPos++; }
+void Lexer::advanceChar() { col++; curCharPos++; }
 
 char Lexer::getCurChar() const { return characters[curCharPos]; }
 

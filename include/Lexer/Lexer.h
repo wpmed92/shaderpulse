@@ -35,7 +35,7 @@ struct Error {
 class Lexer {
 public:
   Lexer(const std::string &characters)
-      : characters(characters), curCharPos(0), lineNum(0) {}
+      : characters(characters), curCharPos(0), lineNum(1), col(1) {}
 
   tl::expected<std::reference_wrapper<std::vector<std::unique_ptr<Token>>>,
                Error>
@@ -48,6 +48,7 @@ private:
   std::string characters;
   int curCharPos;
   int lineNum;
+  int col;
   std::vector<std::unique_ptr<Token>> tokenStream;
   char getCurChar() const;
   void advanceChar();
@@ -69,7 +70,6 @@ private:
   bool isAlphaNumeric(char) const;
   bool isNewLine(char) const;
   bool isStartOfFractionalPart(char) const;
-  bool isPrecisionSubfix(char, char) const;
   bool isStopCharacter(char) const;
 
   // Handlers
