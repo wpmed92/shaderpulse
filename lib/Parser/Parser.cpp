@@ -1009,10 +1009,7 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
   auto op = Parser::getAssignmentOperatorFromTokenKind(curToken->getTokenKind());
 
   advanceToken();
-
-  std::cout << "Before assign expr" << cursor << std::endl;
   auto exp = parseExpression();
-  std::cout << "After assign expr" << cursor << std::endl;
 
   if (!curToken->is(TokenKind::semiColon)) {
     std::cout << "Expected a semicolon after assignment expression." << cursor
@@ -1090,9 +1087,6 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseMemberAcces
     } while (curToken->is(TokenKind::dot));
 
     cursor = cursor - 1;
-
-    std::cout << "Cursor: " << cursor << std::endl;
-    std::cout << "Member count: " << members.size() << std::endl;
     return std::move(members);
   }
 
@@ -1175,7 +1169,6 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAcc
   if (auto primary = parsePrimaryExpression()) {
     if (!parsingMemberAccess) {
       if (auto members = parseMemberAccessChain()) {
-        std::cout << "Found member access chain: " << cursor << std::endl;
         return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members), parsingLhsExpression);
       } else {
         return primary;
