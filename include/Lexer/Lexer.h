@@ -35,7 +35,7 @@ struct Error {
 class Lexer {
 public:
   Lexer(const std::string &characters)
-      : characters(characters), curCharPos(0), lineNum(1), col(1) {}
+      : characters(characters), curCharPos(0), savedCharPos(0), lineNum(1), col(1) {}
 
   tl::expected<std::reference_wrapper<std::vector<std::unique_ptr<Token>>>,
                Error>
@@ -47,6 +47,7 @@ public:
 private:
   std::string characters;
   int curCharPos;
+  int savedCharPos;
   int lineNum;
   int col;
   std::vector<std::unique_ptr<Token>> tokenStream;

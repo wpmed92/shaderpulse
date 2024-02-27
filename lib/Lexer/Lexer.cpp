@@ -342,6 +342,8 @@ bool Lexer::handlePunctuator(Error &error) {
     return false;
   }
 
+  savedCharPos = curCharPos;
+
   switch (getCurChar()) {
   case '<': {
     if (peekChar() == '<') {
@@ -543,7 +545,8 @@ void Lexer::addToken(TokenKind kind) {
   auto tok = std::make_unique<Token>();
   tok->setTokenKind(kind);
   tok->setSourceLocation(SourceLocation(lineNum, col));
-  tok->setRawData(Lexer::getSpelling(kind));
+  std::string rawData = characters.substr(savedCharPos, curCharPos - savedCharPos + 1);
+  tok->setRawData(rawData);
   tokenStream.push_back(std::move(tok));
 }
 
