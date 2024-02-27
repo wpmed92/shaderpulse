@@ -14,6 +14,22 @@ using namespace ast;
 
 namespace parser {
 
+enum ParserErrorKind {
+  None,
+  UnexpectedToken,
+  ExpectedToken
+};
+
+struct ParserError {
+  ParserError() : kind(ParserErrorKind::None) {}
+  ParserError(ParserErrorKind kind, const std::string &msg) : kind(kind), msg(msg) {}
+
+  ParserErrorKind kind;
+  std::string msg;
+
+  bool none() { return kind == ParserErrorKind::None; }
+};
+
 class Parser {
 
 public:
@@ -68,6 +84,8 @@ private:
   Token *curToken;
   void advanceToken();
   const Token *peek(int);
+  ParserError error;
+  void reportError(ParserErrorKind kind, const std::string &msg);
   int savedPosition;
   bool parsingLhsExpression;
 

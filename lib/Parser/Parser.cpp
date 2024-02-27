@@ -1252,7 +1252,7 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
   }
 
   if (!curToken->is(TokenKind::rCurly)) {
-    std::cout << "Expected a '}' after struct member declaration.";
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '}' after struct member declaration.");
     return nullptr;
   }
 
@@ -1328,6 +1328,11 @@ const Token *Parser::peek(int k) {
   } else {
     return tokenStream[cursor + k].get();
   }
+}
+
+void Parser::reportError(ParserErrorKind kind, const std::string &msg) {
+  std::cout << msg << std::endl;
+  error = ParserError(kind, msg);
 }
 
 }; // namespace parser
