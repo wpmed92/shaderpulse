@@ -110,6 +110,7 @@ bool Lexer::handleIdentifier(Error &error) {
   }
 
   tok->setSourceLocation(SourceLocation(lineNum, startCol));
+  tok->setRawData(token);
   tokenStream.push_back(std::move(tok));
 
   return true;
@@ -156,6 +157,7 @@ bool Lexer::handleHexLiteral(Error &error) {
     tok->setTokenKind(isUnsigned ? TokenKind::UnsignedIntegerConstant
                                  : TokenKind::IntegerConstant);
     tok->setSourceLocation(SourceLocation(lineNum, startCol));
+    tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
 
     return true;
@@ -205,6 +207,7 @@ bool Lexer::handleOctalLiteral(Error &error) {
                                  : TokenKind::IntegerConstant);
 
     tok->setSourceLocation(SourceLocation(lineNum, startCol));
+    tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
 
     return true;
@@ -254,6 +257,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
           std::make_unique<FloatLiteral>(std::stof(literalConstant)));
       tok->setTokenKind(TokenKind::FloatConstant);
       tok->setSourceLocation(SourceLocation(lineNum, startCol));
+      tok->setRawData(literalConstant);
       tokenStream.push_back(std::move(tok));
       return true;
     }
@@ -272,6 +276,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
     }
 
     tok->setSourceLocation(SourceLocation(lineNum, startCol));
+    tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
     return true;
   } else {
@@ -316,6 +321,7 @@ bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
         std::make_unique<FloatLiteral>(std::stof(literalConstant)));
     tok->setTokenKind(TokenKind::FloatConstant);
     tok->setSourceLocation(SourceLocation(lineNum, startCol));
+    tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
 
     return true;
@@ -335,6 +341,8 @@ bool Lexer::handlePunctuator(Error &error) {
   if (!isPunctuator(getCurChar())) {
     return false;
   }
+
+  savedCharPos = curCharPos;
 
   switch (getCurChar()) {
   case '<': {
@@ -537,6 +545,8 @@ void Lexer::addToken(TokenKind kind) {
   auto tok = std::make_unique<Token>();
   tok->setTokenKind(kind);
   tok->setSourceLocation(SourceLocation(lineNum, col));
+  std::string rawData = characters.substr(savedCharPos, curCharPos - savedCharPos + 1);
+  tok->setRawData(rawData);
   tokenStream.push_back(std::move(tok));
 }
 
