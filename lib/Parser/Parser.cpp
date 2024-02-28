@@ -71,8 +71,7 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
     auto params = parseFunctionParameters();
 
     if (!curToken->is(TokenKind::rParen)) {
-      std::cout << "Expected a ')' after function parameter declaration."
-                << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after function parameter declaration.");
       return nullptr;
     }
 
@@ -128,7 +127,7 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
         return std::make_unique<VariableDeclaration>(std::move(type), name,
                                                      std::move(exp));
       } else {
-        std::cout << "Parser error: unexpected token '" << curToken->getRawData() << "' at line " << curToken->getSourceLocation().line << ", col: " <<  curToken->getSourceLocation().col << std::endl;
+        reportError(ParserErrorKind::UnexpectedToken, "Parser error: unexpected token '" + curToken->getRawData() + "'");
       }
     } else if (curToken->is(TokenKind::comma)) {
       advanceToken();
@@ -153,7 +152,7 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
 
   do {
     if (!curToken->is(TokenKind::Identifier)) {
-      std::cout << "Parser error: expected identifier" << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Parser error: expected identifier");
     }
 
     const std::string &varName = curToken->getIdentifierName();
@@ -175,8 +174,7 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
   } while (curToken->is(TokenKind::comma));
 
   if (!curToken->is(TokenKind::semiColon)) {
-    std::cout << "Expected semicolon after variable declaration list."
-              << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected semicolon after variable declaration list.");
   }
 
   advanceToken();
@@ -692,7 +690,7 @@ std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
-    std::cout << "Expected a '(' after switch keyword." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '(' after switch keyword.");
     return nullptr;
   }
 
@@ -705,7 +703,7 @@ std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
   }
 
   if (!curToken->is(TokenKind::rParen)) {
-    std::cout << "Expected a ')' after condition." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after condition.");
     return nullptr;
   }
 
@@ -728,7 +726,7 @@ std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
-    std::cout << "Expected a '(' after while keyword." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '(' after while keyword.");
     return nullptr;
   }
 
@@ -737,8 +735,7 @@ std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
   auto exp = parseExpression();
 
   if (!curToken->is(TokenKind::rParen)) {
-    std::cout << "Expected a ')' after condition expression." << cursor
-              << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after condition expression.");
     return nullptr;
   }
 
@@ -760,14 +757,14 @@ std::unique_ptr<DoStatement> Parser::parseDoStatement() {
 
   if (auto stmt = parseStatement()) {
     if (!curToken->is(TokenKind::kw_while)) {
-      std::cout << "Expected while keyword after statement list." << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected while keyword after statement list.");
       return nullptr;
     }
 
     advanceToken();
 
     if (!curToken->is(TokenKind::lParen)) {
-      std::cout << "Expected a '(' after while keyword." << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected a '(' after while keyword.");
       return nullptr;
     }
 
@@ -776,15 +773,14 @@ std::unique_ptr<DoStatement> Parser::parseDoStatement() {
     auto exp = parseExpression();
 
     if (!curToken->is(TokenKind::rParen)) {
-      std::cout << "Expected a ')' after condition expression." << cursor
-                << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after condition expression.");
       return nullptr;
     }
 
     advanceToken();
 
     if (!curToken->is(TokenKind::semiColon)) {
-      std::cout << "Expected a semicolon after while statement." << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected a semicolon after while statement.");
       return nullptr;
     }
 
@@ -804,7 +800,7 @@ std::unique_ptr<IfStatement> Parser::parseIfStatement() {
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
-    std::cout << "Expected a '(' after if keyword." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '(' after if keyword.");
     return nullptr;
   }
 
@@ -817,7 +813,7 @@ std::unique_ptr<IfStatement> Parser::parseIfStatement() {
   }
 
   if (!curToken->is(TokenKind::rParen)) {
-    std::cout << "Expected a ')' after condition." << cursor << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after condition.");
     return nullptr;
   }
 
@@ -861,7 +857,7 @@ std::unique_ptr<CaseLabel> Parser::parseCaseLabel() {
   }
 
   if (!curToken->is(TokenKind::colon)) {
-    std::cout << "Expected a ':' after case label." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ':' after case label.");
     return nullptr;
   }
 
@@ -878,7 +874,7 @@ std::unique_ptr<DefaultLabel> Parser::parseDefaultLabel() {
   advanceToken();
 
   if (!curToken->is(TokenKind::colon)) {
-    std::cout << "Expected a ':' after case label." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ':' after case label.");
     return nullptr;
   }
 
@@ -906,7 +902,7 @@ std::unique_ptr<Statement> Parser::parseCompoundStatement() {
 
   if (auto stmtList = parseStatementList()) {
     if (!curToken->is(TokenKind::rCurly)) {
-      std::cout << "Expected '}' after statement list." << cursor << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected '}' after statement list.");
       return nullptr;
     } else {
       advanceToken();
@@ -978,7 +974,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
   auto exp = parseExpression();
 
   if (!curToken->is(TokenKind::semiColon)) {
-    std::cout << "Expected semicolon after return statement." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected semicolon after return statement.");
     return nullptr;
   }
 
@@ -1012,8 +1008,7 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
   auto exp = parseExpression();
 
   if (!curToken->is(TokenKind::semiColon)) {
-    std::cout << "Expected a semicolon after assignment expression." << cursor
-              << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a semicolon after assignment expression.");
   }
 
   advanceToken();
@@ -1029,7 +1024,7 @@ std::unique_ptr<DiscardStatement> Parser::parseDiscard() {
   advanceToken();
 
   if (!curToken->is(TokenKind::semiColon)) {
-    std::cout << "Expected semicolon after discard statement." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected semicolon after discard statement.");
     return nullptr;
   }
 
@@ -1046,7 +1041,7 @@ std::unique_ptr<BreakStatement> Parser::parseBreak() {
   advanceToken();
 
   if (!curToken->is(TokenKind::semiColon)) {
-    std::cout << "Expected semicolon after break statement." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected semicolon after break statement.");
     return nullptr;
   }
 
@@ -1063,7 +1058,7 @@ std::unique_ptr<ContinueStatement> Parser::parseContinue() {
   advanceToken();
 
   if (!curToken->is(TokenKind::semiColon)) {
-    std::cout << "Expected semicolon after continue statement." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected semicolon after continue statement.");
     return nullptr;
   }
 
@@ -1133,7 +1128,7 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
     }
 
     if (!curToken->is(TokenKind::rParen)) {
-      std::cout << "Expected a ')' after expression." << std::endl;
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after expression.");
       return nullptr;
     }
 
@@ -1215,7 +1210,7 @@ std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
   } while (true);
 
   if (!curToken->is(TokenKind::rParen)) {
-    std::cout << "Expected a ')' after parameter list in constructor." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after parameter list in constructor.");
     return nullptr;
   }
 
@@ -1230,7 +1225,7 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
   advanceToken();
 
   if (!curToken->is(TokenKind::Identifier)) {
-    std::cout << "Expect an identifier after struct keyword" << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expect an identifier after struct keyword");
     return nullptr;
   }
 
@@ -1239,7 +1234,7 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
   advanceToken();
 
   if (!curToken->is(TokenKind::lCurly)) {
-    std::cout << "Expected '{' after struct name." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected '{' after struct name.");
     return nullptr;
   }
 
@@ -1300,7 +1295,7 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
   } while (true);
 
   if (!curToken->is(TokenKind::rParen)) {
-    std::cout << "Expected a ')' after parameter list." << std::endl;
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after parameter list.");
     return nullptr;
   }
 
@@ -1315,7 +1310,6 @@ void Parser::advanceToken() {
     curToken = tokenStream.back().get();
   } else {
     curToken = tokenStream[++cursor].get();
-    std::cout << "Cur token is at line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
   }
 }
 
@@ -1331,7 +1325,7 @@ const Token *Parser::peek(int k) {
 }
 
 void Parser::reportError(ParserErrorKind kind, const std::string &msg) {
-  std::cout << msg << std::endl;
+  std::cout << msg << std::endl << ", at line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
   error = ParserError(kind, msg);
 }
 
