@@ -116,6 +116,9 @@ void PrinterASTVisitor::visit(StatementList *stmtList) {
   resetIndent();
 }
 
+void PrinterASTVisitor::visit(ForStatement *forStmt) {
+  // TODO: implement me
+}
 
 void PrinterASTVisitor::visit(UnaryExpression *unExp) {
   print("-UnaryExpression: op=" + std::to_string(unExp->getOp()));

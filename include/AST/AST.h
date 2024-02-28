@@ -316,7 +316,31 @@ private:
   std::unique_ptr<Type> type;
 };
 
-class ForStatement : public Statement {};
+class ForStatement : public Statement {
+public:
+  ForStatement(std::unique_ptr<Statement> initStatement,
+                std::unique_ptr<Statement> body,
+                std::unique_ptr<Expression> conditionExp,
+                std::unique_ptr<Expression> inductionExp)
+      : initStatement(std::move(initStatement)),
+        body(std::move(body)),
+        conditionExp(std::move(conditionExp)), 
+        inductionExp(std::move(inductionExp)) { }
+
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+
+  Statement *getInitStatement() { return initStatement.get(); }
+  Statement *getBody() { return body.get(); }
+  Expression *getConditionExpression() { return conditionExp.get(); }
+  Expression *getInductionExpression() { return inductionExp.get(); }
+
+private:
+  std::unique_ptr<Statement> initStatement;
+  std::unique_ptr<Statement> body;
+  std::unique_ptr<Expression> conditionExp;
+  std::unique_ptr<Expression> inductionExp;
+
+};
 
 class SwitchStatement : public Statement {
 

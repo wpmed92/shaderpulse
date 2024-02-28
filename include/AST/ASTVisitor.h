@@ -11,6 +11,7 @@ class VariableDeclaration;
 class VariableDeclarationList;
 class SwitchStatement;
 class WhileStatement;
+class ForStatement;
 class DoStatement;
 class IfStatement;
 class AssignmentExpression;
@@ -45,6 +46,7 @@ public:
   virtual void visit(VariableDeclarationList *) { };
   virtual void visit(SwitchStatement *) { };
   virtual void visit(WhileStatement *) { };
+  virtual void visit(ForStatement *) { };
   virtual void visit(DoStatement *) { };
   virtual void visit(IfStatement *) { };
   virtual void visit(AssignmentExpression *) { };

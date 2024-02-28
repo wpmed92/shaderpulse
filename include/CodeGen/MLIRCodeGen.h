@@ -65,6 +65,7 @@ public:
   void visit(VariableDeclarationList *) override;
   void visit(SwitchStatement *) override;
   void visit(WhileStatement *) override;
+  void visit(ForStatement *) override;
   void visit(DoStatement *) override;
   void visit(IfStatement *) override;
   void visit(AssignmentExpression *) override;

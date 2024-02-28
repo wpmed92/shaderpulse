@@ -47,7 +47,7 @@ public:
   parseVariableDeclarationList(std::unique_ptr<Type>, const std::string &,
                                std::unique_ptr<Expression>);
   std::unique_ptr<Expression> parsePrimaryExpression();
-  std::unique_ptr<ForStatement> parseForLoop();
+  std::unique_ptr<ForStatement> parseForStatement();
   std::unique_ptr<SwitchStatement> parseSwitchStatement();
   std::unique_ptr<WhileStatement> parseWhileStatement();
   std::unique_ptr<DoStatement> parseDoStatement();
