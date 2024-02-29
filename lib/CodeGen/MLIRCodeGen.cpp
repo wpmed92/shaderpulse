@@ -132,6 +132,10 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   }
 }
 
+void MLIRCodeGen::visit(ForStatement *forStmt) {
+  // TODO: implement me
+}
+
 void MLIRCodeGen::visit(UnaryExpression *unExp) {
   unExp->getExpression()->accept(this);
   Value rhs = popExpressionStack();

@@ -664,9 +664,7 @@ Parser::parseFunctionParameters() {
   return params;
 }
 
-std::unique_ptr<ForStatement> Parser::parseForLoop() {
-  advanceToken();
-
+std::unique_ptr<ForStatement> Parser::parseForStatement() {
   if (!curToken->is(TokenKind::kw_for)) {
     return nullptr;
   }
@@ -674,12 +672,49 @@ std::unique_ptr<ForStatement> Parser::parseForLoop() {
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
-    return nullptr; // Expected lparen
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '(' after for keyword.");
+    return nullptr;
+  }
+
+  advanceToken(); // Eat lparen
+
+  auto initStatement = parseStatement();
+
+  if (!initStatement) {
+    return nullptr;
+  }
+
+  auto condExp = parseExpression();
+
+  if (!condExp) {
+    return nullptr;
+  }
+
+  if (!curToken->is(TokenKind::semiColon)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ';' after conditional expression");
+    return nullptr;
   }
 
   advanceToken();
 
-  return nullptr;
+  auto inductionExp = parseExpression();
+
+  if (!inductionExp) {
+    return nullptr;
+  }
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::rParen)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after for statement");
+    return nullptr;
+  }
+
+  advanceToken();
+
+  auto body = parseStatement();
+
+  return std::make_unique<ForStatement>(std::move(initStatement), std::move(body), std::move(condExp), std::move(inductionExp));
 }
 
 std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
@@ -940,6 +975,8 @@ std::unique_ptr<Statement> Parser::parseSimpleStatement() {
     return std::move(defaultLabelStmt);
   } else if (auto whileStmt = parseWhileStatement()) {
     return std::move(whileStmt);
+  } else if (auto forStmt = parseForStatement()) {
+    return std::move(forStmt);
   } else if (auto doStmt = parseDoStatement()) {
     return std::move(doStmt);
   } else if (auto ifStmt = parseIfStatement()) {
@@ -1325,7 +1362,7 @@ const Token *Parser::peek(int k) {
 }
 
 void Parser::reportError(ParserErrorKind kind, const std::string &msg) {
-  std::cout << msg << std::endl << ", at line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
+  std::cout << msg << ", at line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
   error = ParserError(kind, msg);
 }
 
