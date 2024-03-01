@@ -12,18 +12,18 @@ void PrinterASTVisitor::print(const std::string &text) {
     if (i == 0)
       std::cout << "|";
 
-    std::cout << "-";
+    std::cout << " ";
   }
 
   std::cout << text << std::endl;
 }
 
 void PrinterASTVisitor::indent() {
-  prevIndentationLevel = indentationLevel++;
+  indentationLevel+=2;
 }
 
 void PrinterASTVisitor::resetIndent() {
-  indentationLevel = prevIndentationLevel;
+  indentationLevel-=2;
 }
 
 void PrinterASTVisitor::visit(TranslationUnit *unit) {
@@ -52,8 +52,11 @@ void PrinterASTVisitor::visit(VariableDeclarationList *varDeclList) {
 void PrinterASTVisitor::visit(VariableDeclaration *valDecl) {
   print("|-VariableDeclaration: name=" + valDecl->getIdentifierName());
 
-  if (auto exp = valDecl->getInitialzerExpression())
+  indent();
+  if (auto exp = valDecl->getInitialzerExpression()) {
     exp->accept(this);
+  }
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(SwitchStatement *switchStmt) {
@@ -98,8 +101,9 @@ void PrinterASTVisitor::visit(IfStatement *ifStmt) {
 }
 
 void PrinterASTVisitor::visit(AssignmentExpression *assignmentExp) {
-  //print("|-AssignmentExpression: variable name=" + assignmentExp->getIdentifier());
+  print("|-AssignmentExpression");
   indent();
+  assignmentExp->getUnaryExpression()->accept(this);
   assignmentExp->getExpression()->accept(this);
   resetIndent();
 }
@@ -117,7 +121,7 @@ void PrinterASTVisitor::visit(StatementList *stmtList) {
 }
 
 void PrinterASTVisitor::visit(ForStatement *forStmt) {
-  // TODO: implement me
+  print("|-ForStatement");
 }
 
 void PrinterASTVisitor::visit(UnaryExpression *unExp) {
@@ -151,6 +155,16 @@ void PrinterASTVisitor::visit(CallExpression *callee) {
   resetIndent();
 }
 
+void PrinterASTVisitor::visit(ConstructorExpression *constExp) {
+  print("-ConstructorExpression");
+
+  indent();
+  for (auto &exp : constExp->getArguments()) {
+    exp->accept(this);
+  }
+  resetIndent();
+}
+
 void PrinterASTVisitor::visit(VariableExpression *varExp) {
   print("-VariableExpression: name=" + varExp->getName());
 }
@@ -160,7 +174,15 @@ void PrinterASTVisitor::visit(IntegerConstantExpression *intExp) {
 }
 
 void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
-  print("-StructDeclaration");
+  print("|-StructDeclaration: name=" + structDecl->getName());
+
+  indent();
+
+  for (auto &member : structDecl->getMembers()) {
+    member->accept(this);
+  }
+
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintExp) {
@@ -177,6 +199,23 @@ void PrinterASTVisitor::visit(DoubleConstantExpression *doubleExp) {
 
 void PrinterASTVisitor::visit(BoolConstantExpression *boolExp) {
   print("-BoolConstantExpression: value=" + std::to_string(boolExp->getVal()));
+}
+
+void PrinterASTVisitor::visit(MemberAccessExpression *memberExp) {
+  print("|-MemberAccessExpression");
+
+  indent();
+  memberExp->getBaseComposite()->accept(this);
+
+  int savedIndentation = indentationLevel;
+  
+  for (auto &member : memberExp->getMembers()) {
+    indent();
+    member->accept(this);
+  }
+  indentationLevel = savedIndentation;
+
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(ReturnStatement *returnStmt) {

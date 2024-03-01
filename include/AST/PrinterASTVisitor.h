@@ -27,7 +27,9 @@ public:
   void visit(IntegerConstantExpression *) override;
   void visit(UnsignedIntegerConstantExpression *) override;
   void visit(FloatConstantExpression *) override;
+  void visit(ConstructorExpression *) override;
   void visit(DoubleConstantExpression *) override;
+  void visit(MemberAccessExpression *) override;
   void visit(BoolConstantExpression *) override;
   void visit(ReturnStatement *) override;
   void visit(BreakStatement *) override;
@@ -42,7 +44,6 @@ private:
   void resetIndent();
   void print(const std::string &text);
   int indentationLevel = 0;
-  int prevIndentationLevel = 0;
 };
 
 }; // namespace ast
