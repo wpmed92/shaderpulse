@@ -1,5 +1,6 @@
 #pragma once
 #include "AST/ASTVisitor.h"
+#include <set>
 
 namespace shaderpulse {
 
@@ -44,6 +45,7 @@ private:
   void resetIndent();
   void print(const std::string &text);
   int indentationLevel = 0;
+  std::set<int> levels;
 };
 
 }; // namespace ast

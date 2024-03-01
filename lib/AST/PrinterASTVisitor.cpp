@@ -9,7 +9,7 @@ namespace ast {
 
 void PrinterASTVisitor::print(const std::string &text) {
   for (int i = 0; i < indentationLevel; i++) {
-    if (i == 0)
+    if (levels.find(i) != levels.end())
       std::cout << "|";
 
     std::cout << " ";
@@ -20,10 +20,12 @@ void PrinterASTVisitor::print(const std::string &text) {
 
 void PrinterASTVisitor::indent() {
   indentationLevel+=2;
+  levels.insert(indentationLevel);
 }
 
 void PrinterASTVisitor::resetIndent() {
   indentationLevel-=2;
+  levels.erase(std::prev(levels.end()));
 }
 
 void PrinterASTVisitor::visit(TranslationUnit *unit) {
@@ -144,7 +146,7 @@ void PrinterASTVisitor::visit(BinaryExpression *binExp) {
 }
 
 void PrinterASTVisitor::visit(CallExpression *callee) {
-  print("-CallExpression: name=" + callee->getFunctionName());
+  print("|-CallExpression: name=" + callee->getFunctionName());
 
   indent();
 
@@ -156,7 +158,7 @@ void PrinterASTVisitor::visit(CallExpression *callee) {
 }
 
 void PrinterASTVisitor::visit(ConstructorExpression *constExp) {
-  print("-ConstructorExpression");
+  print("|-ConstructorExpression");
 
   indent();
   for (auto &exp : constExp->getArguments()) {
@@ -166,11 +168,11 @@ void PrinterASTVisitor::visit(ConstructorExpression *constExp) {
 }
 
 void PrinterASTVisitor::visit(VariableExpression *varExp) {
-  print("-VariableExpression: name=" + varExp->getName());
+  print("|-VariableExpression: name=" + varExp->getName());
 }
 
 void PrinterASTVisitor::visit(IntegerConstantExpression *intExp) { 
-  print("-IntegerConstantExpression: value=" + std::to_string(intExp->getVal()));
+  print("|-IntegerConstantExpression: value=" + std::to_string(intExp->getVal()));
 }
 
 void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
@@ -186,19 +188,19 @@ void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
 }
 
 void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintExp) {
-  print("-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()));
+  print("|-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()));
 }
 
 void PrinterASTVisitor::visit(FloatConstantExpression *floatExp) {
-  print("-FloatConstantExpression: value=" + std::to_string(floatExp->getVal()));
+  print("|-FloatConstantExpression: value=" + std::to_string(floatExp->getVal()));
 }
 
 void PrinterASTVisitor::visit(DoubleConstantExpression *doubleExp) {
-  print("-DoubleConstantExpression: value=" + std::to_string(doubleExp->getVal()));
+  print("|-DoubleConstantExpression: value=" + std::to_string(doubleExp->getVal()));
 }
 
 void PrinterASTVisitor::visit(BoolConstantExpression *boolExp) {
-  print("-BoolConstantExpression: value=" + std::to_string(boolExp->getVal()));
+  print("|-BoolConstantExpression: value=" + std::to_string(boolExp->getVal()));
 }
 
 void PrinterASTVisitor::visit(MemberAccessExpression *memberExp) {
