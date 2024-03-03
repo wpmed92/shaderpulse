@@ -187,12 +187,16 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
                                  VariableDeclaration *varDecl) {
   shaderpulse::Type *varType = (type) ? type : varDecl->getType();
 
+  if (varType->getKind() == TypeKind::Array) {
+    std::cout << "Array vardecl not supported" << std::endl;
+    return;
+  }
+
   if (inGlobalScope) {
     std::cout << "In global scope" << std::endl;
     spirv::StorageClass storageClass;
 
-    if (auto st = getSpirvStorageClass(
-            varType->getQualifier(TypeQualifierKind::Storage))) {
+    if (auto st = getSpirvStorageClass(varType->getQualifier(TypeQualifierKind::Storage))) {
       storageClass = *st;
     } else {
       storageClass = spirv::StorageClass::Private;
@@ -303,6 +307,12 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
 void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
   std::cout << "Visiting constructor expression" << std::endl;
   auto constructorType = constructorExp->getType();
+
+  if (constructorType->getKind() == TypeKind::Array) {
+    std::cout << "array constructors not supported " << std::endl;
+    return;
+  }
+
   std::vector<mlir::Value> operands;
 
   if (constructorExp->getArguments().size() > 0) {

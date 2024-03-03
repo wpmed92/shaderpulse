@@ -52,8 +52,12 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
 
   if (parseQualifier()) {
     rollbackPosition();
+    std::cout << "rollback to: " << cursor << std::endl;
     return nullptr;
   }
+
+
+  std::cout << "no qualifier: " << cursor << std::endl;
 
   if (auto type = parseType()) {
     if (!(peek(1)->is(TokenKind::Identifier) &&
@@ -421,6 +425,7 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
     return nullptr;
   }
   
+  std::cout << "parsed layout qualitifer " << std::endl;
   return std::make_unique<LayoutQualifier>(std::move(layoutQualifierIds));
 }
 
@@ -443,9 +448,39 @@ std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
 
 std::unique_ptr<Type> Parser::parseType() {
   auto qualifiers = parseQualifiers();
-  auto type = getTypeFromTokenKind(std::move(qualifiers),
-                                           curToken->getTokenKind());
-  return type;
+  auto type = getTypeFromTokenKind(std::move(qualifiers), curToken->getTokenKind());
+
+  std::vector<int> dimensions;
+
+  // Parse array type
+  while (peek(1)->is(TokenKind::lBracket)) {
+    std::cout << "Array type detected " << std::endl;
+    advanceToken();
+    advanceToken();
+
+    int dim = 0;
+
+    if (curToken->is(TokenKind::IntegerConstant)) {
+      auto intConst = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
+      dim = intConst->getVal();
+    }
+
+    advanceToken();
+
+    if (!curToken->is(TokenKind::rBracket)) {
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ']' after array dimension specifier");
+      return nullptr;
+    } else {
+      dimensions.push_back(dim);
+    }
+  }
+
+  if (dimensions.size() > 0) {
+    std::cout << "Dimensions: " << dimensions.size() <<  std::endl;
+    return std::make_unique<ArrayType>(std::move(qualifiers), std::move(type), dimensions);
+  } else {
+    return type;
+  }
 }
 
 std::optional<ast::AssignmentOperator>
@@ -1131,7 +1166,6 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
   } else if (auto callExp = parseCallExpression()) {
     return callExp;
   } else if (curToken->is(TokenKind::Identifier)) {
-    
     return std::make_unique<VariableExpression>(curToken->getIdentifierName(), parsingLhsExpression);
   } else if (curToken->is(TokenKind::IntegerConstant)) {
     auto int_const = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
@@ -1214,18 +1248,30 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAcc
 }
 
 std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
-  if (!(getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind()) &&
-        peek(1)->is(TokenKind::lParen))) {
+  savePosition();
+  std::cout << "Cursor: line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
+  auto myType = parseType();
+
+  if (!myType) {
+    std::cout << "no type" << std::endl;
+    rollbackPosition();
     return nullptr;
   }
 
-  auto type = getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind());
+  std::cout << "Found type" << std::endl;
 
   advanceToken();
+
+  if (!curToken->is(TokenKind::lParen)) {
+    std::cout << "Expected l paren" << std::endl;
+    rollbackPosition();
+    return nullptr;
+  }
+
   advanceToken(); // eat lparen
 
   if (curToken->is(TokenKind::rParen)) {
-    return std::make_unique<ConstructorExpression>(std::move(type));
+    return std::make_unique<ConstructorExpression>(std::move(myType));
   }
 
   std::vector<std::unique_ptr<Expression>> arguments;
@@ -1251,7 +1297,7 @@ std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
     return nullptr;
   }
 
-  return std::make_unique<ConstructorExpression>(std::move(type), std::move(arguments));
+  return std::make_unique<ConstructorExpression>(std::move(myType), std::move(arguments));
 }
 
 std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
