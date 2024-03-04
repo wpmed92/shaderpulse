@@ -36,7 +36,8 @@ enum TypeKind {
   Vector,
   Matrix,
   Opaque,
-  Struct
+  Struct,
+  Array
 };
 
 enum TypeQualifierKind {
@@ -176,6 +177,28 @@ VectorType(std::unique_ptr<Type> elementType, int length)
 private:
   std::unique_ptr<Type> elementType;
   int length;
+};
+
+class ArrayType : public Type {
+
+public:
+  ArrayType(std::unique_ptr<Type> elementType, const std::vector<int>& dimensions)
+      : Type(TypeKind::Array, std::vector<std::unique_ptr<TypeQualifier>>()),
+        elementType(std::move(elementType)), dimensions(dimensions) {
+  }
+  
+  ArrayType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+             std::unique_ptr<Type> elementType, const std::vector<int>& dimensions)
+      : Type(TypeKind::Array, std::move(qualifiers)),
+        elementType(std::move(elementType)), dimensions(dimensions) {
+  }
+
+  Type *getElementType() const { return elementType.get(); };
+  const std::vector<int> &getDimensions() { return dimensions; };
+
+private:
+  std::unique_ptr<Type> elementType;
+  std::vector<int> dimensions;
 };
 
 class MatrixType : public Type {

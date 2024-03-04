@@ -79,6 +79,7 @@ public:
 private:
   std::vector<std::unique_ptr<Token>> &tokenStream;
   std::map<std::string, bool> structDeclarations;
+  std::vector<int> savedPositions;
   
   int cursor;
   Token *curToken;
@@ -86,7 +87,6 @@ private:
   const Token *peek(int);
   ParserError error;
   void reportError(ParserErrorKind kind, const std::string &msg);
-  int savedPosition;
   bool parsingLhsExpression;
 
   // TODO: move these to ast helpers
@@ -106,11 +106,12 @@ private:
                  int);
 
   void savePosition() {
-    savedPosition = cursor;
+    savedPositions.push_back(cursor);
   }
 
   void rollbackPosition() {
-    cursor = savedPosition - 1;
+    cursor = savedPositions.back() - 1;
+    savedPositions.pop_back();
     advanceToken();
   }
 };

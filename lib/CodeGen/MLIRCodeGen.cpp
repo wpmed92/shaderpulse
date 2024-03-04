@@ -187,12 +187,16 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
                                  VariableDeclaration *varDecl) {
   shaderpulse::Type *varType = (type) ? type : varDecl->getType();
 
+  if (varType->getKind() == TypeKind::Array) {
+    std::cout << "Array vardecl not supported" << std::endl;
+    return;
+  }
+
   if (inGlobalScope) {
     std::cout << "In global scope" << std::endl;
     spirv::StorageClass storageClass;
 
-    if (auto st = getSpirvStorageClass(
-            varType->getQualifier(TypeQualifierKind::Storage))) {
+    if (auto st = getSpirvStorageClass(varType->getQualifier(TypeQualifierKind::Storage))) {
       storageClass = *st;
     } else {
       storageClass = spirv::StorageClass::Private;
@@ -303,6 +307,12 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
 void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
   std::cout << "Visiting constructor expression" << std::endl;
   auto constructorType = constructorExp->getType();
+
+  if (constructorType->getKind() == TypeKind::Array) {
+    std::cout << "array constructors not supported " << std::endl;
+    return;
+  }
+
   std::vector<mlir::Value> operands;
 
   if (constructorExp->getArguments().size() > 0) {
@@ -311,8 +321,6 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       operands.push_back(popExpressionStack());
     }
   }
-
-  std::cout << "Operands: " << operands.size() << std::endl;
 
   switch (constructorType->getKind()) {
     case TypeKind::Struct: {
@@ -371,46 +379,34 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
   auto baseComposite = memberAccess->getBaseComposite();
   baseComposite->accept(this);
-
   Value baseCompositeValue = popExpressionStack();
-
   std::vector<int> memberIndices;
-
   std::vector<mlir::Value> memberIndicesAcc;
 
   if (currentBaseComposite) {
-    std::cout << "Found base composite" << std::endl;
-
     for (auto &member : memberAccess->getMembers()) {
-        std::cout << "Members count: " << memberAccess->getMembers().size() << std::endl;
-        if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
-          std::cout << "Found member variable: " << var->getName() << std::endl;
-          auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
-          memberIndices.push_back(memberIndexPair.first);
-          memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
-          std::cout << "Index: " << memberIndexPair.first << std::endl;
-          std::cout << "index pair second: " <<  memberIndexPair.second->getType()->getKind() << std::endl;
+      if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
+        auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
+        memberIndices.push_back(memberIndexPair.first);
+        memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
 
-          if (memberIndexPair.second->getType()->getKind() == TypeKind::Struct) {
-            std::cout << "struct stuff" << std::endl;
-            auto structName = dynamic_cast<StructType*>(memberIndexPair.second->getType())->getName();
+        if (memberIndexPair.second->getType()->getKind() == TypeKind::Struct) {
+          auto structName = dynamic_cast<StructType*>(memberIndexPair.second->getType())->getName();
 
-            if (structDeclarations.find(structName) != structDeclarations.end()) {
-              currentBaseComposite = structDeclarations[structName];
-            }
+          if (structDeclarations.find(structName) != structDeclarations.end()) {
+            currentBaseComposite = structDeclarations[structName];
           }
         }
       }
+    }
 
-      if (memberAccess->isLhs()) {
-        Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
-        expressionStack.push_back(accessChain);
-      } else {
-        Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
-        expressionStack.push_back(compositeElement);
-      }
-
-      std::cout << "Composite extract with " << memberIndices.size() << " index values" << std::endl;
+    if (memberAccess->isLhs()) {
+      Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
+      expressionStack.push_back(accessChain);
+    } else {
+      Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
+      expressionStack.push_back(compositeElement);
+    }
   }
 }
 
@@ -475,29 +471,13 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
 void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
   std::cout << "Visiting assignment " << std::endl;
 
-  //std::cout << "Looking up " << assignmentExp->getIdentifier() << std::endl;
-  //auto varIt = symbolTable.lookup(assignmentExp->getIdentifier());
   assignmentExp->getUnaryExpression()->accept(this);
-
   assignmentExp->getExpression()->accept(this);
 
-  std::cout << "getExpression() accepted" << std::endl;
   Value val = popExpressionStack();
-
   Value ptr = popExpressionStack();
 
-  /*if (varIt.variable) {
-    if (varIt.isGlobal) {
-      auto addressOfGlobal = builder.create<mlir::spirv::AddressOfOp>(builder.getUnknownLoc(), varIt.ptrType, varIt.variable->getIdentifierName());
-      builder.create<spirv::StoreOp>(builder.getUnknownLoc(), addressOfGlobal, val);
-
-      if (insideEntryPoint) {
-        interface.push_back(SymbolRefAttr::get(&context, varIt.variable->getIdentifierName()));
-      }
-    } else {*/
-      builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptr, val);
-    /*}
-  }*/
+  builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptr, val);
 }
 
 void MLIRCodeGen::visit(StatementList *stmtList) {

@@ -420,7 +420,7 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
   if (!curToken->is(TokenKind::rParen)) {
     return nullptr;
   }
-  
+
   return std::make_unique<LayoutQualifier>(std::move(layoutQualifierIds));
 }
 
@@ -443,9 +443,37 @@ std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
 
 std::unique_ptr<Type> Parser::parseType() {
   auto qualifiers = parseQualifiers();
-  auto type = getTypeFromTokenKind(std::move(qualifiers),
-                                           curToken->getTokenKind());
-  return type;
+  auto type = getTypeFromTokenKind(std::move(qualifiers), curToken->getTokenKind());
+
+  std::vector<int> dimensions;
+
+  // Parse array type
+  while (peek(1)->is(TokenKind::lBracket)) {
+    advanceToken();
+    advanceToken();
+
+    int dim = 0;
+
+    if (curToken->is(TokenKind::IntegerConstant)) {
+      auto intConst = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
+      dim = intConst->getVal();
+    }
+
+    advanceToken();
+
+    if (!curToken->is(TokenKind::rBracket)) {
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ']' after array dimension specifier");
+      return nullptr;
+    } else {
+      dimensions.push_back(dim);
+    }
+  }
+
+  if (dimensions.size() > 0) {
+    return std::make_unique<ArrayType>(std::move(qualifiers), std::move(type), dimensions);
+  } else {
+    return type;
+  }
 }
 
 std::optional<ast::AssignmentOperator>
@@ -1131,7 +1159,6 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
   } else if (auto callExp = parseCallExpression()) {
     return callExp;
   } else if (curToken->is(TokenKind::Identifier)) {
-    
     return std::make_unique<VariableExpression>(curToken->getIdentifierName(), parsingLhsExpression);
   } else if (curToken->is(TokenKind::IntegerConstant)) {
     auto int_const = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
@@ -1214,14 +1241,22 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAcc
 }
 
 std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
-  if (!(getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind()) &&
-        peek(1)->is(TokenKind::lParen))) {
+  savePosition();
+  auto type = parseType();
+
+  if (!type) {
+    rollbackPosition();
     return nullptr;
   }
 
-  auto type = getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>(), curToken->getTokenKind());
-
   advanceToken();
+
+  if (!curToken->is(TokenKind::lParen)) {
+    std::cout << "Expected l paren" << std::endl;
+    rollbackPosition();
+    return nullptr;
+  }
+
   advanceToken(); // eat lparen
 
   if (curToken->is(TokenKind::rParen)) {
