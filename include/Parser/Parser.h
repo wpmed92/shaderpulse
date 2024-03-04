@@ -87,7 +87,6 @@ private:
   const Token *peek(int);
   ParserError error;
   void reportError(ParserErrorKind kind, const std::string &msg);
-  int savedPosition;
   bool parsingLhsExpression;
 
   // TODO: move these to ast helpers

@@ -15,7 +15,7 @@ struct A {
 void main() {
   A a = A(1.0, 2.0, 3.0, B(1.2, 1.3));
   float test = a.b.d;
-  float[2] arr = float[2](1.0, 2.0);
+  float[2][3][4] arr = float[2][3][4](1.0, 2.0);
 
   for (int i = 0; i < 10; i++) {
     int j = 1;
