@@ -550,7 +550,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
 }
 
 void MLIRCodeGen::visit(IntegerConstantExpression *intConstExp) {
-  auto type = builder.getIntegerType(32);
+  auto type = builder.getIntegerType(32, true);
   Value val = builder.create<spirv::ConstantOp>(
       builder.getUnknownLoc(), type,
       IntegerAttr::get(type, APInt(32, intConstExp->getVal(), true)));
@@ -559,7 +559,7 @@ void MLIRCodeGen::visit(IntegerConstantExpression *intConstExp) {
 }
 
 void MLIRCodeGen::visit(UnsignedIntegerConstantExpression *uintConstExp) {
-  auto type = builder.getIntegerType(32);
+  auto type = builder.getIntegerType(32, false);
   Value val = builder.create<spirv::ConstantOp>(
       builder.getUnknownLoc(), type,
       IntegerAttr::get(type, APInt(32, uintConstExp->getVal(), false)));
