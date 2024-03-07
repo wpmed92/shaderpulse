@@ -232,8 +232,9 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     // varOp->setAttr(spirv::stringifyDecoration(spirv::Decoration::Invariant),
     // builder.getUnitAttr());
   } else {
-    if (varDecl->getInitialzerExpression())
+    if (varDecl->getInitialzerExpression()) {
       varDecl->getInitialzerExpression()->accept(this);
+    }
 
     Value val;
 
@@ -247,7 +248,9 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     auto var = builder.create<spirv::VariableOp>(
         builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, nullptr);
 
-    builder.create<spirv::StoreOp>(builder.getUnknownLoc(), var, val);
+    if (varDecl->getInitialzerExpression()) {
+      builder.create<spirv::StoreOp>(builder.getUnknownLoc(), var, val);
+    }
 
     declare({ var, varDecl, nullptr, /*isGlobal*/ false});
   }

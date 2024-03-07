@@ -117,7 +117,6 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
 
       // Declaration list
       if (curToken->is(TokenKind::comma)) {
-        advanceToken();
         auto declarations =
             parseVariableDeclarationList(std::move(type), name, std::move(exp));
 
@@ -151,8 +150,10 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
       nullptr, identifierName, std::move(initializerExpression)));
 
   do {
+    advanceToken();
     if (!curToken->is(TokenKind::Identifier)) {
-      reportError(ParserErrorKind::ExpectedToken, "Parser error: expected identifier");
+      
+      reportError(ParserErrorKind::ExpectedToken, "Parser error: expected identifier " + curToken->getRawData());
     }
 
     const std::string &varName = curToken->getIdentifierName();
@@ -170,6 +171,9 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
 
       declarations.push_back(std::make_unique<VariableDeclaration>(
           nullptr, varName, std::move(exp)));
+    } else {
+      declarations.push_back(std::make_unique<VariableDeclaration>(
+          nullptr, varName, nullptr));
     }
   } while (curToken->is(TokenKind::comma));
 
