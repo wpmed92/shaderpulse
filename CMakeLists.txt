@@ -34,16 +34,12 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
-add_executable(shaderpulse-standalone
-  standalone/shaderpulse.cpp
-  lib/Lexer/Lexer.cpp
-  lib/Lexer/Token.cpp
-  lib/Parser/Parser.cpp
-  lib/AST/PrinterASTVisitor.cpp
-  lib/AST/Util.cpp
-  lib/CodeGen/TypeConversion.cpp
-  lib/CodeGen/MLIRCodeGen.cpp
-)
+add_subdirectory(lib/Lexer)
+add_subdirectory(lib/Parser)
+add_subdirectory(lib/AST)
+add_subdirectory(lib/CodeGen)
+
+add_executable(shaderpulse-standalone standalone/shaderpulse.cpp)
 
 include(TableGen)
 include(AddLLVM)
@@ -60,6 +56,10 @@ add_definitions(${LLVM_DEFINITIONS})
 
 target_link_libraries(shaderpulse-standalone
   PRIVATE
+    Lexer
+    Parser
+    AST
+    CodeGen
     ${dialect_libs}
     ${conversion_libs}
     MLIRAnalysis
