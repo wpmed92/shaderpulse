@@ -2,6 +2,7 @@
 #include "AST/PrinterASTVisitor.h"
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
+#include "Preprocessor/Preprocessor.h"
 #include <iostream>
 #include <fstream>
 
@@ -40,8 +41,13 @@ int main(int argc, char** argv) {
     std::ifstream glslIn(argv[1]);
     std::stringstream shaderCodeBuffer;
     shaderCodeBuffer << glslIn.rdbuf();
-    
-    auto lexer = Lexer(shaderCodeBuffer.str());
+    auto sourceCode = shaderCodeBuffer.str();
+
+    auto preprocessor = preprocessor::Preprocessor(sourceCode);
+    preprocessor.process();
+    auto processedCode = preprocessor.getProcessedSource();
+    std::cout << processedCode;
+    auto lexer = Lexer(processedCode);
     auto resp = lexer.lexCharacterStream();
     if (!resp.has_value()) {
         std::cout << "Lexer error " << std::endl;
