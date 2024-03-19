@@ -47,9 +47,7 @@ int main(int argc, char** argv) {
     preprocessor.process();
     auto processedCode = preprocessor.getProcessedSource();
     std::cout << processedCode;
-
-    /*
-    auto lexer = Lexer(sourceCode);
+    auto lexer = Lexer(processedCode);
     auto resp = lexer.lexCharacterStream();
     if (!resp.has_value()) {
         std::cout << "Lexer error " << std::endl;
@@ -69,5 +67,4 @@ int main(int argc, char** argv) {
     }
 
     translationUnit->accept(std::make_unique<PrinterASTVisitor>().get());
-    */
 }
