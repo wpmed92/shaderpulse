@@ -34,6 +34,7 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
+add_subdirectory(lib/Preprocessor)
 add_subdirectory(lib/Lexer)
 add_subdirectory(lib/Parser)
 add_subdirectory(lib/AST)
@@ -56,6 +57,7 @@ add_definitions(${LLVM_DEFINITIONS})
 
 target_link_libraries(shaderpulse-standalone
   PRIVATE
+    Preprocessor
     Lexer
     Parser
     AST

@@ -5,6 +5,7 @@ struct B {
   float e;
 };
 
+// This is a commment and should be skipped
 struct A {
   float x;
   float y;
@@ -12,6 +13,8 @@ struct A {
   B b;
 };
 
+/* This is a multine comment, and this should
+   also be removed as part of the preprocessing*/
 void main() {
   A a = A(1.0, 2.0, 3.0, B(1.2, 1.3));
   float test = a.b.d;
