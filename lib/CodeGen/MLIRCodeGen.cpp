@@ -132,6 +132,10 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   }
 }
 
+void MLIRCodeGen::visit(ConditionalExpression *condExp) {
+  std::cout << "Found conditional expression" << std::endl;
+}
+
 void MLIRCodeGen::visit(ForStatement *forStmt) {
   // TODO: implement me
 }

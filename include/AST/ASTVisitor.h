@@ -6,6 +6,7 @@ namespace ast {
 
 class TranslationUnit;
 class BinaryExpression;
+class ConditionalExpression;
 class UnaryExpression;
 class VariableDeclaration;
 class VariableDeclarationList;
@@ -41,6 +42,7 @@ public:
   virtual void visit(TranslationUnit *) { };
   virtual void visit(BinaryExpression *) { };
   virtual void visit(UnaryExpression *) { };
+  virtual void visit(ConditionalExpression *) { };
   virtual void visit(StructDeclaration *) { };
   virtual void visit(VariableDeclaration *) { };
   virtual void visit(VariableDeclarationList *) { };

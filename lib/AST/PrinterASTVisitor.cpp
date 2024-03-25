@@ -147,6 +147,10 @@ void PrinterASTVisitor::visit(BinaryExpression *binExp) {
   resetIndent();
 }
 
+void PrinterASTVisitor::visit(ConditionalExpression *condExp) {
+  // TODO: ConditionalExpression
+}
+
 void PrinterASTVisitor::visit(CallExpression *callee) {
   print("|-CallExpression: name=" + callee->getFunctionName());
 
