@@ -244,6 +244,26 @@ private:
   std::unique_ptr<Expression> rhs;
 };
 
+class ConditionalExpression : public Expression {
+public:
+  ConditionalExpression( 
+    std::unique_ptr<Expression> condition,
+    std::unique_ptr<Expression> truePart,
+    std::unique_ptr<Expression> falsePart)
+      : condition(std::move(condition)), truePart(std::move(truePart)), falsePart(std::move(falsePart)) {}
+
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+
+  Expression *getCondition() { return condition.get(); }
+  Expression *getTruePart() { return truePart.get(); }
+  Expression *getFalsePart() { return falsePart.get(); }
+private:
+  std::unique_ptr<Expression> condition;
+  std::unique_ptr<Expression> truePart;
+  std::unique_ptr<Expression> falsePart;
+
+};
+
 class Statement : virtual public ASTNode {
 
 public:

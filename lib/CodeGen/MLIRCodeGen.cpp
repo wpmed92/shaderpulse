@@ -132,6 +132,25 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   }
 }
 
+void MLIRCodeGen::visit(ConditionalExpression *condExp) {
+  condExp->getFalsePart()->accept(this);
+  condExp->getTruePart()->accept(this);
+  condExp->getCondition()->accept(this);
+
+  Value condition = popExpressionStack();
+  Value truePart = popExpressionStack();
+  Value falsePart = popExpressionStack();
+
+  Value res = builder.create<spirv::SelectOp>(
+    builder.getUnknownLoc(),
+    /* Harcoded, fix me */ mlir::FloatType::getF32(&context),
+    condition,
+    truePart,
+    falsePart);
+
+  expressionStack.push_back(res);
+}
+
 void MLIRCodeGen::visit(ForStatement *forStmt) {
   // TODO: implement me
 }

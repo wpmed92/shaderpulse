@@ -113,7 +113,7 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
       // Initializer expression
       advanceToken();
 
-      auto exp = parseExpression();
+      auto exp = parseConditionalExpression();
 
       // Declaration list
       if (curToken->is(TokenKind::comma)) {
@@ -163,7 +163,7 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
     if (curToken->is(TokenKind::assign)) {
       advanceToken();
 
-      auto exp = parseExpression();
+      auto exp = parseConditionalExpression();
 
       if (!exp) {
         return nullptr;
@@ -716,7 +716,7 @@ std::unique_ptr<ForStatement> Parser::parseForStatement() {
     return nullptr;
   }
 
-  auto condExp = parseExpression();
+  auto condExp = parseConditionalExpression();
 
   if (!condExp) {
     return nullptr;
@@ -729,7 +729,7 @@ std::unique_ptr<ForStatement> Parser::parseForStatement() {
 
   advanceToken();
 
-  auto inductionExp = parseExpression();
+  auto inductionExp = parseConditionalExpression();
 
   if (!inductionExp) {
     return nullptr;
@@ -763,7 +763,7 @@ std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
 
   advanceToken();
 
-  auto exp = parseExpression();
+  auto exp = parseConditionalExpression();
 
   if (!exp) {
     return nullptr;
@@ -799,7 +799,7 @@ std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
 
   advanceToken();
 
-  auto exp = parseExpression();
+  auto exp = parseConditionalExpression();
 
   if (!curToken->is(TokenKind::rParen)) {
     reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after condition expression.");
@@ -837,7 +837,7 @@ std::unique_ptr<DoStatement> Parser::parseDoStatement() {
 
     advanceToken();
 
-    auto exp = parseExpression();
+    auto exp = parseConditionalExpression();
 
     if (!curToken->is(TokenKind::rParen)) {
       reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after condition expression.");
@@ -873,7 +873,7 @@ std::unique_ptr<IfStatement> Parser::parseIfStatement() {
 
   advanceToken();
 
-  auto exp = parseExpression();
+  auto exp = parseConditionalExpression();
 
   if (!exp) {
     return nullptr;
@@ -917,7 +917,7 @@ std::unique_ptr<CaseLabel> Parser::parseCaseLabel() {
 
   advanceToken();
 
-  auto exp = parseExpression();
+  auto exp = parseConditionalExpression();
 
   if (!exp) {
     return nullptr;
@@ -1040,7 +1040,7 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
     return std::make_unique<ReturnStatement>();
   }
 
-  auto exp = parseExpression();
+  auto exp = parseConditionalExpression();
 
   if (!curToken->is(TokenKind::semiColon)) {
     reportError(ParserErrorKind::ExpectedToken, "Expected semicolon after return statement.");
@@ -1066,7 +1066,6 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
 
   parsingLhsExpression = false;
 
-
   if (!unaryExpression) {
     return nullptr;
   }
@@ -1074,7 +1073,7 @@ std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
   auto op = Parser::getAssignmentOperatorFromTokenKind(curToken->getTokenKind());
 
   advanceToken();
-  auto exp = parseExpression();
+  auto exp = parseConditionalExpression();
 
   if (!curToken->is(TokenKind::semiColon)) {
     reportError(ParserErrorKind::ExpectedToken, "Expected a semicolon after assignment expression.");
@@ -1158,7 +1157,7 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseMemberAcces
 }
 
 std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
-   if (auto constructorExp = parseConstructorExpression()) {
+  if (auto constructorExp = parseConstructorExpression()) {
     return constructorExp;
   } else if (auto callExp = parseCallExpression()) {
     return callExp;
@@ -1189,7 +1188,7 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
         curToken->is(TokenKind::kw_true));
   } else if (curToken->is(TokenKind::lParen)) {
     advanceToken();
-    auto exp = parseExpression();
+    auto exp = parseConditionalExpression();
 
     if (!exp) {
       return nullptr;
@@ -1270,7 +1269,7 @@ std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
   std::vector<std::unique_ptr<Expression>> arguments;
 
   do {
-    auto exp = parseExpression();
+    auto exp = parseConditionalExpression();
 
     if (!exp) {
       return nullptr;
@@ -1355,7 +1354,7 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
   std::vector<std::unique_ptr<Expression>> arguments;
 
   do {
-    auto exp = parseExpression();
+    auto exp = parseConditionalExpression();
 
     if (!exp) {
       return nullptr;
@@ -1376,6 +1375,29 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
   }
 
   return std::make_unique<CallExpression>(name, std::move(arguments));
+}
+
+std::unique_ptr<Expression> Parser::parseConditionalExpression() {
+  auto condition = parseExpression();
+
+  if (!curToken->is(TokenKind::question)) {
+    return condition;
+  }
+
+  advanceToken();
+
+  auto truePart = parseExpression();
+
+  if (!curToken->is(TokenKind::colon)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ':'");
+    return nullptr;
+  }
+
+  advanceToken();
+
+  auto falsePart = parseExpression();
+
+  return std::make_unique<ConditionalExpression>(std::move(condition), std::move(truePart), std::move(falsePart));
 }
 
 void Parser::advanceToken() {

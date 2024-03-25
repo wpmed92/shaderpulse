@@ -13,6 +13,7 @@ public:
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
   void visit(UnaryExpression *) override;
+  void visit(ConditionalExpression *) override;
   void visit(StructDeclaration *) override;
   void visit(VariableDeclaration *) override;
   void visit(VariableDeclarationList *) override;
