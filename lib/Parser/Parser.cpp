@@ -1378,10 +1378,7 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
 }
 
 std::unique_ptr<Expression> Parser::parseConditionalExpression() {
-  std::cout << "Trying parse conditional" << std::endl;
   auto condition = parseExpression();
-
-  std::cout << "Found condition" << std::endl;
 
   if (!curToken->is(TokenKind::question)) {
     return condition;
@@ -1391,8 +1388,6 @@ std::unique_ptr<Expression> Parser::parseConditionalExpression() {
 
   auto truePart = parseExpression();
 
-  std::cout << "Found true part" << std::endl;
-
   if (!curToken->is(TokenKind::colon)) {
     reportError(ParserErrorKind::ExpectedToken, "Expected a ':'");
     return nullptr;
@@ -1401,8 +1396,6 @@ std::unique_ptr<Expression> Parser::parseConditionalExpression() {
   advanceToken();
 
   auto falsePart = parseExpression();
-
-  std::cout << "Found false part" << std::endl;
 
   return std::make_unique<ConditionalExpression>(std::move(condition), std::move(truePart), std::move(falsePart));
 }
