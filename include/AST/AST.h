@@ -156,6 +156,23 @@ private:
   std::vector<std::unique_ptr<Expression>> members;
 };
 
+class ArrayAccessExpression : public Expression {
+  
+public:
+  ArrayAccessExpression(std::unique_ptr<Expression> array, std::vector<std::unique_ptr<Expression>> accessChain, bool lhs = false) :
+     Expression(lhs), array(std::move(array)), accessChain(std::move(accessChain)) {
+
+  }
+
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+  const std::vector<std::unique_ptr<Expression>> &getAccessChain() { return accessChain; }
+  Expression* getArray() const { return array.get(); }
+
+private:
+  std::unique_ptr<Expression> array;
+  std::vector<std::unique_ptr<Expression>> accessChain;
+};
+
 class CallExpression : public Expression {
 
 public:

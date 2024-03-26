@@ -1143,7 +1143,7 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseMemberAcces
     do {
       advanceToken();
 
-      if (auto member = parsePostfixExpression(/*parsingMemberAccess*/ true)) {
+      if (auto member = parsePostfixExpression(/*parsingSubExpression*/ true)) {
         members.push_back(std::move(member));
         advanceToken();
       }
@@ -1151,6 +1151,36 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseMemberAcces
 
     cursor = cursor - 1;
     return std::move(members);
+  }
+
+  return std::nullopt;
+}
+
+std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseArrayAccess() {
+  if (peek(1)->is(TokenKind::lBracket)) {
+    advanceToken();
+    std::vector<std::unique_ptr<Expression>> accessChain;
+
+    do {
+      advanceToken();
+
+      if (auto access = parsePostfixExpression(/*parsingSubExpression*/ true)) {
+        accessChain.push_back(std::move(access));
+        advanceToken();
+
+        if (!curToken->is(TokenKind::rBracket)) {
+          reportError(ParserErrorKind::ExpectedToken, "Expected a ']");
+          return std::nullopt;
+        }
+
+        advanceToken();
+      } else {
+        return std::nullopt;
+      }
+    } while (curToken->is(TokenKind::lBracket));
+
+    cursor = cursor - 1;
+    return std::move(accessChain);
   }
 
   return std::nullopt;
@@ -1227,14 +1257,15 @@ std::unique_ptr<Expression> Parser::parseUnaryExpression() {
   }
 }
 
-std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingMemberAccess) {
+std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingSubExpression) {
   if (auto primary = parsePrimaryExpression()) {
-    if (!parsingMemberAccess) {
-      if (auto members = parseMemberAccessChain()) {
-        return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members), parsingLhsExpression);
-      } else {
-        return primary;
-      }
+    if (parsingSubExpression) {
+      return primary;
+    } else if (auto members = parseMemberAccessChain()) {
+      return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members), parsingLhsExpression);
+    } else if (auto access = parseArrayAccess()) {
+      std::cout << "Found array access" << std::endl;
+      return std::make_unique<ArrayAccessExpression>(std::move(primary), std::move(*access), parsingLhsExpression);
     } else {
       return primary;
     }
@@ -1255,7 +1286,6 @@ std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
-    std::cout << "Expected l paren" << std::endl;
     rollbackPosition();
     return nullptr;
   }

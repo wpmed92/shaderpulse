@@ -32,6 +32,7 @@ public:
   void visit(ConstructorExpression *) override;
   void visit(DoubleConstantExpression *) override;
   void visit(MemberAccessExpression *) override;
+  void visit(ArrayAccessExpression *) override;
   void visit(BoolConstantExpression *) override;
   void visit(ReturnStatement *) override;
   void visit(BreakStatement *) override;

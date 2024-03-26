@@ -19,6 +19,18 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, Type *shaderPulseType,
     return mlir::FloatType::getF32(ctx);
   case TypeKind::Double:
     return mlir::FloatType::getF64(ctx);
+  case TypeKind::Array: {
+    auto arrType = dynamic_cast<shaderpulse::ArrayType *>(shaderPulseType);
+    auto elementType = convertShaderPulseType(ctx, arrType->getElementType(), structDeclarations);
+    auto shape = arrType->getShape();
+    mlir::spirv::ArrayType spirvArrType = mlir::spirv::ArrayType::get(elementType, shape[shape.size()-1]);
+
+    for (int i = shape.size()-2; i >= 0; i--) {
+      spirvArrType = mlir::spirv::ArrayType::get(spirvArrType, shape[i]);
+    }
+
+    return spirvArrType;
+  }
   case TypeKind::Vector: {
     auto vecType = dynamic_cast<shaderpulse::VectorType *>(shaderPulseType);
     llvm::SmallVector<int64_t, 1> shape;
