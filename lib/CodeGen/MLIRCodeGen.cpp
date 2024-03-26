@@ -323,7 +323,6 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
 }
 
 void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
-  std::cout << "Visiting constructor expression" << std::endl;
   auto constructorType = constructorExp->getType();
 
   std::vector<mlir::Value> operands;
@@ -343,8 +342,6 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
               builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
         expressionStack.push_back(val);
-        std::cout << "Expression stack size: " << expressionStack.size() << std::endl;
-        std::cout << "Creating struct" << std::endl;
       }
 
       break;
@@ -355,7 +352,6 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       mlir::Value val = builder.create<spirv::CompositeConstructOp>(
             builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
       expressionStack.push_back(val);
-      std::cout << "Creating vector" << std::endl;
       break;
     }
 
@@ -391,8 +387,6 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 }
 
 void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
-  // TODO: implement me
-  std::cout << "Visiting array access";
   auto array = arrayAccess->getArray();
   array->accept(this);
   Value mlirArray = popExpressionStack();
@@ -448,7 +442,6 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
 
 void MLIRCodeGen::visit(StructDeclaration *structDecl) {
   if (structDeclarations.find(structDecl->getName()) == structDeclarations.end()) {
-    std::cout << "Inserting: " << structDecl->getName() << std::endl;
     structDeclarations.insert({structDecl->getName(), structDecl});
   }
 }
@@ -505,8 +498,6 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
 }
 
 void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
-  std::cout << "Visiting assignment " << std::endl;
-
   assignmentExp->getUnaryExpression()->accept(this);
   assignmentExp->getExpression()->accept(this);
 
