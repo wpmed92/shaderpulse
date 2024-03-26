@@ -69,13 +69,14 @@ public:
   std::unique_ptr<Expression> parseConditionalExpression();
   std::unique_ptr<ConstructorExpression> parseConstructorExpression();
   std::unique_ptr<Expression> parseUnaryExpression();
-  std::unique_ptr<Expression> parsePostfixExpression(bool parsingMemberAccess = false);
+  std::unique_ptr<Expression> parsePostfixExpression(bool parsingSubExpression = false);
   std::vector<std::unique_ptr<TypeQualifier>> parseQualifiers();
   std::unique_ptr<TypeQualifier> parseQualifier();
   std::unique_ptr<Type> parseType();
   std::unique_ptr<LayoutQualifier> parseLayoutQualifier();
   std::unique_ptr<StructDeclaration> parseStructDeclaration();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseMemberAccessChain();
+  std::optional<std::vector<std::unique_ptr<Expression>>> parseArrayAccess();
 
 private:
   std::vector<std::unique_ptr<Token>> &tokenStream;

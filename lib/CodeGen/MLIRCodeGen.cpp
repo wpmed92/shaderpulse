@@ -252,6 +252,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     // builder.getUnitAttr());
   } else {
     if (varDecl->getInitialzerExpression()) {
+      std::cout << "Accept init" << std::endl;
       varDecl->getInitialzerExpression()->accept(this);
     }
 
@@ -396,6 +397,11 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       // Unsupported composite construct
       break;
   }
+}
+
+void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
+  // TODO: implement me
+  std::cout << "Visiting array access";
 }
 
 void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {

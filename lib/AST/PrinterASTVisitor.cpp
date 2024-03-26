@@ -226,6 +226,10 @@ void PrinterASTVisitor::visit(MemberAccessExpression *memberExp) {
   resetIndent();
 }
 
+void PrinterASTVisitor::visit(ArrayAccessExpression *arrayAccess) {
+  // TODO: implement me
+}
+
 void PrinterASTVisitor::visit(ReturnStatement *returnStmt) {
   print("|-ReturnStatement");
   
