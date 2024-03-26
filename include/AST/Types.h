@@ -182,23 +182,23 @@ private:
 class ArrayType : public Type {
 
 public:
-  ArrayType(std::unique_ptr<Type> elementType, const std::vector<int>& dimensions)
+  ArrayType(std::unique_ptr<Type> elementType, const std::vector<int>& shape)
       : Type(TypeKind::Array, std::vector<std::unique_ptr<TypeQualifier>>()),
-        elementType(std::move(elementType)), dimensions(dimensions) {
+        elementType(std::move(elementType)), shape(shape) {
   }
   
   ArrayType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
-             std::unique_ptr<Type> elementType, const std::vector<int>& dimensions)
+             std::unique_ptr<Type> elementType, const std::vector<int>& shape)
       : Type(TypeKind::Array, std::move(qualifiers)),
-        elementType(std::move(elementType)), dimensions(dimensions) {
+        elementType(std::move(elementType)), shape(shape) {
   }
 
   Type *getElementType() const { return elementType.get(); };
-  const std::vector<int> &getDimensions() { return dimensions; };
+  const std::vector<int> &getShape() { return shape; };
 
 private:
   std::unique_ptr<Type> elementType;
-  std::vector<int> dimensions;
+  std::vector<int> shape;
 };
 
 class MatrixType : public Type {

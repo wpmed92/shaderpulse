@@ -206,11 +206,6 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
                                  VariableDeclaration *varDecl) {
   shaderpulse::Type *varType = (type) ? type : varDecl->getType();
 
-  if (varType->getKind() == TypeKind::Array) {
-    std::cout << "Array vardecl not supported" << std::endl;
-    return;
-  }
-
   if (inGlobalScope) {
     std::cout << "In global scope" << std::endl;
     spirv::StorageClass storageClass;
@@ -331,11 +326,6 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
   std::cout << "Visiting constructor expression" << std::endl;
   auto constructorType = constructorExp->getType();
 
-  if (constructorType->getKind() == TypeKind::Array) {
-    std::cout << "array constructors not supported " << std::endl;
-    return;
-  }
-
   std::vector<mlir::Value> operands;
 
   if (constructorExp->getArguments().size() > 0) {
@@ -360,7 +350,8 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       break;
     }
 
-    case TypeKind::Vector: {
+    case TypeKind::Vector:
+    case TypeKind::Array: {
       mlir::Value val = builder.create<spirv::CompositeConstructOp>(
             builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
       expressionStack.push_back(val);
@@ -402,6 +393,23 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
   // TODO: implement me
   std::cout << "Visiting array access";
+  auto array = arrayAccess->getArray();
+  array->accept(this);
+  Value mlirArray = popExpressionStack();
+  std::vector<mlir::Value> indices;
+
+  for (auto &access : arrayAccess->getAccessChain()) {
+    access->accept(this);
+    indices.push_back(popExpressionStack());
+  }
+
+  Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), mlirArray, indices);
+
+  if (arrayAccess->isLhs()) {
+    expressionStack.push_back(accessChain);
+  } else {
+    expressionStack.push_back(builder.create<spirv::LoadOp>(builder.getUnknownLoc(), accessChain)->getResult(0));
+  }
 }
 
 void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
@@ -557,7 +565,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
         interface.push_back(SymbolRefAttr::get(&context, varExp->getName()));
       }
     } else {
-      val = (varExp->isLhs()) ? entry.value : builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
+      val = (varExp->isLhs() || (entry.variable->getType()->getKind() == TypeKind::Array)) ? entry.value : builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
     }
 
     if (entry.variable->getType()->getKind() == TypeKind::Struct) {
