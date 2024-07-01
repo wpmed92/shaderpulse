@@ -214,20 +214,25 @@ void PrinterASTVisitor::visit(MemberAccessExpression *memberExp) {
 
   indent();
   memberExp->getBaseComposite()->accept(this);
-
-  int savedIndentation = indentationLevel;
   
   for (auto &member : memberExp->getMembers()) {
-    indent();
     member->accept(this);
   }
-  indentationLevel = savedIndentation;
 
   resetIndent();
 }
 
 void PrinterASTVisitor::visit(ArrayAccessExpression *arrayAccess) {
-  // TODO: implement me
+  print("|-ArrayAccessExpression");
+
+  indent();
+  arrayAccess->getArray()->accept(this);
+
+  for (auto& accessElem : arrayAccess->getAccessChain()) {
+    accessElem->accept(this);
+  }
+
+  resetIndent();
 }
 
 void PrinterASTVisitor::visit(ReturnStatement *returnStmt) {
