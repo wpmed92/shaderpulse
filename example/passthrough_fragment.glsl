@@ -25,6 +25,7 @@ void main() {
   int decl1=0,decl2,decl3;
   float[2] arr = float[2](1.0, 2.0);
   float testAccess = arr[0];
+  vec3 testInitExp = { 0.0, 1.0, 2.0 };
 
   for (int i = 0; i < 10; i++) {
     int j = 1;

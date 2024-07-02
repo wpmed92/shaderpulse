@@ -224,6 +224,36 @@ private:
   std::vector<std::unique_ptr<Expression>> arguments;
 };
 
+// Can it be merged with ConstructorExpression?
+class InitializerExpression : public Expression {
+
+public:
+    InitializerExpression(std::unique_ptr<Type> type) :
+      type(std::move(type))  {
+
+    }
+
+  InitializerExpression(std::unique_ptr<Type> type, 
+    std::vector<std::unique_ptr<Expression>> arguments) :
+      type(std::move(type)), 
+      arguments(std::move(arguments))  {
+
+    }
+
+  void accept(ASTVisitor *visitor) override {
+    visitor->visit(this);
+  }
+
+  Type *getType() const { return type.get(); }
+  const std::vector<std::unique_ptr<Expression>> &getArguments() const {
+    return arguments;
+  }
+
+private:
+  std::unique_ptr<Type> type;
+  std::vector<std::unique_ptr<Expression>> arguments;
+};
+
 class UnaryExpression : public Expression {
 
 public:

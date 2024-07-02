@@ -68,6 +68,7 @@ public:
   std::unique_ptr<CallExpression> parseCallExpression();
   std::unique_ptr<Expression> parseConditionalExpression();
   std::unique_ptr<ConstructorExpression> parseConstructorExpression();
+  std::unique_ptr<InitializerExpression> parseInitializerExpression();
   std::unique_ptr<Expression> parseUnaryExpression();
   std::unique_ptr<Expression> parsePostfixExpression(bool parsingSubExpression = false);
   std::vector<std::unique_ptr<TypeQualifier>> parseQualifiers();

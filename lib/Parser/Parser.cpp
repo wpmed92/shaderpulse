@@ -951,10 +951,10 @@ std::unique_ptr<DefaultLabel> Parser::parseDefaultLabel() {
 }
 
 std::unique_ptr<Statement> Parser::parseStatement() {
-  if (auto stmt = parseSimpleStatement()) {
-    return stmt;
-  } else if (auto compStmt = parseCompoundStatement()) {
+  if (auto compStmt = parseCompoundStatement()) {
     return compStmt;
+  } else if (auto stmt = parseSimpleStatement()) {
+    return stmt;
   } else {
     return nullptr;
   }
@@ -1189,6 +1189,8 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseArrayAccess
 std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
   if (auto constructorExp = parseConstructorExpression()) {
     return constructorExp;
+  } else if (auto initExp = parseInitializerExpression()) {
+    return initExp;
   } else if (auto callExp = parseCallExpression()) {
     return callExp;
   } else if (curToken->is(TokenKind::Identifier)) {
@@ -1272,6 +1274,40 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingSubExpres
   }
 
   return nullptr;
+}
+
+
+std::unique_ptr<InitializerExpression> Parser::parseInitializerExpression() {
+  if (!curToken->is(TokenKind::lCurly)) {
+    return nullptr;
+  }
+
+  advanceToken();
+
+  std::vector<std::unique_ptr<Expression>> arguments;
+
+  do {
+    auto exp = parseConditionalExpression();
+
+    if (!exp) {
+      return nullptr;
+    }
+
+    arguments.push_back(std::move(exp));
+
+    if (curToken->is(TokenKind::comma)) {
+      advanceToken();
+    } else {
+      break;
+    }
+  } while (true);
+
+  if (!curToken->is(TokenKind::rCurly)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '}' after initializer list.");
+    return nullptr;
+  }
+
+  return std::make_unique<InitializerExpression>(std::move(nullptr), std::move(arguments));
 }
 
 std::unique_ptr<ConstructorExpression> Parser::parseConstructorExpression() {

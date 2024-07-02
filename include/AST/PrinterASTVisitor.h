@@ -30,6 +30,7 @@ public:
   void visit(UnsignedIntegerConstantExpression *) override;
   void visit(FloatConstantExpression *) override;
   void visit(ConstructorExpression *) override;
+  void visit(InitializerExpression *) override;
   void visit(DoubleConstantExpression *) override;
   void visit(MemberAccessExpression *) override;
   void visit(ArrayAccessExpression *) override;

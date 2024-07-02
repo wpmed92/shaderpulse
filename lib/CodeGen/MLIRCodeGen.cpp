@@ -155,6 +155,19 @@ void MLIRCodeGen::visit(ForStatement *forStmt) {
   // TODO: implement me
 }
 
+void MLIRCodeGen::visit(InitializerExpression *initExp) {
+  /* TODO: This is a placeholder to have something on the expression stack,
+   * will be replaced with actual InitializerExpression code gen once type inference
+   * is implemented.
+   */
+  auto type = builder.getIntegerType(32, true);
+  Value val = builder.create<spirv::ConstantOp>(
+      builder.getUnknownLoc(), type,
+      IntegerAttr::get(type, APInt(32, 0, true)));
+
+  expressionStack.push_back(val);
+}
+
 void MLIRCodeGen::visit(UnaryExpression *unExp) {
   unExp->getExpression()->accept(this);
   Value rhs = popExpressionStack();

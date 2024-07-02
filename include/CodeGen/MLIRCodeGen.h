@@ -73,6 +73,7 @@ public:
   void visit(StatementList *) override;
   void visit(CallExpression *) override;
   void visit(ConstructorExpression *) override;
+  void visit(InitializerExpression *) override;
   void visit(MemberAccessExpression *) override;
   void visit(ArrayAccessExpression *) override;
   void visit(StructDeclaration *) override;

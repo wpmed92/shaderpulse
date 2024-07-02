@@ -35,6 +35,7 @@ class DefaultLabel;
 class CaseLabel;
 class MemberAccessExpression;
 class ArrayAccessExpression;
+class InitializerExpression;
 
 class ASTVisitor {
 
@@ -56,6 +57,7 @@ public:
   virtual void visit(StatementList *) { };
   virtual void visit(CallExpression *) { };
   virtual void visit(ConstructorExpression *) { };
+  virtual void visit(InitializerExpression *) { };
   virtual void visit(MemberAccessExpression *) { };
   virtual void visit(ArrayAccessExpression *) { };
   virtual void visit(VariableExpression *) { };

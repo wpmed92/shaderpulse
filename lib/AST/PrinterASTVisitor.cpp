@@ -173,6 +173,17 @@ void PrinterASTVisitor::visit(ConstructorExpression *constExp) {
   resetIndent();
 }
 
+void PrinterASTVisitor::visit(InitializerExpression *initExp) {
+  print("|-InitializerExpression");
+
+  indent();
+  for (auto &exp : initExp->getArguments()) {
+    exp->accept(this);
+  }
+
+  resetIndent();
+}
+
 void PrinterASTVisitor::visit(VariableExpression *varExp) {
   print("|-VariableExpression: name=" + varExp->getName());
 }
