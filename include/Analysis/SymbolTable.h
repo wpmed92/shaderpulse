@@ -7,11 +7,12 @@ namespace shaderpulse {
 
 namespace analysis {
 
-class SymbolTableEntry {
-
-public:
+struct SymbolTableEntry {
+    std::string id;
     Type* type;
-
+    bool isFunction;
+    bool isGlobal;
+    std::vector<Type*> argumentTypes;
 };
 
 class SymbolTable {
