@@ -39,6 +39,7 @@ add_subdirectory(lib/Lexer)
 add_subdirectory(lib/Parser)
 add_subdirectory(lib/AST)
 add_subdirectory(lib/CodeGen)
+add_subdirectory(lib/Analysis)
 
 add_executable(shaderpulse-standalone standalone/shaderpulse.cpp)
 
@@ -62,6 +63,7 @@ target_link_libraries(shaderpulse-standalone
     Parser
     AST
     CodeGen
+    Analysis
     ${dialect_libs}
     ${conversion_libs}
     MLIRAnalysis
