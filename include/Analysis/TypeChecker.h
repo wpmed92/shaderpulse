@@ -49,6 +49,9 @@ public:
 
 private:
     ScopeManager scopeManager;
+    std::vector<Type*> typeStack;
+    Type* typeContext;
+    bool binopAllowed(Type* a, Type* b);
 };
 
 } // namespace analysis

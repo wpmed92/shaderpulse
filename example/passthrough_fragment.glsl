@@ -19,7 +19,7 @@ void main() {
   A a = A(1.0, 2.0, 3.0, B(1.2, 1.3));
   float test = a.b.d;
   bool cond = true;
-  float condTruePart = 1.0;
+  float condTruePart = 1.0 + 2.0;
   float condFalsePart = 2.0;
   float ternaryTest = cond ? condTruePart : condFalsePart;
   int decl1=0,decl2,decl3;
