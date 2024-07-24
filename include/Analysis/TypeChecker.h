@@ -51,7 +51,7 @@ private:
     ScopeManager scopeManager;
     std::vector<Type*> typeStack;
     Type* typeContext;
-    bool binopAllowed(Type* a, Type* b);
+    bool matchTypes(Type* a, Type* b);
 };
 
 } // namespace analysis

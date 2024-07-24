@@ -68,6 +68,9 @@ int main(int argc, char** argv) {
         std::cout << "SPIR-V module verified" << std::endl;
     }
 
-   // translationUnit->accept(std::make_unique<PrinterASTVisitor>().get());
-    translationUnit->accept(std::make_unique<TypeChecker>().get());
+    // translationUnit->accept(std::make_unique<PrinterASTVisitor>().get());
+    auto checker = std::make_unique<TypeChecker>();
+    translationUnit->accept(checker.get());
+
+    return 0;
 }

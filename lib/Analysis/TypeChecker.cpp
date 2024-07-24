@@ -14,6 +14,8 @@ void TypeChecker::visit(TranslationUnit *unit) {
         extDecl->accept(this);
         std::cout << "Accepting..." << std::endl;
     }
+
+    std::cout << "End" << std::endl;
 }
 
 void TypeChecker::visit(FunctionDeclaration *funcDecl) {
@@ -54,13 +56,18 @@ void TypeChecker::visit(VariableDeclaration *varDecl) {
     entry.id = varDecl->getIdentifierName();
     scopeManager.putSymbol(varDecl->getIdentifierName(), entry);
 
-    // This is our current type context
-    typeStack.push_back(entry.type);
-    typeContext = entry.type;
-
     if (varDecl->getInitialzerExpression() != nullptr) {
         varDecl->getInitialzerExpression()->accept(this);
         std::cout << "Found initializer expression" << std::endl;
+
+        if (typeStack.size() > 0) {
+          auto typeToAssign = typeStack.back();
+          typeStack.pop_back();
+
+          if (!matchTypes(entry.type, typeToAssign)) {
+            std::cout << "Cannot assign initializer expression's type to " << entry.id << " variable." << std::endl;
+          }
+        }
     }
 
     std::cout << "Entry added to current scope's symbol table: " << varDecl->getIdentifierName() << std::endl;
@@ -87,7 +94,7 @@ void TypeChecker::visit(IfStatement *ifStmt) {
 }
 
 void TypeChecker::visit(AssignmentExpression *assignmentExp) {
-
+  std::cout << "Visiting assignment" << std::endl;
 }
 
 void TypeChecker::visit(StatementList *stmtList) { 
@@ -97,54 +104,13 @@ void TypeChecker::visit(StatementList *stmtList) {
 }
 
 void TypeChecker::visit(ForStatement *forStmt) {
-
+  std::cout << "Visiting for stmt" << std::endl;
 }
 
 void TypeChecker::visit(UnaryExpression *unExp) {
 
 }
 
-/*
-When performing implicit conversion for binary operators, there may be multiple data types to which the two operands can be converted. 
-For example, when adding an int value to a uint value, both values can be implicitly converted to uint, float, and double.
-In such cases, a floating-point type is chosen if either operand has a floating-point type. 
-Otherwise, an unsigned integer type is chosen if either operand has an unsigned integer type. 
-Otherwise, a signed integer type is chosen. 
--------------------------------------------
-int + float -> float
-int + uint -> uint
-
-Type of expression Can be implicitly converted to
-int     uint
-int    
-uint   float
-int uint float
-double
-ivec2 uvec2
-ivec3 uvec3
-ivec4 uvec4
-ivec2 uvec2
-vec2
-ivec3 uvec3
-vec3
-ivec4 uvec4
-vec4
-ivec2 uvec2 vec2
-dvec2
-ivec3 uvec3 vec3
-dvec3
-ivec4 uvec4 vec4
-dvec4
-mat2   dmat2
-mat3   dmat3
-mat4   dmat4
-mat2x3 dmat2x3
-mat2x4 dmat2x4
-mat3x2 dmat3x2
-mat3x4 dmat3x4
-mat4x2 dmat4x2
-mat4x3 dmat4x3
-*/
 void TypeChecker::visit(BinaryExpression *binExp) {
   std::cout << "Type checking binexp" << std::endl;
   binExp->getLhs()->accept(this);
@@ -155,7 +121,7 @@ void TypeChecker::visit(BinaryExpression *binExp) {
   Type* lhsType = typeStack.back();
   typeStack.pop_back();
 
-  if (binopAllowed(lhsType, rhsType)) {
+  if (matchTypes(lhsType, rhsType)) {
     typeStack.push_back(lhsType);
     std::cout << "Binary operation allowed." << std::endl;
   } else {
@@ -163,7 +129,7 @@ void TypeChecker::visit(BinaryExpression *binExp) {
   }
 }
 
-bool TypeChecker::binopAllowed(Type* a, Type* b) {
+bool TypeChecker::matchTypes(Type* a, Type* b) {
   if (a->isScalar() && b->isScalar() && a->getKind() == b->getKind()) {
     return true;
   } else if (a->isVector() && b->isVector()) {
@@ -177,14 +143,16 @@ bool TypeChecker::binopAllowed(Type* a, Type* b) {
 }
 
 void TypeChecker::visit(ConditionalExpression *condExp) {
-  // TODO: ConditionalExpression
+
 }
 
 void TypeChecker::visit(CallExpression *callee) {
-
+  auto entry = scopeManager.findSymbol(callee->getFunctionName());
+  typeStack.push_back(entry->type);
 }
 
 void TypeChecker::visit(ConstructorExpression *constExp) {
+  std::cout << "Visiting constructor expression" << std::endl;
   typeStack.push_back(constExp->getType());
 }
 
@@ -202,7 +170,7 @@ void TypeChecker::visit(IntegerConstantExpression *intExp) {
 }
 
 void TypeChecker::visit(StructDeclaration *structDecl) {
-
+  std::cout << "Visiting struct declaration" << std::endl;
 }
 
 void TypeChecker::visit(UnsignedIntegerConstantExpression *uintExp) {
@@ -222,15 +190,15 @@ void TypeChecker::visit(BoolConstantExpression *boolExp) {
 }
 
 void TypeChecker::visit(MemberAccessExpression *memberExp) {
-
+ // Figure out the type of the accessed property, then push to type stack
 }
 
 void TypeChecker::visit(ArrayAccessExpression *arrayAccess) {
-
+  arrayAccess->getArray()->accept(this);
 }
 
 void TypeChecker::visit(ReturnStatement *returnStmt) {
-
+  std::cout << "Visiting return stmt" << std::endl;
 }
 
 void TypeChecker::visit(BreakStatement *breakStmt) {
