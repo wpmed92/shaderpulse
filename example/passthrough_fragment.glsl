@@ -36,3 +36,7 @@ void main() {
   outColor = vec4(test, 0.0, 0.0, 1.0);
   return;
 }
+
+int test() {
+  return 1;
+}

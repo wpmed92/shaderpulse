@@ -50,7 +50,7 @@ public:
 private:
     ScopeManager scopeManager;
     std::vector<Type*> typeStack;
-    Type* typeContext;
+    Type* currentFunctionReturnType;
     bool matchTypes(Type* a, Type* b);
 };
 

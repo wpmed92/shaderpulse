@@ -19,29 +19,19 @@ void TypeChecker::visit(TranslationUnit *unit) {
 }
 
 void TypeChecker::visit(FunctionDeclaration *funcDecl) {
-    std::cout << "Putting function" << std::endl;
     auto entry = SymbolTableEntry();
     entry.type = funcDecl->getReturnType();
     entry.id = funcDecl->getName();
     entry.isFunction = true;
     entry.isGlobal = true;
+    currentFunctionReturnType = entry.type;
 
     for (auto &param : funcDecl->getParams()) {
-        std::cout << "Saving argument type information..." << std::endl;
         entry.argumentTypes.push_back(param.get()->getType());
     }
 
-    std::cout << "Saved function..." << std::endl;
     scopeManager.putSymbol(funcDecl->getName(), entry);
 
-    auto testFound = scopeManager.findSymbol(funcDecl->getName());
-
-    if (testFound) {
-        std::cout << "Function properly saved and found in symbol table: " << testFound->id << ", " << testFound->type->getKind() << ", isFunction: " << testFound->isFunction << std::endl;
-    }
-
-    // Type check function body
-    std::cout << "Accepting function body..." << std::endl;
     funcDecl->getBody()->accept(this);
 }
 
@@ -198,7 +188,17 @@ void TypeChecker::visit(ArrayAccessExpression *arrayAccess) {
 }
 
 void TypeChecker::visit(ReturnStatement *returnStmt) {
-  std::cout << "Visiting return stmt" << std::endl;
+  if (returnStmt->getExpression() != nullptr) {
+    returnStmt->getExpression()->accept(this);
+    Type* expressionType = typeStack.back();
+    typeStack.pop_back();
+
+    if (!matchTypes(expressionType, currentFunctionReturnType)) {
+      std::cout << "Return expression's type does not match function return type." << std::endl;
+    } else {
+      std::cout << "Return type check OK" << std::endl;
+    }
+  }
 }
 
 void TypeChecker::visit(BreakStatement *breakStmt) {
