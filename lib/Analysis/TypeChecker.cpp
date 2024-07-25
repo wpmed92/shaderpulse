@@ -84,7 +84,19 @@ void TypeChecker::visit(IfStatement *ifStmt) {
 }
 
 void TypeChecker::visit(AssignmentExpression *assignmentExp) {
-  std::cout << "Visiting assignment" << std::endl;
+  assignmentExp->getUnaryExpression()->accept(this);
+  assignmentExp->getExpression()->accept(this);
+
+  Type* rhsType = typeStack.back();
+  typeStack.pop_back();
+  Type* lhsType = typeStack.back();
+  typeStack.pop_back();
+
+  if (!matchTypes(lhsType, rhsType)) {
+    std::cout << "Cannot assign the provided type to the variable." << std::endl;
+  } else {
+    std::cout << "Assignment expression OK" << std::endl;
+  }
 }
 
 void TypeChecker::visit(StatementList *stmtList) { 
@@ -102,7 +114,6 @@ void TypeChecker::visit(UnaryExpression *unExp) {
 }
 
 void TypeChecker::visit(BinaryExpression *binExp) {
-  std::cout << "Type checking binexp" << std::endl;
   binExp->getLhs()->accept(this);
   binExp->getRhs()->accept(this);
 
@@ -115,7 +126,7 @@ void TypeChecker::visit(BinaryExpression *binExp) {
     typeStack.push_back(lhsType);
     std::cout << "Binary operation allowed." << std::endl;
   } else {
-    std::cout << "Binary operation not supported on the provided types. " << std::endl;
+    std::cout << "Binary operation not supported on the provided types." << std::endl;
   }
 }
 
@@ -194,9 +205,13 @@ void TypeChecker::visit(ReturnStatement *returnStmt) {
     typeStack.pop_back();
 
     if (!matchTypes(expressionType, currentFunctionReturnType)) {
-      std::cout << "Return expression's type does not match function return type." << std::endl;
+      std::cout << "'return' value type does not match the function type." << std::endl;
     } else {
       std::cout << "Return type check OK" << std::endl;
+    }
+  } else {
+    if (currentFunctionReturnType->getKind() != TypeKind::Void) {
+      std::cout << "'return' with no value, in function returning non-void.";
     }
   }
 }
