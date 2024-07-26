@@ -1,5 +1,11 @@
  void testFunc() {
     int a = 1;
+    float b = 1.0;
+
+    // error: init-expression in a switch statement must be a scalar integer
+    switch (b) {
+
+    }
 
     // error: case only in switch
     // error: break only in loops and switches

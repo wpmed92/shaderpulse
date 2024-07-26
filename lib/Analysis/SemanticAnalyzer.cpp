@@ -58,8 +58,12 @@ void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
 void SemanticAnalyzer::visit(SwitchStatement *switchStmt) {
   switchStmt->getExpression()->accept(this);
 
-  // TODO: type check switch expression, ignore for now
+  Type* initExpType = typeStack.back();
   typeStack.pop_back();
+
+  if (initExpType->getKind() != TypeKind::Integer) {
+    std::cout <<  "init-expression in a switch statement must be a scalar integer" << std::endl;
+  }
 
   if (switchStmt->getBody() != nullptr) {
     scopeManager.newScope(ScopeType::Switch);
