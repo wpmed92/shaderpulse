@@ -34,7 +34,6 @@ ScopeManager::ScopeManager() {
 
 // TODO: consistent naming between ScopeManager and Scope
 void ScopeManager::newScope() {
-    std::cout << "Pushing scope..." << std::endl;
     currentScope->push();
     currentScope = currentScope->getChildren().back().get();
 }
@@ -47,14 +46,15 @@ void ScopeManager::exitScope() {
     currentScope = currentScope->getParent();
 }
 
-void ScopeManager::printScopes() {
-    if (scopeChain != nullptr) {
-        scopeChain->getSymbolTable()->printEntries();
+void ScopeManager::printScopes(Scope* scope) {
+    if (scope == nullptr) {
+        scope = scopeChain.get();
+    }
 
-        std::cout << "Found " << scopeChain->getChildren().size() << " child scopes." << std::endl;
+    scope->getSymbolTable()->printEntries();
 
-        if (scopeChain->getChildren().size() == 3)
-            scopeChain->getChildren()[2]->getSymbolTable()->printEntries();
+    for (auto &childScope : scope->getChildren()) {
+        printScopes(childScope.get());
     }
 }
 

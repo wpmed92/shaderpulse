@@ -9,62 +9,50 @@ using namespace ast;
 namespace analysis {
 
 void TypeChecker::visit(TranslationUnit *unit) {
-    std::cout << "Typechecking translation unit" << std::endl;
-    for (auto &extDecl : unit->getExternalDeclarations()) {
-        extDecl->accept(this);
-        std::cout << "Accepting..." << std::endl;
-    }
-
-    std::cout << "End" << std::endl;
+  for (auto &extDecl : unit->getExternalDeclarations()) {
+    extDecl->accept(this);
+  }
 }
 
 void TypeChecker::visit(FunctionDeclaration *funcDecl) {
-    auto entry = SymbolTableEntry();
-    entry.type = funcDecl->getReturnType();
-    entry.id = funcDecl->getName();
-    entry.isFunction = true;
-    entry.isGlobal = true;
-    currentFunctionReturnType = entry.type;
+  auto entry = SymbolTableEntry();
+  entry.type = funcDecl->getReturnType();
+  entry.id = funcDecl->getName();
+  entry.isFunction = true;
+  entry.isGlobal = true;
+  currentFunctionReturnType = entry.type;
 
-    for (auto &param : funcDecl->getParams()) {
-        entry.argumentTypes.push_back(param.get()->getType());
-    }
+  for (auto &param : funcDecl->getParams()) {
+    entry.argumentTypes.push_back(param.get()->getType());
+  }
 
-    scopeManager.putSymbol(funcDecl->getName(), entry);
+  scopeManager.putSymbol(funcDecl->getName(), entry);
 
-    funcDecl->getBody()->accept(this);
+  funcDecl->getBody()->accept(this);
 }
 
 void TypeChecker::visit(VariableDeclarationList *varDeclList) {
-    std::cout << "Typechecking vardecl list" << std::endl;
+  std::cout << "Typechecking vardecl list" << std::endl;
 }
 
 void TypeChecker::visit(VariableDeclaration *varDecl) {
-    std::cout << "Typechecking vardecl" << std::endl;
-    auto entry = SymbolTableEntry();
-    entry.type = varDecl->getType();
-    entry.id = varDecl->getIdentifierName();
-    scopeManager.putSymbol(varDecl->getIdentifierName(), entry);
+  auto entry = SymbolTableEntry();
+  entry.type = varDecl->getType();
+  entry.id = varDecl->getIdentifierName();
+  scopeManager.putSymbol(varDecl->getIdentifierName(), entry);
 
-    if (varDecl->getInitialzerExpression() != nullptr) {
-        varDecl->getInitialzerExpression()->accept(this);
-        std::cout << "Found initializer expression" << std::endl;
+  if (varDecl->getInitialzerExpression() != nullptr) {
+    varDecl->getInitialzerExpression()->accept(this);
 
-        if (typeStack.size() > 0) {
-          auto typeToAssign = typeStack.back();
-          typeStack.pop_back();
+    if (typeStack.size() > 0) {
+      auto typeToAssign = typeStack.back();
+      typeStack.pop_back();
 
-          if (!matchTypes(entry.type, typeToAssign)) {
-            std::cout << "Cannot assign initializer expression's type to " << entry.id << " variable." << std::endl;
-          }
-        }
+      if (!matchTypes(entry.type, typeToAssign)) {
+        std::cout << "Cannot assign initializer expression's type to " << entry.id << " variable." << std::endl;
+      }
     }
-
-    std::cout << "Entry added to current scope's symbol table: " << varDecl->getIdentifierName() << std::endl;
-    auto testFound = scopeManager.findSymbol(varDecl->getIdentifierName());
-    if (testFound) {
-        std::cout << "Entry properly saved and found in symbol table: " << testFound->id << ", " << testFound->type->getKind() <<  std::endl;
-    }
+  }
 }
 
 void TypeChecker::visit(SwitchStatement *switchStmt) {
@@ -93,12 +81,47 @@ void TypeChecker::visit(WhileStatement *whileStmt) {
   }
 }
 
+// TODO: merge with WhileStatement type check as these are the same
 void TypeChecker::visit(DoStatement *doStmt) {
-  // Check if condition is boolean
+  doStmt->getCondition()->accept(this);
+
+  Type* condition = typeStack.back();
+  typeStack.pop_back();
+
+  if (condition->getKind() != TypeKind::Bool) {
+    std::cout << "boolean expression expected in while condition.";
+  } else {
+    std::cout << "while loop condition type correct.";
+  }
+
+  if (doStmt->getBody() != nullptr) {
+    scopeManager.newScope();
+    doStmt->getBody()->accept(this);
+    scopeManager.exitScope();
+  }
 }
 
 void TypeChecker::visit(IfStatement *ifStmt) {
+  ifStmt->getCondition()->accept(this);
 
+  Type* condition = typeStack.back();
+  typeStack.pop_back();
+
+  if (condition->getKind() != TypeKind::Bool) {
+    std::cout << "boolean expression expected in if condition." << std::endl;
+  } else {
+    std::cout << "if condition type correct." << std::endl;
+  }
+
+  if (ifStmt->getTruePart() != nullptr) {
+    scopeManager.newScope();
+    ifStmt->getTruePart()->accept(this);
+    scopeManager.exitScope();
+  } else if (ifStmt->getFalsePart() != nullptr) {
+    scopeManager.newScope();
+    ifStmt->getFalsePart()->accept(this);
+    scopeManager.exitScope();
+  }
 }
 
 void TypeChecker::visit(AssignmentExpression *assignmentExp) {
@@ -124,7 +147,7 @@ void TypeChecker::visit(StatementList *stmtList) {
 }
 
 void TypeChecker::visit(ForStatement *forStmt) {
-  std::cout << "Visiting for stmt" << std::endl;
+  // TODO: analyse for statement
 }
 
 void TypeChecker::visit(UnaryExpression *unExp) {
@@ -148,19 +171,6 @@ void TypeChecker::visit(BinaryExpression *binExp) {
   }
 }
 
-bool TypeChecker::matchTypes(Type* a, Type* b) {
-  if (a->isScalar() && b->isScalar() && a->getKind() == b->getKind()) {
-    return true;
-  } else if (a->isVector() && b->isVector()) {
-    auto aVec = dynamic_cast<VectorType*>(a);
-    auto bVec = dynamic_cast<VectorType*>(b);
-
-    return aVec->getElementType()->getKind() == bVec->getElementType()->getKind() && aVec->getLength() == bVec->getLength();
-  } else {
-    return false;
-  }
-}
-
 void TypeChecker::visit(ConditionalExpression *condExp) {
 
 }
@@ -171,7 +181,6 @@ void TypeChecker::visit(CallExpression *callee) {
 }
 
 void TypeChecker::visit(ConstructorExpression *constExp) {
-  std::cout << "Visiting constructor expression" << std::endl;
   typeStack.push_back(constExp->getType());
 }
 
@@ -189,7 +198,7 @@ void TypeChecker::visit(IntegerConstantExpression *intExp) {
 }
 
 void TypeChecker::visit(StructDeclaration *structDecl) {
-  std::cout << "Visiting struct declaration" << std::endl;
+  // TODO: handle structs
 }
 
 void TypeChecker::visit(UnsignedIntegerConstantExpression *uintExp) {
@@ -209,7 +218,7 @@ void TypeChecker::visit(BoolConstantExpression *boolExp) {
 }
 
 void TypeChecker::visit(MemberAccessExpression *memberExp) {
- // Figure out the type of the accessed property, then push to type stack
+ // TODO: Figure out the type of the accessed property, then push to type stack
 }
 
 void TypeChecker::visit(ArrayAccessExpression *arrayAccess) {
@@ -229,7 +238,7 @@ void TypeChecker::visit(ReturnStatement *returnStmt) {
     }
   } else {
     if (currentFunctionReturnType->getKind() != TypeKind::Void) {
-      std::cout << "'return' with no value, in function returning non-void.";
+      std::cout << "'return' with no value, in function returning non-void." << std::endl;
     }
   }
 }
@@ -252,6 +261,19 @@ void TypeChecker::visit(DefaultLabel *defaultLabel) {
 
 void TypeChecker::visit(CaseLabel *caseLabel) {
   // TODO: Check if inside switch
+}
+
+bool TypeChecker::matchTypes(Type* a, Type* b) {
+  if (a->isScalar() && b->isScalar() && a->getKind() == b->getKind()) {
+    return true;
+  } else if (a->isVector() && b->isVector()) {
+    auto aVec = dynamic_cast<VectorType*>(a);
+    auto bVec = dynamic_cast<VectorType*>(b);
+
+    return aVec->getElementType()->getKind() == bVec->getElementType()->getKind() && aVec->getLength() == bVec->getLength();
+  } else {
+    return false;
+  }
 }
 
 } // namespace analysis

@@ -29,7 +29,7 @@ public:
     void newScope();
     void enterScope();
     void exitScope();
-    void printScopes();
+    void printScopes(Scope* scope = nullptr);
     SymbolTableEntry* findSymbol(std::string identifier);
     bool putSymbol(std::string identifier, SymbolTableEntry entry);
 

@@ -6,12 +6,22 @@ void loopTest() {
 
     }
 
+    // error: boolean expression expected in while condition
+    do {
+
+    } while(a);
+
     bool b = true;
 
     // OK
     while (b) {
 
     }
+
+    // OK
+    do {
+
+    } while(b);
 
     int c = 1;
 
