@@ -1,28 +1,15 @@
-void testFunc() {
-    bool a = true;
-    int b = 1;
-
-    // error: boolean expression expected in if condition
-    if (b) {
-
-    } else {
-
-    }
-
-    // OK
-    if (a) {
-
-    } else {
-
-    }
+ void testFunc() {
+    int a = 1;
 
     // error: case only in switch
+    // error: break only in loops and switches
     case 1: break;
 
     // error: default only in switch
+    // error: break only in loops and switches
     default: break;
 
-    switch (b) {
+    switch (a) {
         // OK
         case 1:
             // OK
@@ -33,4 +20,4 @@ void testFunc() {
             // OK
             break;
     }
-}
+ }
