@@ -29,4 +29,26 @@ void loopTest() {
     while (b) {
         int c = 2;
     }
+
+    // error: break only in loops and switches
+    break;
+
+    // error: continue only in loops
+    continue;
+
+    while (b) {
+        // OK
+        break;
+
+        // OK
+        continue;
+    }
+
+    do {
+        // OK
+        break;
+
+        // OK
+        continue;
+    } while(b);
 }

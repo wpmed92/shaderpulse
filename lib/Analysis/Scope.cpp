@@ -5,8 +5,7 @@ namespace shaderpulse {
 
 namespace analysis {
 
-Scope::Scope() {
-    table = std::make_unique<SymbolTable>();
+Scope::Scope(ScopeType type) : table(std::make_unique<SymbolTable>()), type(type) {
 }
 
 SymbolTable* Scope::getSymbolTable() {
@@ -17,8 +16,12 @@ Scope* Scope::getParent() {
     return parent;
 }
 
-void Scope::push() {
-    auto newScope = std::make_unique<Scope>();
+ScopeType Scope::getType() {
+    return type;
+}
+
+void Scope::makeNew(ScopeType type) {
+    auto newScope = std::make_unique<Scope>(type);
     newScope->parent = this;
     children.push_back(std::move(newScope));
 }
@@ -32,10 +35,27 @@ ScopeManager::ScopeManager() {
     currentScope = scopeChain.get();
 }
 
-// TODO: consistent naming between ScopeManager and Scope
-void ScopeManager::newScope() {
-    currentScope->push();
+void ScopeManager::newScope(ScopeType type) {
+    currentScope->makeNew(type);
     currentScope = currentScope->getChildren().back().get();
+}
+
+Scope* ScopeManager::getCurrentScope() {
+    return currentScope;
+}
+
+bool ScopeManager::hasParentScopeOf(ScopeType type) {
+    Scope* scope = currentScope;
+
+    while (scope->getParent() != nullptr) {
+        if (scope->getType() == type) {
+            return true;
+        }
+
+        scope = scope->getParent();
+    }
+
+    return false;
 }
 
 void ScopeManager::enterScope() {

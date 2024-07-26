@@ -66,14 +66,14 @@ void SemanticAnalyzer::visit(WhileStatement *whileStmt) {
   typeStack.pop_back();
 
   if (condition->getKind() != TypeKind::Bool) {
-    std::cout << "boolean expression expected in while condition.";
+    std::cout << "boolean expression expected in while condition." << std::endl;
   } else {
-    std::cout << "while loop condition type correct.";
+    std::cout << "while loop condition type correct." << std::endl;
   }
 
 
   if (whileStmt->getBody() != nullptr) {
-    scopeManager.newScope();
+    scopeManager.newScope(ScopeType::Loop);
     whileStmt->getBody()->accept(this);
     scopeManager.exitScope();
 
@@ -89,13 +89,13 @@ void SemanticAnalyzer::visit(DoStatement *doStmt) {
   typeStack.pop_back();
 
   if (condition->getKind() != TypeKind::Bool) {
-    std::cout << "boolean expression expected in while condition.";
+    std::cout << "boolean expression expected in while condition." << std::endl;
   } else {
-    std::cout << "while loop condition type correct.";
+    std::cout << "while loop condition type correct." << std::endl;
   }
 
   if (doStmt->getBody() != nullptr) {
-    scopeManager.newScope();
+    scopeManager.newScope(ScopeType::Loop);
     doStmt->getBody()->accept(this);
     scopeManager.exitScope();
   }
@@ -114,11 +114,11 @@ void SemanticAnalyzer::visit(IfStatement *ifStmt) {
   }
 
   if (ifStmt->getTruePart() != nullptr) {
-    scopeManager.newScope();
+    scopeManager.newScope(ScopeType::Conditional);
     ifStmt->getTruePart()->accept(this);
     scopeManager.exitScope();
   } else if (ifStmt->getFalsePart() != nullptr) {
-    scopeManager.newScope();
+    scopeManager.newScope(ScopeType::Conditional);
     ifStmt->getFalsePart()->accept(this);
     scopeManager.exitScope();
   }
@@ -244,11 +244,19 @@ void SemanticAnalyzer::visit(ReturnStatement *returnStmt) {
 }
 
 void SemanticAnalyzer::visit(BreakStatement *breakStmt) {
-  // TODO: Check if in loop or swith
+  if (!scopeManager.hasParentScopeOf(ScopeType::Loop) && !scopeManager.hasParentScopeOf(ScopeType::Switch) ) {
+    std::cout << "break statement only allowed in loops and switch statements" << std::endl;
+  } else {
+    std::cout << "break correct." << std::endl;
+  }
 }
 
 void SemanticAnalyzer::visit(ContinueStatement *continueStmt) {
-  // TODO: Check if inside  a loop
+  if (!scopeManager.hasParentScopeOf(ScopeType::Loop)) {
+    std::cout << "continue statement only allowed in loops" << std::endl;
+  } else {
+    std::cout << "continue correct." << std::endl;
+  }
 }
 
 void SemanticAnalyzer::visit(DiscardStatement *discardStmt) {
