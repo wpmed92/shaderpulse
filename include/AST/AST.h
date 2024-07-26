@@ -68,63 +68,77 @@ private:
 class IntegerConstantExpression : public Expression {
 
 public:
-  IntegerConstantExpression(int32_t val) : val(val) {}
+  IntegerConstantExpression(int32_t val) : val(val), type(std::make_unique<Type>(TypeKind::Integer)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
   int32_t getVal() { return val; }
 
+  Type *getType() const { return type.get(); }
+
 private:
   int32_t val;
+  std::unique_ptr<Type> type;
 };
 
 class UnsignedIntegerConstantExpression : public Expression {
 
 public:
-  UnsignedIntegerConstantExpression(uint32_t val) : val(val) {}
+  UnsignedIntegerConstantExpression(uint32_t val) : val(val), type(std::make_unique<Type>(TypeKind::UnsignedInteger)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); } 
+
+  Type *getType() const { return type.get(); }
 
   uint32_t getVal() { return val; }
 
 private:
   uint32_t val;
+  std::unique_ptr<Type> type;
 };
 
 class FloatConstantExpression : public Expression {
 public:
-  FloatConstantExpression(float val) : val(val) {}
+  FloatConstantExpression(float val) : val(val), type(std::make_unique<Type>(TypeKind::Float)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
+  Type *getType() const { return type.get(); }
   float getVal() const { return val; }
 
 private:
   float val;
+  std::unique_ptr<Type> type;
+
 };
 
 class DoubleConstantExpression : public Expression {
 public:
-  DoubleConstantExpression(double val) : val(val) {}
+  DoubleConstantExpression(double val) : val(val), type(std::make_unique<Type>(TypeKind::Double)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+  Type *getType() const { return type.get(); }
 
   double getVal() const { return val; }
 
 private:
   double val;
+  std::unique_ptr<Type> type;
 };
 
 class BoolConstantExpression : public Expression {
 public:
-  BoolConstantExpression(bool val) : val(val) {}
+  BoolConstantExpression(bool val) : val(val), type(std::make_unique<Type>(TypeKind::Bool)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
+  Type *getType() const { return type.get(); }
+  
   bool getVal() const { return val; }
 
 private:
   bool val;
+  std::unique_ptr<Type> type;
 };
 
 class VariableExpression : public Expression {

@@ -1,4 +1,5 @@
 #include "CodeGen/MLIRCodeGen.h"
+#include "Analysis/TypeChecker.h"
 #include "AST/PrinterASTVisitor.h"
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
@@ -31,6 +32,7 @@ using namespace shaderpulse;
 using namespace shaderpulse::ast;
 using namespace shaderpulse::lexer;
 using namespace shaderpulse::parser;
+using namespace shaderpulse::analysis;
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -66,5 +68,8 @@ int main(int argc, char** argv) {
         std::cout << "SPIR-V module verified" << std::endl;
     }
 
-    translationUnit->accept(std::make_unique<PrinterASTVisitor>().get());
+    auto checker = std::make_unique<TypeChecker>();
+    translationUnit->accept(checker.get());
+
+    return 0;
 }
