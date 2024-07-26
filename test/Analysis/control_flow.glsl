@@ -16,14 +16,21 @@ void testFunc() {
 
     }
 
-    // error: case in switch
+    // error: case only in switch
     case 1: break;
+
+    // error: default only in switch
+    default: break;
 
     switch (b) {
         // OK
         case 1:
             // OK
             break;
-    }
 
+        // OK
+        default:
+            // OK
+            break;
+    }
 }

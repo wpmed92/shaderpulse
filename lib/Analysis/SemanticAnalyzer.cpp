@@ -273,14 +273,18 @@ void SemanticAnalyzer::visit(DiscardStatement *discardStmt) {
 }
 
 void SemanticAnalyzer::visit(DefaultLabel *defaultLabel) {
-  // TODO: Check if inside switch
+  if (!scopeManager.hasParentScopeOf(ScopeType::Switch)) {
+    std::cout << "default labels need to be inside switch statements" << std::endl;
+  } else {
+    std::cout << "default label correct" << std::endl;
+  }
 }
 
 void SemanticAnalyzer::visit(CaseLabel *caseLabel) {
   if (!scopeManager.hasParentScopeOf(ScopeType::Switch)) {
     std::cout << "case labels need to be inside switch statements" << std::endl;
   } else {
-    std::cout << "case correct" << std::endl;
+    std::cout << "case label correct" << std::endl;
   }
 }
 
