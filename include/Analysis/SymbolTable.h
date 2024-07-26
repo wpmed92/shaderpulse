@@ -20,6 +20,7 @@ class SymbolTable {
 public:
     SymbolTableEntry* find(std::string);
     bool put(std::string, SymbolTableEntry);
+    void printEntries();
 
 private:
     std::map<std::string, SymbolTableEntry> table;

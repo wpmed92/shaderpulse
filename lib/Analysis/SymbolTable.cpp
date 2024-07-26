@@ -19,6 +19,12 @@ bool SymbolTable::put(std::string identifier, SymbolTableEntry entry) {
     return result.second;
 }
 
+void SymbolTable::printEntries() {
+     for (auto it = table.begin(); it != table.end(); ++it) {
+        std::cout << "key: " << it->first << ", id: " << it->second.id << ", type: " << it->second.type << std::endl;
+    }
+}
+
 }
 
 }

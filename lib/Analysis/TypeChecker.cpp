@@ -72,11 +72,29 @@ void TypeChecker::visit(SwitchStatement *switchStmt) {
 }
 
 void TypeChecker::visit(WhileStatement *whileStmt) {
+  whileStmt->getCondition()->accept(this);
 
+  Type* condition = typeStack.back();
+  typeStack.pop_back();
+
+  if (condition->getKind() != TypeKind::Bool) {
+    std::cout << "boolean expression expected in while condition.";
+  } else {
+    std::cout << "while loop condition type correct.";
+  }
+
+
+  if (whileStmt->getBody() != nullptr) {
+    scopeManager.newScope();
+    whileStmt->getBody()->accept(this);
+    scopeManager.exitScope();
+
+    scopeManager.printScopes();
+  }
 }
 
 void TypeChecker::visit(DoStatement *doStmt) {
-
+  // Check if condition is boolean
 }
 
 void TypeChecker::visit(IfStatement *ifStmt) {
@@ -217,11 +235,11 @@ void TypeChecker::visit(ReturnStatement *returnStmt) {
 }
 
 void TypeChecker::visit(BreakStatement *breakStmt) {
-
+  // TODO: Check if in loop or swith
 }
 
 void TypeChecker::visit(ContinueStatement *continueStmt) {
-
+  // TODO: Check if inside  a loop
 }
 
 void TypeChecker::visit(DiscardStatement *discardStmt) {
@@ -229,11 +247,11 @@ void TypeChecker::visit(DiscardStatement *discardStmt) {
 }
 
 void TypeChecker::visit(DefaultLabel *defaultLabel) {
-
+  // TODO: Check if inside switch
 }
 
 void TypeChecker::visit(CaseLabel *caseLabel) {
-
+  // TODO: Check if inside switch
 }
 
 } // namespace analysis
