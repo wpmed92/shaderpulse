@@ -1,5 +1,5 @@
 #include "CodeGen/MLIRCodeGen.h"
-#include "Analysis/TypeChecker.h"
+#include "Analysis/SemanticAnalyzer.h"
 #include "AST/PrinterASTVisitor.h"
 #include "Lexer/Lexer.h"
 #include "Parser/Parser.h"
@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
         std::cout << "SPIR-V module verified" << std::endl;
     }
 
-    auto checker = std::make_unique<TypeChecker>();
+    auto checker = std::make_unique<SemanticAnalyzer>();
     translationUnit->accept(checker.get());
 
     return 0;

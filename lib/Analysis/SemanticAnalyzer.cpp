@@ -1,4 +1,4 @@
-#include "Analysis/TypeChecker.h"
+#include "Analysis/SemanticAnalyzer.h"
 #include <iostream>
 #include "../../utils/include/magic_enum.hpp"
 
@@ -8,13 +8,13 @@ using namespace ast;
 
 namespace analysis {
 
-void TypeChecker::visit(TranslationUnit *unit) {
+void SemanticAnalyzer::visit(TranslationUnit *unit) {
   for (auto &extDecl : unit->getExternalDeclarations()) {
     extDecl->accept(this);
   }
 }
 
-void TypeChecker::visit(FunctionDeclaration *funcDecl) {
+void SemanticAnalyzer::visit(FunctionDeclaration *funcDecl) {
   auto entry = SymbolTableEntry();
   entry.type = funcDecl->getReturnType();
   entry.id = funcDecl->getName();
@@ -31,11 +31,11 @@ void TypeChecker::visit(FunctionDeclaration *funcDecl) {
   funcDecl->getBody()->accept(this);
 }
 
-void TypeChecker::visit(VariableDeclarationList *varDeclList) {
+void SemanticAnalyzer::visit(VariableDeclarationList *varDeclList) {
   std::cout << "Typechecking vardecl list" << std::endl;
 }
 
-void TypeChecker::visit(VariableDeclaration *varDecl) {
+void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
   auto entry = SymbolTableEntry();
   entry.type = varDecl->getType();
   entry.id = varDecl->getIdentifierName();
@@ -55,11 +55,11 @@ void TypeChecker::visit(VariableDeclaration *varDecl) {
   }
 }
 
-void TypeChecker::visit(SwitchStatement *switchStmt) {
+void SemanticAnalyzer::visit(SwitchStatement *switchStmt) {
 
 }
 
-void TypeChecker::visit(WhileStatement *whileStmt) {
+void SemanticAnalyzer::visit(WhileStatement *whileStmt) {
   whileStmt->getCondition()->accept(this);
 
   Type* condition = typeStack.back();
@@ -82,7 +82,7 @@ void TypeChecker::visit(WhileStatement *whileStmt) {
 }
 
 // TODO: merge with WhileStatement type check as these are the same
-void TypeChecker::visit(DoStatement *doStmt) {
+void SemanticAnalyzer::visit(DoStatement *doStmt) {
   doStmt->getCondition()->accept(this);
 
   Type* condition = typeStack.back();
@@ -101,7 +101,7 @@ void TypeChecker::visit(DoStatement *doStmt) {
   }
 }
 
-void TypeChecker::visit(IfStatement *ifStmt) {
+void SemanticAnalyzer::visit(IfStatement *ifStmt) {
   ifStmt->getCondition()->accept(this);
 
   Type* condition = typeStack.back();
@@ -124,7 +124,7 @@ void TypeChecker::visit(IfStatement *ifStmt) {
   }
 }
 
-void TypeChecker::visit(AssignmentExpression *assignmentExp) {
+void SemanticAnalyzer::visit(AssignmentExpression *assignmentExp) {
   assignmentExp->getUnaryExpression()->accept(this);
   assignmentExp->getExpression()->accept(this);
 
@@ -140,21 +140,21 @@ void TypeChecker::visit(AssignmentExpression *assignmentExp) {
   }
 }
 
-void TypeChecker::visit(StatementList *stmtList) { 
+void SemanticAnalyzer::visit(StatementList *stmtList) { 
     for (auto &stmt : stmtList->getStatements()) {
         stmt->accept(this);
     }
 }
 
-void TypeChecker::visit(ForStatement *forStmt) {
+void SemanticAnalyzer::visit(ForStatement *forStmt) {
   // TODO: analyse for statement
 }
 
-void TypeChecker::visit(UnaryExpression *unExp) {
+void SemanticAnalyzer::visit(UnaryExpression *unExp) {
 
 }
 
-void TypeChecker::visit(BinaryExpression *binExp) {
+void SemanticAnalyzer::visit(BinaryExpression *binExp) {
   binExp->getLhs()->accept(this);
   binExp->getRhs()->accept(this);
 
@@ -171,61 +171,61 @@ void TypeChecker::visit(BinaryExpression *binExp) {
   }
 }
 
-void TypeChecker::visit(ConditionalExpression *condExp) {
+void SemanticAnalyzer::visit(ConditionalExpression *condExp) {
 
 }
 
-void TypeChecker::visit(CallExpression *callee) {
+void SemanticAnalyzer::visit(CallExpression *callee) {
   auto entry = scopeManager.findSymbol(callee->getFunctionName());
   typeStack.push_back(entry->type);
 }
 
-void TypeChecker::visit(ConstructorExpression *constExp) {
+void SemanticAnalyzer::visit(ConstructorExpression *constExp) {
   typeStack.push_back(constExp->getType());
 }
 
-void TypeChecker::visit(InitializerExpression *initExp) {
+void SemanticAnalyzer::visit(InitializerExpression *initExp) {
 
 }
 
-void TypeChecker::visit(VariableExpression *varExp) {
+void SemanticAnalyzer::visit(VariableExpression *varExp) {
   auto entry = scopeManager.findSymbol(varExp->getName());
   typeStack.push_back(entry->type);
 }
 
-void TypeChecker::visit(IntegerConstantExpression *intExp) { 
+void SemanticAnalyzer::visit(IntegerConstantExpression *intExp) { 
   typeStack.push_back(intExp->getType());
 }
 
-void TypeChecker::visit(StructDeclaration *structDecl) {
+void SemanticAnalyzer::visit(StructDeclaration *structDecl) {
   // TODO: handle structs
 }
 
-void TypeChecker::visit(UnsignedIntegerConstantExpression *uintExp) {
+void SemanticAnalyzer::visit(UnsignedIntegerConstantExpression *uintExp) {
   typeStack.push_back(uintExp->getType());
 }
 
-void TypeChecker::visit(FloatConstantExpression *floatExp) {
+void SemanticAnalyzer::visit(FloatConstantExpression *floatExp) {
   typeStack.push_back(floatExp->getType());
 }
 
-void TypeChecker::visit(DoubleConstantExpression *doubleExp) {
+void SemanticAnalyzer::visit(DoubleConstantExpression *doubleExp) {
   typeStack.push_back(doubleExp->getType());
 }
 
-void TypeChecker::visit(BoolConstantExpression *boolExp) {
+void SemanticAnalyzer::visit(BoolConstantExpression *boolExp) {
   typeStack.push_back(boolExp->getType());
 }
 
-void TypeChecker::visit(MemberAccessExpression *memberExp) {
+void SemanticAnalyzer::visit(MemberAccessExpression *memberExp) {
  // TODO: Figure out the type of the accessed property, then push to type stack
 }
 
-void TypeChecker::visit(ArrayAccessExpression *arrayAccess) {
+void SemanticAnalyzer::visit(ArrayAccessExpression *arrayAccess) {
   arrayAccess->getArray()->accept(this);
 }
 
-void TypeChecker::visit(ReturnStatement *returnStmt) {
+void SemanticAnalyzer::visit(ReturnStatement *returnStmt) {
   if (returnStmt->getExpression() != nullptr) {
     returnStmt->getExpression()->accept(this);
     Type* expressionType = typeStack.back();
@@ -243,27 +243,27 @@ void TypeChecker::visit(ReturnStatement *returnStmt) {
   }
 }
 
-void TypeChecker::visit(BreakStatement *breakStmt) {
+void SemanticAnalyzer::visit(BreakStatement *breakStmt) {
   // TODO: Check if in loop or swith
 }
 
-void TypeChecker::visit(ContinueStatement *continueStmt) {
+void SemanticAnalyzer::visit(ContinueStatement *continueStmt) {
   // TODO: Check if inside  a loop
 }
 
-void TypeChecker::visit(DiscardStatement *discardStmt) {
+void SemanticAnalyzer::visit(DiscardStatement *discardStmt) {
 
 }
 
-void TypeChecker::visit(DefaultLabel *defaultLabel) {
+void SemanticAnalyzer::visit(DefaultLabel *defaultLabel) {
   // TODO: Check if inside switch
 }
 
-void TypeChecker::visit(CaseLabel *caseLabel) {
+void SemanticAnalyzer::visit(CaseLabel *caseLabel) {
   // TODO: Check if inside switch
 }
 
-bool TypeChecker::matchTypes(Type* a, Type* b) {
+bool SemanticAnalyzer::matchTypes(Type* a, Type* b) {
   if (a->isScalar() && b->isScalar() && a->getKind() == b->getKind()) {
     return true;
   } else if (a->isVector() && b->isVector()) {

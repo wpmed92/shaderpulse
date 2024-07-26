@@ -10,10 +10,10 @@ using namespace ast;
 
 namespace analysis {
 
-class TypeChecker : public ASTVisitor {
+class SemanticAnalyzer : public ASTVisitor {
 
 public:
-  TypeChecker() {}
+  SemanticAnalyzer() {}
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
   void visit(UnaryExpression *) override;
