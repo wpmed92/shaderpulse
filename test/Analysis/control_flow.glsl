@@ -15,4 +15,15 @@ void testFunc() {
     } else {
 
     }
+
+    // error: case in switch
+    case 1: break;
+
+    switch (b) {
+        // OK
+        case 1:
+            // OK
+            break;
+    }
+
 }

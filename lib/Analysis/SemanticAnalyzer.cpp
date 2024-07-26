@@ -56,7 +56,16 @@ void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
 }
 
 void SemanticAnalyzer::visit(SwitchStatement *switchStmt) {
+  switchStmt->getExpression()->accept(this);
 
+  // TODO: type check switch expression, ignore for now
+  typeStack.pop_back();
+
+  if (switchStmt->getBody() != nullptr) {
+    scopeManager.newScope(ScopeType::Switch);
+    switchStmt->getBody()->accept(this);
+    scopeManager.exitScope();
+  }
 }
 
 void SemanticAnalyzer::visit(WhileStatement *whileStmt) {
@@ -268,7 +277,11 @@ void SemanticAnalyzer::visit(DefaultLabel *defaultLabel) {
 }
 
 void SemanticAnalyzer::visit(CaseLabel *caseLabel) {
-  // TODO: Check if inside switch
+  if (!scopeManager.hasParentScopeOf(ScopeType::Switch)) {
+    std::cout << "case labels need to be inside switch statements" << std::endl;
+  } else {
+    std::cout << "case correct" << std::endl;
+  }
 }
 
 bool SemanticAnalyzer::matchTypes(Type* a, Type* b) {
