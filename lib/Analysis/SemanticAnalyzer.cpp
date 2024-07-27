@@ -311,6 +311,15 @@ void SemanticAnalyzer::visit(CaseLabel *caseLabel) {
   } else {
     std::cout << "case label correct" << std::endl;
   }
+
+  caseLabel->getExpression()->accept(this);
+
+  Type* caseLabelType = typeStack.back();
+  typeStack.pop_back();
+
+  if (caseLabelType->getKind() != TypeKind::Integer) {
+    std::cout << "Case label must be a scalar integer" << std::endl;
+  }
 }
 
 bool SemanticAnalyzer::matchTypes(Type* a, Type* b) {

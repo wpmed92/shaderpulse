@@ -21,6 +21,10 @@
             // OK
             break;
 
+        // error: case label must be a scalar integer
+        case 1.0:
+            break;
+
         // OK
         default:
             // OK
