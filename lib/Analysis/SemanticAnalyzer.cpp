@@ -69,6 +69,7 @@ void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
       auto typeToAssign = typeStack.back();
       typeStack.pop_back();
 
+      // TODO: error message should be "cannot convert from type X to type Y"
       if (!matchTypes(entry.type, typeToAssign)) {
         std::cout << "Cannot assign initializer expression's type to " << entry.id << " variable." << std::endl;
       }
@@ -206,7 +207,29 @@ void SemanticAnalyzer::visit(BinaryExpression *binExp) {
 }
 
 void SemanticAnalyzer::visit(ConditionalExpression *condExp) {
+  condExp->getCondition()->accept(this);
 
+  Type* conditionType = typeStack.back();
+  typeStack.pop_back();
+
+  if (conditionType->getKind() != TypeKind::Bool) {
+    std::cout << "Boolean expression expected" << std::endl;
+  }
+
+  condExp->getTruePart()->accept(this);
+  condExp->getFalsePart()->accept(this);
+
+  Type* falseType = typeStack.back();
+  typeStack.pop_back();
+
+  Type* trueType = typeStack.back();
+  typeStack.pop_back();
+
+  if (!matchTypes(trueType, falseType)) {
+    std::cout << "the types of true and false parts of conditional expression do not match" << std::endl;
+  }
+
+  typeStack.push_back(trueType);
 }
 
 void SemanticAnalyzer::visit(CallExpression *callee) {
