@@ -11,3 +11,19 @@ float voidFunction() {
 float floatFunction() {
     return 1.0;
 }
+
+// Scopes
+int a = 1;
+
+float functionScope(int b) {
+    // OK, hides external a
+    int a = 2;
+
+    // Error: redeclaration
+    int b = 3;
+}
+
+// error: redefinition of symbol (no overload support yet)
+float functionScope() {
+
+}

@@ -26,9 +26,27 @@ void SemanticAnalyzer::visit(FunctionDeclaration *funcDecl) {
     entry.argumentTypes.push_back(param.get()->getType());
   }
 
-  scopeManager.putSymbol(funcDecl->getName(), entry);
+  // Save function in global scope
+  if (!scopeManager.putSymbol(entry.id, entry)) {
+    std::cout << "Redeclaration of symbol '" << entry.id << "'" << std::endl;
+  }
+
+  // New scope for function body
+  scopeManager.newScope(ScopeType::Function);
+
+  for (auto &param : funcDecl->getParams()) {
+    // Save function params in the function scope's symbol table
+    auto paramEntry = SymbolTableEntry();
+    paramEntry.type = param->getType();
+    paramEntry.id = param->getName();
+    paramEntry.isFunction = false;
+    paramEntry.isGlobal = false;
+    scopeManager.putSymbol(param->getName(), paramEntry);
+  }
 
   funcDecl->getBody()->accept(this);
+
+  scopeManager.exitScope();
 }
 
 void SemanticAnalyzer::visit(VariableDeclarationList *varDeclList) {
@@ -39,7 +57,10 @@ void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
   auto entry = SymbolTableEntry();
   entry.type = varDecl->getType();
   entry.id = varDecl->getIdentifierName();
-  scopeManager.putSymbol(varDecl->getIdentifierName(), entry);
+  
+  if (!scopeManager.putSymbol(varDecl->getIdentifierName(), entry)) {
+    std::cout << "Redeclaration of symbol '" << varDecl->getIdentifierName() << "'" << std::endl;
+  }
 
   if (varDecl->getInitialzerExpression() != nullptr) {
     varDecl->getInitialzerExpression()->accept(this);
@@ -273,7 +294,7 @@ void SemanticAnalyzer::visit(ContinueStatement *continueStmt) {
 }
 
 void SemanticAnalyzer::visit(DiscardStatement *discardStmt) {
-
+  // TODO: assert in fragment shader
 }
 
 void SemanticAnalyzer::visit(DefaultLabel *defaultLabel) {
