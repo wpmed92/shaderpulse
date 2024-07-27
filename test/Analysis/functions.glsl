@@ -27,3 +27,11 @@ float functionScope(int b) {
 float functionScope() {
 
 }
+
+void testArgumentTypes() {
+    // OK
+    float a = functionScope(1);
+
+    // error: argument type mismatch
+    float b = functionScope(1.0);
+}

@@ -79,8 +79,14 @@ void ScopeManager::printScopes(Scope* scope) {
 }
 
 SymbolTableEntry* ScopeManager::findSymbol(std::string identifier) {
-    if (currentScope != nullptr) {
-        return currentScope->getSymbolTable()->find(identifier);
+    Scope* scope = currentScope;
+
+    while (scope != nullptr) {
+        if (auto entry = scope->getSymbolTable()->find(identifier)) {
+            return entry;
+        }
+
+        scope = scope->getParent();
     }
 
     return nullptr;

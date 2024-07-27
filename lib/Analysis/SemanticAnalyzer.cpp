@@ -235,6 +235,20 @@ void SemanticAnalyzer::visit(ConditionalExpression *condExp) {
 void SemanticAnalyzer::visit(CallExpression *callee) {
   auto entry = scopeManager.findSymbol(callee->getFunctionName());
   typeStack.push_back(entry->type);
+
+  // Type check call expression parameters
+  for (int i = 0; i < callee->getArguments().size(); i++) {
+    auto &arg = callee->getArguments()[i];
+    Type* argType = entry->argumentTypes[i];
+    arg->accept(this);
+
+    Type* argExpressionType = typeStack.back();
+    typeStack.pop_back();
+
+    if (!matchTypes(argType, argExpressionType)) {
+      std::cout << "Argument type mismatch" << std::endl;
+    }
+  }
 }
 
 void SemanticAnalyzer::visit(ConstructorExpression *constExp) {
