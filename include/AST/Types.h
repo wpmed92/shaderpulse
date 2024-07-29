@@ -119,6 +119,30 @@ public:
       : kind(kind), qualifiers(std::move(qualifiers)) {}
 
   virtual ~Type() = default;
+  virtual std::string toString() {
+    switch (kind) {
+      case TypeKind::Integer:
+        return "int";
+      case TypeKind::Bool:
+        return "bool";
+      case TypeKind::Double:
+        return "double";
+      case TypeKind::Float:
+        return "float";
+      case TypeKind::UnsignedInteger:
+        return "uint";
+      case TypeKind::Array:
+        return "array";
+      case TypeKind::Vector:
+        return "vec";
+      case TypeKind::Matrix:
+        return "mat";
+      case TypeKind::Struct:
+        return "struct";
+      default:
+        return "opaque";
+    }
+  }
 
   TypeKind getKind() const { return kind; }
   TypeQualifier *getQualifier(TypeQualifierKind kind) {
@@ -174,6 +198,30 @@ VectorType(std::unique_ptr<Type> elementType, int length)
   Type *getElementType() const { return elementType.get(); };
   int getLength() const { return length; };
 
+  std::string toString() override {
+    std::string prefix = "";
+
+    switch (elementType->getKind()) {
+      case TypeKind::Integer:
+        prefix = "i";
+        break;
+      case TypeKind::UnsignedInteger:
+        prefix = "u";
+        break;
+      case TypeKind::Double:
+        prefix = "d";
+        break;
+      case TypeKind::Bool:
+        prefix = "b";
+        break;
+      default:
+        prefix = "";
+        break;
+    }
+
+    return prefix + "vec" + std::to_string(length);
+  }
+
 private:
   std::unique_ptr<Type> elementType;
   int length;
@@ -196,6 +244,16 @@ public:
   Type *getElementType() const { return elementType.get(); };
   const std::vector<int> &getShape() { return shape; };
 
+  std::string toString() override {
+    std::string arrStr = elementType->toString();
+
+    for (auto dim : shape) {
+      arrStr += "[" + std::to_string(dim) + "]";
+    }
+
+    return arrStr;
+  }
+
 private:
   std::unique_ptr<Type> elementType;
   std::vector<int> shape;
@@ -204,16 +262,36 @@ private:
 class MatrixType : public Type {
 
 public:
+  MatrixType(std::unique_ptr<Type> elementType, int rows, int cols)
+      : Type(TypeKind::Matrix, std::vector<std::unique_ptr<TypeQualifier>>()),
+        elementType(std::move(elementType)), rows(rows), cols(cols) {
+    assert(this->elementType->isScalar() && (this->elementType->getKind() == TypeKind::Float || this->elementType->getKind() == TypeKind::Double));
+  }
   MatrixType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
              std::unique_ptr<Type> elementType, int rows, int cols)
       : Type(TypeKind::Matrix, std::move(qualifiers)),
         elementType(std::move(elementType)), rows(rows), cols(cols) {
-    assert(this->elementType->isScalar());
+    assert(this->elementType->isScalar() && (this->elementType->getKind() == TypeKind::Float || this->elementType->getKind() == TypeKind::Double));
   }
 
   int getRows() const { return rows; }
   int getCols() const { return cols; }
   Type *getElementType() const { return elementType.get(); }
+
+  std::string toString() override {
+    std::string prefix = "";
+
+    switch (elementType->getKind()) {
+      case TypeKind::Double:
+        prefix = "d";
+        break;
+      default:
+        prefix = "";
+        break;
+    }
+
+    return prefix + "mat" + std::to_string(rows) + "x" + std::to_string(cols);
+  }
 
 private:
   std::unique_ptr<Type> elementType;
