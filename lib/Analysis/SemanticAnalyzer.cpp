@@ -69,9 +69,8 @@ void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
       auto typeToAssign = typeStack.back();
       typeStack.pop_back();
 
-      // TODO: error message should be "cannot convert from type X to type Y"
       if (!matchTypes(entry.type, typeToAssign)) {
-        std::cout << "Cannot assign initializer expression's type to " << entry.id << " variable." << std::endl;
+        std::cout << "Cannot convert '" << typeToAssign->toString() << "' to '" << entry.type->toString() << "'." << std::endl;
       }
     }
   }
@@ -169,7 +168,7 @@ void SemanticAnalyzer::visit(AssignmentExpression *assignmentExp) {
   typeStack.pop_back();
 
   if (!matchTypes(lhsType, rhsType)) {
-    std::cout << "Cannot assign the provided type to the variable." << std::endl;
+    std::cout << "Cannot convert '" << rhsType->toString() << "' to '" << lhsType->toString() << "'." << std::endl;
   } else {
     std::cout << "Assignment expression OK" << std::endl;
   }

@@ -6,11 +6,14 @@ int myFunc() {
     // OK
     float c = a + b;
 
-    // error: cannot convert float to int
+    // error: cannot convert 'float' to 'int'
     int d = 1.0;
 
     // OK
     a = 3.0;
+
+    // error: cannot convert 'int' to 'float'
+    a = 1;
 
     bool test = true;
 
