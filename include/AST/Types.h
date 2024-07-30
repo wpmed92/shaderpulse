@@ -119,6 +119,11 @@ public:
       : kind(kind), qualifiers(std::move(qualifiers)) {}
 
   virtual ~Type() = default;
+
+  virtual bool isEqual(const Type& other) {
+    return other.kind == kind;
+  }
+
   virtual std::string toString() {
     switch (kind) {
       case TypeKind::Integer:
@@ -183,7 +188,7 @@ private:
 class VectorType : public Type {
 
 public:
-VectorType(std::unique_ptr<Type> elementType, int length)
+  VectorType(std::unique_ptr<Type> elementType, int length)
       : Type(TypeKind::Vector, std::vector<std::unique_ptr<TypeQualifier>>()),
         elementType(std::move(elementType)), length(length) {
     assert(this->elementType->isScalar());
@@ -197,6 +202,14 @@ VectorType(std::unique_ptr<Type> elementType, int length)
 
   Type *getElementType() const { return elementType.get(); };
   int getLength() const { return length; };
+
+  bool isEqual(const Type& other) override {
+    if (auto vecType = dynamic_cast<const VectorType*>(&other)) {
+      return vecType->getElementType()->getKind() == elementType->getKind() && vecType->getLength() == length;
+    }
+
+    return false;
+  }
 
   std::string toString() override {
     std::string prefix = "";
@@ -244,6 +257,14 @@ public:
   Type *getElementType() const { return elementType.get(); };
   const std::vector<int> &getShape() { return shape; };
 
+  bool isEqual(const Type& other) override {
+    if (auto arrType = dynamic_cast<const ArrayType*>(&other)) {
+      return arrType->elementType->getKind() == elementType->getKind() && arrType->shape == shape;
+    }
+
+    return false;
+  }
+
   std::string toString() override {
     std::string arrStr = elementType->toString();
 
@@ -278,6 +299,14 @@ public:
   int getCols() const { return cols; }
   Type *getElementType() const { return elementType.get(); }
 
+  bool isEqual(const Type& other) override {
+    if (auto matType = dynamic_cast<const MatrixType*>(&other)) {
+      return matType->elementType->getKind() == elementType->getKind() && matType->rows == rows && matType->cols == cols;
+    }
+
+    return false;
+  }
+
   std::string toString() override {
     std::string prefix = "";
 
@@ -299,6 +328,7 @@ private:
   int cols;
 };
 
+// TODO: it should store member types
 class StructType : public Type {
 
 public:
@@ -307,6 +337,18 @@ public:
       : Type(TypeKind::Struct, std::move(qualifiers)), structName(structName) {}
 
   const std::string &getName() const { return structName; }
+
+  bool isEqual(const Type& other) override {
+    if (auto structType = dynamic_cast<const StructType*>(&other)) {
+      return structType->structName == structName;
+    }
+
+    return false;
+  }
+
+  std::string toString() override {
+    return structName;
+  }
 
 private:
   std::string structName;

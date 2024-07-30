@@ -69,7 +69,7 @@ void SemanticAnalyzer::visit(VariableDeclaration *varDecl) {
       auto typeToAssign = typeStack.back();
       typeStack.pop_back();
 
-      if (!matchTypes(entry.type, typeToAssign)) {
+      if (!entry.type->isEqual(*typeToAssign)) {
         std::cout << "Cannot convert '" << typeToAssign->toString() << "' to '" << entry.type->toString() << "'." << std::endl;
       }
     }
@@ -110,8 +110,6 @@ void SemanticAnalyzer::visit(WhileStatement *whileStmt) {
     scopeManager.newScope(ScopeType::Loop);
     whileStmt->getBody()->accept(this);
     scopeManager.exitScope();
-
-    scopeManager.printScopes();
   }
 }
 
@@ -167,7 +165,7 @@ void SemanticAnalyzer::visit(AssignmentExpression *assignmentExp) {
   Type* lhsType = typeStack.back();
   typeStack.pop_back();
 
-  if (!matchTypes(lhsType, rhsType)) {
+  if (!lhsType->isEqual(*rhsType)) {
     std::cout << "Cannot convert '" << rhsType->toString() << "' to '" << lhsType->toString() << "'." << std::endl;
   } else {
     std::cout << "Assignment expression OK" << std::endl;
@@ -197,7 +195,7 @@ void SemanticAnalyzer::visit(BinaryExpression *binExp) {
   Type* lhsType = typeStack.back();
   typeStack.pop_back();
 
-  if (matchTypes(lhsType, rhsType)) {
+  if (lhsType->isEqual(*rhsType)) {
     typeStack.push_back(lhsType);
     std::cout << "Binary operation allowed." << std::endl;
   } else {
@@ -224,7 +222,7 @@ void SemanticAnalyzer::visit(ConditionalExpression *condExp) {
   Type* trueType = typeStack.back();
   typeStack.pop_back();
 
-  if (!matchTypes(trueType, falseType)) {
+  if (!trueType->isEqual(*falseType)) {
     std::cout << "the types of true and false parts of conditional expression do not match" << std::endl;
   }
 
@@ -244,7 +242,7 @@ void SemanticAnalyzer::visit(CallExpression *callee) {
     Type* argExpressionType = typeStack.back();
     typeStack.pop_back();
 
-    if (!matchTypes(argType, argExpressionType)) {
+    if (!argType->isEqual(*argExpressionType)) {
       std::cout << "Argument type mismatch" << std::endl;
     }
   }
@@ -301,7 +299,7 @@ void SemanticAnalyzer::visit(ReturnStatement *returnStmt) {
     Type* expressionType = typeStack.back();
     typeStack.pop_back();
 
-    if (!matchTypes(expressionType, currentFunctionReturnType)) {
+    if (!expressionType->isEqual(*currentFunctionReturnType)) {
       std::cout << "'return' value type does not match the function type." << std::endl;
     } else {
       std::cout << "Return type check OK" << std::endl;
@@ -355,19 +353,6 @@ void SemanticAnalyzer::visit(CaseLabel *caseLabel) {
 
   if (caseLabelType->getKind() != TypeKind::Integer) {
     std::cout << "Case label must be a scalar integer" << std::endl;
-  }
-}
-
-bool SemanticAnalyzer::matchTypes(Type* a, Type* b) {
-  if (a->isScalar() && b->isScalar() && a->getKind() == b->getKind()) {
-    return true;
-  } else if (a->isVector() && b->isVector()) {
-    auto aVec = dynamic_cast<VectorType*>(a);
-    auto bVec = dynamic_cast<VectorType*>(b);
-
-    return aVec->getElementType()->getKind() == bVec->getElementType()->getKind() && aVec->getLength() == bVec->getLength();
-  } else {
-    return false;
   }
 }
 

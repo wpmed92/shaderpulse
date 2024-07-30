@@ -51,7 +51,6 @@ private:
     ScopeManager scopeManager;
     std::vector<Type*> typeStack;
     Type* currentFunctionReturnType;
-    bool matchTypes(Type* a, Type* b);
 };
 
 } // namespace analysis
