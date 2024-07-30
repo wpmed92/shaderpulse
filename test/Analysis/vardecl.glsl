@@ -3,6 +3,9 @@ int myFunc() {
     float a = 1.0;
     float b = 2.2;
 
+    // error: Cannot convert vec2 to vec3
+    vec3 vecTest = vec2(1.0, 1.0);
+
     // OK
     float c = a + b;
 
