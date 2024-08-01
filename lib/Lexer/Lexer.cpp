@@ -503,10 +503,12 @@ bool Lexer::handlePunctuator(Error &error) {
 
     break;
   }
-  case ',': {
+  case ',':
     addToken(TokenKind::comma);
     break;
-  }
+  case '~':
+    addToken(TokenKind::bnot);
+    break;
   case '(':
     addToken(TokenKind::lParen);
     break;
