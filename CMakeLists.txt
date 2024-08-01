@@ -21,6 +21,9 @@ project(
   LANGUAGES CXX C
 )
 
+# Set the MLIR and LLVM installation prefixes
+set(CMAKE_PREFIX_PATH "./llvm-project/build" ${CMAKE_PREFIX_PATH})
+
 # MLIR specific
 find_package(MLIR REQUIRED CONFIG)
 
@@ -33,6 +36,9 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+
+list(APPEND CMAKE_MODULE_PATH "${LLVM_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${MLIR_DIR}/cmake/modules")
 
 add_subdirectory(lib/Preprocessor)
 add_subdirectory(lib/Lexer)
@@ -80,3 +86,5 @@ target_link_libraries(shaderpulse-standalone
     MLIRTargetLLVMIRExport
     MLIRTransforms
 )
+
+add_subdirectory(unittests)

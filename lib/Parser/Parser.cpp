@@ -1393,7 +1393,6 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
   }
 
   advanceToken();
-  advanceToken();
 
   if (structDeclarations.find(structName) == structDeclarations.end()) {
     structDeclarations.insert({structName, true});

@@ -53,7 +53,8 @@ private:
   std::vector<std::unique_ptr<Token>> tokenStream;
   char getCurChar() const;
   void advanceChar();
-  char peekChar() const;
+  char peekChar(int n = 1) const;
+  bool peekExponentialPart();
   void skipWhiteSpaces();
   void addToken(TokenKind);
 

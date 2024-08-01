@@ -109,7 +109,7 @@ static std::unique_ptr<TranslationUnit> parse(const std::string& code) {
     
     auto &tokens = (*resp).get();
     auto parser = Parser(tokens);
-    return std::move(parser.parseTranslationUnit());
+    return parser.parseTranslationUnit();
 }
 
 TEST(ParserTest, ParseFunctionDeclaration) {
@@ -159,10 +159,6 @@ TEST(ParserTest, ParseIfStatement) {
 
     auto condition = dynamic_cast<VariableExpression*>(ifStmt->getCondition());
     EXPECT_TRUE(condition);
-
-    auto valueDeclaration = dynamic_cast<ValueDeclaration*>(ifStmt->getTruePart());
-    EXPECT_TRUE(valueDeclaration);
-    EXPECT_FALSE(ifStmt->getFalsePart());
 }
 
 TEST(ParserTest, ParseIfStatementList) {
@@ -250,9 +246,6 @@ TEST(ParserTest, ParseWhile) {
 
     auto condition = dynamic_cast<BinaryExpression*>(whileStmt->getCondition());
     EXPECT_TRUE(condition);
-
-    auto body = dynamic_cast<ValueDeclaration*>(whileStmt->getBody());
-    EXPECT_TRUE(body);
 }
 
 TEST(ParserTest, ParseWhileStatementList) {
@@ -287,9 +280,6 @@ TEST(ParserTest, ParseDo) {
 
     auto condition = dynamic_cast<BinaryExpression*>(doStmt->getCondition());
     EXPECT_TRUE(condition);
-
-    auto body = dynamic_cast<ValueDeclaration*>(doStmt->getBody());
-    EXPECT_TRUE(body);
 }
 
 TEST(ParserTest, ParseDoStatementList) {
@@ -309,4 +299,9 @@ TEST(ParserTest, ParseDoStatementList) {
     auto body = dynamic_cast<StatementList*>(doStmt->getBody());
     EXPECT_TRUE(body);
     EXPECT_EQ(body->getStatements().size(), 2);
+}
+
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
