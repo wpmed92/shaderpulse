@@ -1,0 +1,44 @@
+name: CMake Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y ninja-build cmake
+
+    - name: Build LLVM and MLIR
+      run: |
+        mkdir -p llvm-project/build
+        cd llvm-project/build
+        cmake -G Ninja ../llvm \
+          -DLLVM_ENABLE_PROJECTS="mlir" \
+          -DLLVM_TARGETS_TO_BUILD="host" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_ENABLE_ASSERTIONS=ON
+        cmake --build .
+
+    - name: Configure CMake for shaderpulse
+      run: |
+        cmake -S . -B build \
+          -DLLVM_DIR=${GITHUB_WORKSPACE}/llvm-project/build/lib/cmake/llvm \
+          -DMLIR_DIR=${GITHUB_WORKSPACE}/llvm-project/build/lib/cmake/mlir
+
+    - name: Build shaderpulse
+      run: cmake --build build -- -j $(nproc)
+
+    - name: Run tests
+      run: ctest --test-dir build --output-on-failure
