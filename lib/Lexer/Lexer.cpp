@@ -220,6 +220,10 @@ bool Lexer::handleOctalLiteral(Error &error) {
   }
 }
 
+bool Lexer::peekExponentialPart() {
+  return isExponentFlag(peekChar()) && (peekChar(2) == '-' || peekChar(2) == '+' || isDecimalDigit(peekChar(2)));
+}
+
 bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
   if (!error.none()) {
     return false;
@@ -240,7 +244,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
   if (hasDigit && handleExponentialForm(literalConstant, error))
     return true;
   // Handle fractional part digit . fractional exp, . fractional exp
-  else if (getCurChar() == '.' && !isStartOfIdentifier(peekChar())) {
+  else if (getCurChar() == '.' && (peekExponentialPart() || isDecimalDigit(peekChar()) || hasDigit)) {
     literalConstant += getCurChar();
     advanceChar();
 
@@ -253,9 +257,9 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
       return true;
     else if (isStopCharacter(getCurChar())) {
       auto tok = std::make_unique<Token>();
+      tok->setTokenKind(TokenKind::FloatConstant);
       tok->setLiteralData(
           std::make_unique<FloatLiteral>(std::stof(literalConstant)));
-      tok->setTokenKind(TokenKind::FloatConstant);
       tok->setSourceLocation(SourceLocation(lineNum, startCol));
       tok->setRawData(literalConstant);
       tokenStream.push_back(std::move(tok));
@@ -285,7 +289,8 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
 }
 
 bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
-  if (!isExponentFlag(getCurChar())) {
+  // TODO: combine with 'peekExponentialPart'
+  if (!(isExponentFlag(getCurChar()) && (peekChar() == '-' || peekChar() == '+' || isDecimalDigit(peekChar())))) {
     return false;
   }
 
@@ -690,7 +695,13 @@ void Lexer::advanceChar() { col++; curCharPos++; }
 
 char Lexer::getCurChar() const { return characters[curCharPos]; }
 
-char Lexer::peekChar() const { return characters[curCharPos + 1]; }
+char Lexer::peekChar(int n) const { 
+  if (curCharPos < characters.size() - n) {
+    return characters[curCharPos + n]; 
+  } else {
+    return ' ';
+  }
+}
 
 const std::vector<std::unique_ptr<Token>> &Lexer::getTokenStream() const {
   return tokenStream;
