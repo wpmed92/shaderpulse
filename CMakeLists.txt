@@ -92,4 +92,4 @@ if(ENABLE_LLVM)
   )
 endif()
 
-add_subdirectory(unittests)
+add_subdirectory(test)

@@ -25,14 +25,14 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/lib)
 include_directories(${CMAKE_BINARY_DIR}/include)
 
-add_executable(LexerTest ${CMAKE_SOURCE_DIR}/unittests/Lexer/LexerTest.cpp)
+add_executable(LexerTest ${CMAKE_SOURCE_DIR}/test/Lexer/LexerTest.cpp)
 target_link_libraries(LexerTest
   gtest
   gtest_main
   Lexer
 )
 
-add_executable(ParserTest ${CMAKE_SOURCE_DIR}/unittests/Parser/ParserTest.cpp)
+add_executable(ParserTest ${CMAKE_SOURCE_DIR}/test/Parser/ParserTest.cpp)
 target_link_libraries(ParserTest
   gtest
   gtest_main
