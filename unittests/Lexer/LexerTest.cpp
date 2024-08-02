@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <vector>
+#include <stdint.h>
 #include "Lexer/Lexer.h"
 #include "Lexer/Token.h"
 
@@ -37,33 +38,53 @@ std::string getAllPunctuatorsString() {
     return punctuators;
 }
 
-TEST(LexerTest, Literals) {
-    static std::string literals = R"(
-    0xFF 0100 1234 10e5 1.444 .66 .2e-2 .2e+3 2. 314.e-3 12u 0x122u 010u 0x1u
+TEST(LexerTest, IntegerLiterals) {
+    static std::string intLiterals = R"(
+        0xFF 0100 1234 12u 0x122u 010u 0x1u
     )";
-    auto lexer = Lexer(literals);
+    std::vector<uint32_t> expectedValues = {
+        0xFF, 64, 1234, 12, 0x122, 8, 1
+    };
+    auto lexer = Lexer(intLiterals);
+    auto resp = lexer.lexCharacterStream();
+
+    EXPECT_TRUE(resp.has_value());
+
+    auto& tokens = (*resp).get();
+
+    EXPECT_EQ(tokens.size(), expectedValues.size());
+
+    for (size_t i = 0; i < tokens.size(); i++) {
+        if (i > 2) {
+            EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::UnsignedIntegerConstant);
+            EXPECT_EQ(dynamic_cast<UnsignedIntegerLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
+        } else {
+            EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::IntegerConstant);
+            EXPECT_EQ(dynamic_cast<IntegerLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
+        }
+    }
+}
+
+TEST(LexerTest, FloatLiterals) {
+    std::string floatLiterals = R"(
+        10e5 1.444 .66 .2e-2 .2e+3 2. 314.e-3
+    )";
+    std::vector<float> expectedValues = {
+        1000000.0f, 1.444f, 0.66f, 0.002f, 200.0f, 2.0f, 0.314f
+    };
+    auto lexer = Lexer(floatLiterals);
     auto resp = lexer.lexCharacterStream();
 
     EXPECT_TRUE(resp.has_value());
     
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), 14);
+    EXPECT_EQ(tokens.size(), expectedValues.size());
 
-    EXPECT_EQ(dynamic_cast<IntegerLiteral*>(tokens.at(0)->getLiteralData())->getVal(), 255);
-    EXPECT_EQ(dynamic_cast<IntegerLiteral*>(tokens.at(1)->getLiteralData())->getVal(), 64);
-    EXPECT_EQ(dynamic_cast<IntegerLiteral*>(tokens.at(2)->getLiteralData())->getVal(), 1234);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(3)->getLiteralData())->getVal(), 1000000.0f);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(4)->getLiteralData())->getVal(), 1.444f);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(5)->getLiteralData())->getVal(), 0.66f);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(6)->getLiteralData())->getVal(), 0.002f);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(7)->getLiteralData())->getVal(), 200.0f);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(8)->getLiteralData())->getVal(), 2.0f);
-    EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(9)->getLiteralData())->getVal(), 0.314f);
-    EXPECT_EQ(dynamic_cast<UnsignedIntegerLiteral*>(tokens.at(10)->getLiteralData())->getVal(), 12u);
-    EXPECT_EQ(dynamic_cast<UnsignedIntegerLiteral*>(tokens.at(11)->getLiteralData())->getVal(), 0x122u);
-    EXPECT_EQ(dynamic_cast<UnsignedIntegerLiteral*>(tokens.at(12)->getLiteralData())->getVal(), 8u);
-    EXPECT_EQ(dynamic_cast<UnsignedIntegerLiteral*>(tokens.at(13)->getLiteralData())->getVal(), 1u);
+    for (size_t i = 0; i < tokens.size(); i++) {
+        EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::FloatConstant);
+        EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
+    }
 }
 
 TEST(LexerText, Identifiers) {
