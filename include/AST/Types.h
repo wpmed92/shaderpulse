@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <assert.h>
+#include <memory>
+#include <algorithm>
 
 namespace shaderpulse {
 
