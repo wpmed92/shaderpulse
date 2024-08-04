@@ -220,10 +220,6 @@ bool Lexer::handleOctalLiteral(Error &error) {
   }
 }
 
-bool Lexer::peekExponentialPart() {
-  return isExponentFlag(peekChar()) && (peekChar(2) == '-' || peekChar(2) == '+' || isDecimalDigit(peekChar(2)));
-}
-
 bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
   if (!error.none()) {
     return false;
@@ -257,20 +253,12 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
       return true;
     }
 
-    bool isDouble = false;
-
-    if (getCurChar() == 'f' || getCurChar() == 'F') {
-      advanceChar();
-    } else if ((getCurChar() == 'l' && peekChar() == 'f') || (getCurChar() == 'L' && peekChar() == 'F')) {
-      isDouble = true;
-      advanceChar();
-      advanceChar();
-    }
+    SuffixCheckResult suffixCheck = handleFloatSuffix();
 
     if (isStopCharacter(getCurChar())) {
       auto tok = std::make_unique<Token>();
 
-      if (isDouble) {
+      if (suffixCheck == SuffixCheckResult::Double) {
         tok->setTokenKind(TokenKind::DoubleConstant);
         tok->setLiteralData(
             std::make_unique<DoubleLiteral>(std::stod(literalConstant)));
@@ -339,12 +327,22 @@ bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
     return false;
   }
 
+  SuffixCheckResult suffixCheck = handleFloatSuffix();
+
   if (isStopCharacter(getCurChar())) {
     literalConstant += decimalPart;
     auto tok = std::make_unique<Token>();
-    tok->setLiteralData(
-        std::make_unique<FloatLiteral>(std::stof(literalConstant)));
-    tok->setTokenKind(TokenKind::FloatConstant);
+
+    if (suffixCheck == SuffixCheckResult::Double) {
+      tok->setLiteralData(
+          std::make_unique<DoubleLiteral>(std::stod(literalConstant)));
+      tok->setTokenKind(TokenKind::DoubleConstant);
+    } else {
+      tok->setLiteralData(
+          std::make_unique<FloatLiteral>(std::stof(literalConstant)));
+      tok->setTokenKind(TokenKind::FloatConstant);
+    }
+
     tok->setSourceLocation(SourceLocation(lineNum, startCol));
     tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
@@ -566,6 +564,23 @@ bool Lexer::handlePunctuator(Error &error) {
   advanceChar();
 
   return true;
+}
+
+SuffixCheckResult Lexer::handleFloatSuffix() {
+  if (getCurChar() == 'f' || getCurChar() == 'F') {
+    advanceChar();
+    return SuffixCheckResult::Float;
+  } else if ((getCurChar() == 'l' && peekChar() == 'f') || (getCurChar() == 'L' && peekChar() == 'F')) {
+    advanceChar();
+    advanceChar();
+    return SuffixCheckResult::Double;
+  } else {
+    return SuffixCheckResult::None;
+  }
+}
+
+bool Lexer::peekExponentialPart() {
+  return isExponentFlag(peekChar()) && (peekChar(2) == '-' || peekChar(2) == '+' || isDecimalDigit(peekChar(2)));
 }
 
 void Lexer::addToken(TokenKind kind) {

@@ -67,10 +67,12 @@ TEST(LexerTest, IntegerLiterals) {
 
 TEST(LexerTest, FloatLiterals) {
     std::string floatLiterals = R"(
-        10e5 1.444 .66 .2e-2 .2e+3 2. 314.e-3 1.0f 1.f 10.123f .18f 1.0F 1.F 10.123F .18F
+        10e5 1.444 .66 .2e-2 .2e+3 2. 314.e-3 1.0f 1.f 10.123f .18f 1.0F 1.F 10.123F .18F 
+        10e5f .2e-2f 314.e-3f 10e5F .2e-2F 314.e-3F
     )";
     std::vector<float> expectedValues = {
-        1000000.0f, 1.444f, 0.66f, 0.002f, 200.0f, 2.0f, 0.314f, 1.0f, 1.0f, 10.123f, 0.18f, 1.0f, 1.0f, 10.123f, 0.18f
+        1000000.0f, 1.444f, 0.66f, 0.002f, 200.0f, 2.0f, 0.314f, 1.0f, 1.0f, 10.123f, 0.18f, 1.0f, 1.0f, 10.123f, 0.18f,
+        1000000.0f, 0.002f, 0.314f, 1000000.0f, 0.002f, 0.314f
     };
     auto lexer = Lexer(floatLiterals);
     auto resp = lexer.lexCharacterStream();
@@ -90,9 +92,11 @@ TEST(LexerTest, FloatLiterals) {
 TEST(LexerTest, DoubleLiterals) {
     std::string doubleLiterals = R"(
         1.0lf 1.lf 10.123lf .18lf 1.0LF 1.LF 10.123LF .18LF
+        10e5lf .2e-2lf 314.e-3lf 10e5LF .2e-2LF 314.e-3LF
     )";
     std::vector<double> expectedValues = {
-        1.0, 1.0, 10.123, 0.18, 1.0, 1.0, 10.123, 0.18
+        1.0, 1.0, 10.123, 0.18, 1.0, 1.0, 10.123, 0.18,
+        1000000.0, 0.002, 0.314, 1000000.0, 0.002, 0.314
     };
     auto lexer = Lexer(doubleLiterals);
     auto resp = lexer.lexCharacterStream();

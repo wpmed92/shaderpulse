@@ -11,7 +11,7 @@ namespace shaderpulse {
 
 namespace lexer {
 
-enum ErrorKind {
+enum class ErrorKind {
   None,
   InvalidOctalConstant,
   InvalidHexConstant,
@@ -20,6 +20,12 @@ enum ErrorKind {
   InvalidConstant,
   InvalidIdentififer,
   UnexpectedCharacter
+};
+
+enum class SuffixCheckResult {
+  None,
+  Float,
+  Double
 };
 
 struct Error {
@@ -83,6 +89,8 @@ private:
   bool handleOctalLiteral(Error &);
   bool handleExponentialForm(std::string &, Error &);
   bool handleDecimalOrFloatLiteral(Error &);
+
+  SuffixCheckResult handleFloatSuffix();
 
   std::optional<TokenKind>
   getKwTokenKindFromString(const std::string &kw) const;
