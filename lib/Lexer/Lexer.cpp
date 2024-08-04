@@ -253,13 +253,33 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
       advanceChar();
     }
 
-    if (handleExponentialForm(literalConstant, error))
+    if (handleExponentialForm(literalConstant, error)) {
       return true;
-    else if (isStopCharacter(getCurChar())) {
+    }
+
+    bool isDouble = false;
+
+    if (getCurChar() == 'f' || getCurChar() == 'F') {
+      advanceChar();
+    } else if ((getCurChar() == 'l' && peekChar() == 'f') || (getCurChar() == 'L' && peekChar() == 'F')) {
+      isDouble = true;
+      advanceChar();
+      advanceChar();
+    }
+
+    if (isStopCharacter(getCurChar())) {
       auto tok = std::make_unique<Token>();
-      tok->setTokenKind(TokenKind::FloatConstant);
-      tok->setLiteralData(
-          std::make_unique<FloatLiteral>(std::stof(literalConstant)));
+
+      if (isDouble) {
+        tok->setTokenKind(TokenKind::DoubleConstant);
+        tok->setLiteralData(
+            std::make_unique<DoubleLiteral>(std::stod(literalConstant)));
+      } else {
+        tok->setTokenKind(TokenKind::FloatConstant);
+        tok->setLiteralData(
+            std::make_unique<FloatLiteral>(std::stof(literalConstant)));
+      }
+
       tok->setSourceLocation(SourceLocation(lineNum, startCol));
       tok->setRawData(literalConstant);
       tokenStream.push_back(std::move(tok));
@@ -695,7 +715,13 @@ Lexer::getKwTokenKindFromString(const std::string &kw) const {
 
 void Lexer::advanceChar() { col++; curCharPos++; }
 
-char Lexer::getCurChar() const { return characters[curCharPos]; }
+char Lexer::getCurChar() const {
+  if (curCharPos < characters.size()) {
+    return characters[curCharPos];
+  } else {
+    return ' ';
+  }
+}
 
 char Lexer::peekChar(int n) const { 
   if (curCharPos < characters.size() - n) {

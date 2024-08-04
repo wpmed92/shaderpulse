@@ -67,10 +67,10 @@ TEST(LexerTest, IntegerLiterals) {
 
 TEST(LexerTest, FloatLiterals) {
     std::string floatLiterals = R"(
-        10e5 1.444 .66 .2e-2 .2e+3 2. 314.e-3
+        10e5 1.444 .66 .2e-2 .2e+3 2. 314.e-3 1.0f 1.f 10.123f .18f 1.0F 1.F 10.123F .18F
     )";
     std::vector<float> expectedValues = {
-        1000000.0f, 1.444f, 0.66f, 0.002f, 200.0f, 2.0f, 0.314f
+        1000000.0f, 1.444f, 0.66f, 0.002f, 200.0f, 2.0f, 0.314f, 1.0f, 1.0f, 10.123f, 0.18f, 1.0f, 1.0f, 10.123f, 0.18f
     };
     auto lexer = Lexer(floatLiterals);
     auto resp = lexer.lexCharacterStream();
@@ -84,6 +84,28 @@ TEST(LexerTest, FloatLiterals) {
     for (size_t i = 0; i < tokens.size(); i++) {
         EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::FloatConstant);
         EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
+    }
+}
+
+TEST(LexerTest, DoubleLiterals) {
+    std::string doubleLiterals = R"(
+        1.0lf 1.lf 10.123lf .18lf 1.0LF 1.LF 10.123LF .18LF
+    )";
+    std::vector<double> expectedValues = {
+        1.0, 1.0, 10.123, 0.18, 1.0, 1.0, 10.123, 0.18
+    };
+    auto lexer = Lexer(doubleLiterals);
+    auto resp = lexer.lexCharacterStream();
+
+    EXPECT_TRUE(resp.has_value());
+
+    auto& tokens = (*resp).get();
+
+    EXPECT_EQ(tokens.size(), expectedValues.size());
+
+    for (size_t i = 0; i < tokens.size(); i++) {
+        EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::DoubleConstant);
+        EXPECT_EQ(dynamic_cast<DoubleLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
     }
 }
 
