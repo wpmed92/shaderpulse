@@ -20,7 +20,7 @@ jobs:
         cmake-version: '3.25'
 
     - name: Configure CMake
-      run: cmake -B build -DENABLE_LLVM=OFF -DCMAKE_BUILD_TYPE=Release
+      run: cmake -B build -DENABLE_CODEGEN=OFF -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       run: cmake --build build --config Release

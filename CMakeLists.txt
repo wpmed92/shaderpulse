@@ -21,9 +21,9 @@ project(
   LANGUAGES CXX C
 )
 
-option(ENABLE_LLVM "Enable LLVM dependency" ON)
+option(ENABLE_CODEGEN "Enable LLVM dependency for code generation" ON)
 
-if(ENABLE_LLVM)
+if(ENABLE_CODEGEN)
   set(CMAKE_PREFIX_PATH "./llvm-project/build" ${CMAKE_PREFIX_PATH})
 
   find_package(MLIR REQUIRED CONFIG)
@@ -64,7 +64,7 @@ add_subdirectory(lib/Parser)
 add_subdirectory(lib/AST)
 add_subdirectory(lib/Analysis)
 
-if(ENABLE_LLVM)
+if(ENABLE_CODEGEN)
   add_executable(shaderpulse-standalone standalone/shaderpulse.cpp)
   target_link_libraries(shaderpulse-standalone
     PRIVATE
