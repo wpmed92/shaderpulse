@@ -301,6 +301,41 @@ TEST(ParserTest, ParseDoStatementList) {
     EXPECT_EQ(body->getStatements().size(), 2);
 }
 
+TEST(ParserTest, ParseStruct) {
+    std::string structDecl =
+    R"(
+        struct MyStruct {
+            bool a;
+            int b;
+            float c;
+            double d;
+        };
+    )";
+
+    std::vector<std::string> propertyNames = {
+        "a", "b", "c", "d"
+    };
+
+    std::vector<std::string> propertyTypes = {
+        "bool", "int", "float", "double"
+    };
+
+    auto unit = parse(structDecl);
+
+    EXPECT_TRUE(unit);
+    auto& externalDecl = unit->getExternalDeclarations();
+    EXPECT_EQ(externalDecl.size(), 1);
+    auto parsedStructDecl = dynamic_cast<StructDeclaration*>(externalDecl.at(0).get());
+
+
+    EXPECT_EQ(parsedStructDecl->getMembers().size(), propertyNames.size());
+
+    for (size_t i = 0; i < parsedStructDecl->getMembers().size(); i++) {
+        EXPECT_EQ(dynamic_cast<VariableDeclaration*>(parsedStructDecl->getMembers()[i].get())->getIdentifierName(), propertyNames[i]);
+        EXPECT_EQ(dynamic_cast<VariableDeclaration*>(parsedStructDecl->getMembers()[i].get())->getType()->toString(), propertyTypes[i]);
+    }
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
