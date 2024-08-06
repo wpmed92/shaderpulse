@@ -337,6 +337,33 @@ TEST(ParserTest, ParseStruct) {
     }
 }
 
+TEST(ParserTest, Expressions) {
+    std::string structDecl =
+    R"(
+        float a = 3.14;
+        float b = 1.0 + 2.0 * 3.0 / a;
+    )";
+
+    auto unit = parse(structDecl);
+
+    EXPECT_TRUE(unit);
+    auto& externalDecl = unit->getExternalDeclarations();
+    EXPECT_EQ(externalDecl.size(), 2);
+    auto parsedA = dynamic_cast<VariableDeclaration*>(externalDecl.at(0).get());
+    auto parsedB = dynamic_cast<VariableDeclaration*>(externalDecl.at(1).get());
+
+    // Check var names
+    EXPECT_EQ(parsedA->getIdentifierName(), "a");
+    EXPECT_EQ(parsedB->getIdentifierName(), "b");
+
+    // Check types
+    EXPECT_EQ(parsedA->getType()->toString(), "float");
+    EXPECT_EQ(parsedB->getType()->toString(), "float");
+
+    EXPECT_EQ(dynamic_cast<FloatConstantExpression*>(parsedA->getInitialzerExpression())->getVal(), 3.14f);
+    EXPECT_TRUE(dynamic_cast<BinaryExpression*>(parsedB->getInitialzerExpression()));
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
