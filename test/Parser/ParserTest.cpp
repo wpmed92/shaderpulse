@@ -327,6 +327,7 @@ TEST(ParserTest, ParseStruct) {
     EXPECT_EQ(externalDecl.size(), 1);
     auto parsedStructDecl = dynamic_cast<StructDeclaration*>(externalDecl.at(0).get());
 
+    EXPECT_EQ(parsedStructDecl->getName(), "MyStruct");
 
     EXPECT_EQ(parsedStructDecl->getMembers().size(), propertyNames.size());
 
