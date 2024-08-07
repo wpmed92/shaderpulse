@@ -92,24 +92,28 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
 
 std::unique_ptr<Declaration> Parser::parseDeclaration() {
   if (auto type = parseType()) {
+    SourceLocation startLoc = curToken->getSourceLocation();
     advanceToken();
 
     // Only type, no variable name
     if (curToken->is(TokenKind::semiColon)) {
       advanceToken();
-      return std::make_unique<VariableDeclaration>(std::move(type),
+      return std::make_unique<VariableDeclaration>(startLoc, std::move(type),
                                                    std::string(), nullptr);
     }
 
     const std::string &name = curToken->getIdentifierName();
-
+    SourceLocation endLoc = curToken->getSourceLocation();
     advanceToken();
 
     // Type and variable name, no initializer expression
     if (curToken->is(TokenKind::semiColon)) {
       advanceToken();
-      return std::make_unique<VariableDeclaration>(std::move(type), name,
-                                                   nullptr);
+      return std::make_unique<VariableDeclaration>(
+        SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.startLine, endLoc.endCol), 
+        std::move(type), 
+        name,
+        nullptr);
     } else if (curToken->is(TokenKind::assign)) {
       // Initializer expression
       advanceToken();
@@ -124,7 +128,7 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
         return declarations;
       } else if (curToken->is(TokenKind::semiColon)) {
         advanceToken();
-        return std::make_unique<VariableDeclaration>(std::move(type), name,
+        return std::make_unique<VariableDeclaration>(SourceLocation(), std::move(type), name,
                                                      std::move(exp));
       } else {
         reportError(ParserErrorKind::UnexpectedToken, "Parser error: unexpected token '" + curToken->getRawData() + "'");
@@ -147,13 +151,12 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
     std::unique_ptr<Type> type, const std::string &identifierName,
     std::unique_ptr<Expression> initializerExpression) {
   std::vector<std::unique_ptr<VariableDeclaration>> declarations;
-  declarations.push_back(std::make_unique<VariableDeclaration>(
+  declarations.push_back(std::make_unique<VariableDeclaration>(SourceLocation(),
       nullptr, identifierName, std::move(initializerExpression)));
 
   do {
     advanceToken();
     if (!curToken->is(TokenKind::Identifier)) {
-      
       reportError(ParserErrorKind::ExpectedToken, "Parser error: expected identifier " + curToken->getRawData());
     }
 
@@ -170,10 +173,10 @@ std::unique_ptr<VariableDeclarationList> Parser::parseVariableDeclarationList(
         return nullptr;
       }
 
-      declarations.push_back(std::make_unique<VariableDeclaration>(
+      declarations.push_back(std::make_unique<VariableDeclaration>(SourceLocation(),
           nullptr, varName, std::move(exp)));
     } else {
-      declarations.push_back(std::make_unique<VariableDeclaration>(
+      declarations.push_back(std::make_unique<VariableDeclaration>(SourceLocation(),
           nullptr, varName, nullptr));
     }
   } while (curToken->is(TokenKind::comma));
@@ -679,11 +682,13 @@ Parser::parseFunctionParameters() {
     advanceToken();
 
     if (auto type = parseType()) {
+      SourceLocation startLoc = curToken->getSourceLocation();
       advanceToken();
 
       if (curToken->is(TokenKind::Identifier)) {
+        SourceLocation endLoc = curToken->getSourceLocation();
         auto param = std::make_unique<ParameterDeclaration>(
-            curToken->getIdentifierName(), std::move(type));
+          SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.startLine, endLoc.endCol), curToken->getIdentifierName(), std::move(type));
         advanceToken();
         params.push_back(std::move(param));
       }

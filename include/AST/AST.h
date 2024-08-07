@@ -363,9 +363,9 @@ public:
 class VariableDeclaration : public Declaration {
 
 public:
-  VariableDeclaration(std::unique_ptr<Type> type, const std::string &name,
+  VariableDeclaration(SourceLocation location, std::unique_ptr<Type> type, const std::string &name,
                       std::unique_ptr<Expression> initializerExpr)
-      : type(std::move(type)), identifierName(name),
+      : ASTNode(location), type(std::move(type)), identifierName(name),
         initializerExpr(std::move(initializerExpr)) {}
 
   const std::string &getIdentifierName() const { return identifierName; }
@@ -400,14 +400,17 @@ private:
   std::vector<std::unique_ptr<VariableDeclaration>> declarations;
 };
 
-class ParameterDeclaration {
+class ParameterDeclaration : public ASTNode {
 
 public:
-  ParameterDeclaration(const std::string &name, std::unique_ptr<Type> type)
-      : name(name), type(std::move(type)) {}
+  ParameterDeclaration(SourceLocation location, const std::string &name, std::unique_ptr<Type> type)
+      : ASTNode(location), name(name), type(std::move(type)) {}
 
   const std::string &getName() { return name; }
   Type *getType() { return type.get(); }
+  void accept(ASTVisitor *visitor) override {
+  
+  }
 
 private:
   std::string name;
