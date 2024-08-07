@@ -49,6 +49,7 @@ private:
   void print(const std::string &text);
   int indentationLevel = 0;
   std::set<int> levels;
+  std::string loc(const SourceLocation &sourceLoc);
 };
 
 }; // namespace ast

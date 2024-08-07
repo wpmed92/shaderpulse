@@ -11,6 +11,16 @@ namespace shaderpulse {
 
 namespace ast {
 
+struct SourceLocation {
+  SourceLocation() = default;
+  SourceLocation(int startLine, int startCol, int endLine, int endCol) : startLine(startLine), startCol(startCol),
+  endLine(endLine), endCol(endCol) { }
+  int startLine;
+  int startCol;
+  int endLine;
+  int endCol;
+};
+
 enum UnaryOperator { Inc, Dec, Plus, Dash, Bang, Tilde };
 
 enum BinaryOperator {
@@ -51,8 +61,13 @@ enum AssignmentOperator {
 
 class ASTNode {
 public:
+  ASTNode(SourceLocation loc = SourceLocation()) : loc(loc) { }
   virtual ~ASTNode() = default;
   virtual void accept(ASTVisitor *visitor) = 0;
+  SourceLocation getSourceLocation() { return loc; }
+
+protected:
+  SourceLocation loc;
 };
 
 class Expression : public ASTNode {
@@ -608,10 +623,10 @@ private:
 class FunctionDeclaration : public ExternalDeclaration {
 
 public:
-  FunctionDeclaration(std::unique_ptr<Type> returnType, const std::string &name,
+  FunctionDeclaration(SourceLocation location, std::unique_ptr<Type> returnType, const std::string &name,
                       std::vector<std::unique_ptr<ParameterDeclaration>> params,
                       std::unique_ptr<Statement> body)
-      : returnType(std::move(returnType)), name(name),
+      : ASTNode(location), returnType(std::move(returnType)), name(name),
         params(std::move(params)), body(std::move(body)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }

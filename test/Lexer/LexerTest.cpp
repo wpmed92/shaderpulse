@@ -52,9 +52,9 @@ TEST(LexerTest, IntegerLiterals) {
 
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), expectedValues.size());
+    EXPECT_EQ(tokens.size()-1, expectedValues.size());
 
-    for (size_t i = 0; i < tokens.size(); i++) {
+    for (size_t i = 0; i < tokens.size()-1; i++) {
         if (i > 2) {
             EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::UnsignedIntegerConstant);
             EXPECT_EQ(dynamic_cast<UnsignedIntegerLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
@@ -81,9 +81,9 @@ TEST(LexerTest, FloatLiterals) {
     
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), expectedValues.size());
+    EXPECT_EQ(tokens.size()-1, expectedValues.size());
 
-    for (size_t i = 0; i < tokens.size(); i++) {
+    for (size_t i = 0; i < tokens.size()-1; i++) {
         EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::FloatConstant);
         EXPECT_EQ(dynamic_cast<FloatLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
     }
@@ -105,9 +105,9 @@ TEST(LexerTest, DoubleLiterals) {
 
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), expectedValues.size());
+    EXPECT_EQ(tokens.size()-1, expectedValues.size());
 
-    for (size_t i = 0; i < tokens.size(); i++) {
+    for (size_t i = 0; i < tokens.size()-1; i++) {
         EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::DoubleConstant);
         EXPECT_EQ(dynamic_cast<DoubleLiteral*>(tokens.at(i)->getLiteralData())->getVal(), expectedValues[i]);
     }
@@ -129,9 +129,9 @@ TEST(LexerText, Identifiers) {
     
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), identifiersList.size());
+    EXPECT_EQ(tokens.size()-1, identifiersList.size());
 
-    for (size_t i = 0; i < tokens.size(); i++) {
+    for (size_t i = 0; i < tokens.size()-1; i++) {
         EXPECT_EQ(tokens[i].get()->getIdentifierName(), identifiersList[i]);
         EXPECT_EQ(tokens[i].get()->getTokenKind(), TokenKind::Identifier);
     }
@@ -147,9 +147,9 @@ TEST(LexerTest, Keywords) {
 
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), expectedTokenKinds.size());
+    EXPECT_EQ(tokens.size()-1, expectedTokenKinds.size());
 
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size()-1; ++i) {
         EXPECT_EQ(tokens[i]->getTokenKind(), expectedTokenKinds[i]);
     }
 }
@@ -164,9 +164,9 @@ TEST(LexerTest, Punctuators) {
 
     auto& tokens = (*resp).get();
 
-    EXPECT_EQ(tokens.size(), expectedTokenKinds.size());
+    EXPECT_EQ(tokens.size()-1, expectedTokenKinds.size());
 
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size()-1; ++i) {
         EXPECT_EQ(tokens[i]->getTokenKind(), expectedTokenKinds[i]);
     }
 }

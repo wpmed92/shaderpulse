@@ -40,11 +40,11 @@ void Token::setLiteralData(std::unique_ptr<NumericLiteral> literalData) {
   this->literalData = std::move(literalData);
 }
 
-void Token::setSourceLocation(SourceLocation loc) {
+void Token::setSourceLocation(ast::SourceLocation loc) {
   sourceLoc = loc;
 }
 
-SourceLocation Token::getSourceLocation() const {
+ast::SourceLocation Token::getSourceLocation() const {
   return sourceLoc;
 }
 

@@ -61,6 +61,7 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
       return nullptr;
     }
 
+    auto startLoc = curToken->getSourceLocation();
     advanceToken();
 
     auto returnType = std::move(type);
@@ -78,9 +79,9 @@ std::unique_ptr<FunctionDeclaration> Parser::parseFunctionDeclaration() {
     advanceToken();
 
     if (auto body = parseStatement()) {
-      return std::make_unique<FunctionDeclaration>(
-          std::move(returnType), functionName, std::move(params),
-          std::move(body));
+      auto endLoc = curToken->getSourceLocation();
+      auto spanLoc = SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.endLine, endLoc.endCol);
+      return std::make_unique<FunctionDeclaration>(spanLoc, std::move(returnType), functionName, std::move(params), std::move(body));
     } else {
       return nullptr;
     }
@@ -1466,10 +1467,7 @@ std::unique_ptr<Expression> Parser::parseConditionalExpression() {
 }
 
 void Parser::advanceToken() {
-  if ((cursor > -1) && ((size_t)cursor >= (tokenStream.size() - 1))) {
-    auto tok = std::make_unique<Token>();
-    tok->setTokenKind(TokenKind::Eof);
-    tokenStream.push_back(std::move(tok));
+  if ((cursor > -1) && (size_t)cursor >= (tokenStream.size())) {
     curToken = tokenStream.back().get();
   } else {
     curToken = tokenStream[++cursor].get();
@@ -1478,17 +1476,14 @@ void Parser::advanceToken() {
 
 const Token *Parser::peek(int k) {
   if ((size_t)(cursor + k) >= tokenStream.size()) {
-    auto tok = std::make_unique<Token>();
-    tok->setTokenKind(TokenKind::Eof);
-    tokenStream.push_back(std::move(tok));
-    return tokenStream[tokenStream.size() - 1].get();
+    return tokenStream.back().get();
   } else {
     return tokenStream[cursor + k].get();
   }
 }
 
 void Parser::reportError(ParserErrorKind kind, const std::string &msg) {
-  std::cout << msg << ", at line: " << curToken->getSourceLocation().line << ", col: " << curToken->getSourceLocation().col << std::endl;
+  std::cout << msg << ", at line: " << curToken->getSourceLocation().startLine << ", col: " << curToken->getSourceLocation().startCol << std::endl;
   error = ParserError(kind, msg);
 }
 

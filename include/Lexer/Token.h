@@ -1,17 +1,11 @@
 #pragma once
+#include "AST/AST.h"
 #include <memory>
 #include <string>
 
 namespace shaderpulse {
 
 namespace lexer {
-
-struct SourceLocation {
-  SourceLocation() = default;
-  SourceLocation(int line, int col) : line(line), col(col) { }
-  int line;
-  int col;
-};
 
 class NumericLiteral {
 public:
@@ -83,14 +77,14 @@ public:
   bool isDoubleConstant() const;
   NumericLiteral *getLiteralData() const;
   void setLiteralData(std::unique_ptr<NumericLiteral>);
-  void setSourceLocation(SourceLocation loc);
-  SourceLocation getSourceLocation() const;
+  void setSourceLocation(ast::SourceLocation loc);
+  ast::SourceLocation getSourceLocation() const;
   void setRawData(const std::string&);
   std::string getRawData() const;
 
 private:
   TokenKind tokenKind;
-  SourceLocation sourceLoc;
+  ast::SourceLocation sourceLoc;
   std::string identifierName;
   std::string rawData;
   std::unique_ptr<NumericLiteral> literalData;

@@ -2,6 +2,7 @@
 #include "AST/Util.h"
 #include "AST/PrinterASTVisitor.h"
 #include <iostream>
+#include <sstream>
 
 namespace shaderpulse {
 
@@ -268,7 +269,7 @@ void PrinterASTVisitor::visit(DiscardStatement *discardStmt) {
 }
 
 void PrinterASTVisitor::visit(FunctionDeclaration *funcDecl) {
-  print("|-FunctionDeclaration: name=" + funcDecl->getName() + ", return type=" + funcDecl->getReturnType()->toString());
+  print("|-FunctionDeclaration: name=" + funcDecl->getName() + " " + loc(funcDecl->getSourceLocation()) +  ", return type=" + funcDecl->getReturnType()->toString());
   indent();
 
   print("|-Args:");
@@ -294,6 +295,12 @@ void PrinterASTVisitor::visit(CaseLabel *caseLabel) {
   indent();
   caseLabel->getExpression()->accept(this);
   resetIndent();
+}
+
+std::string PrinterASTVisitor::loc(const SourceLocation &sourceLoc) {
+  std::stringstream ssLoc;
+  ssLoc << "[line: " << sourceLoc.startLine << ", col:" << sourceLoc.startCol << "]->" << "[line: " << sourceLoc.endLine << ", col:" << sourceLoc.endCol << "]";
+  return ssLoc.str();
 }
 
 } // namespace ast
