@@ -2,7 +2,6 @@
 #include "AST/Util.h"
 #include "AST/PrinterASTVisitor.h"
 #include <iostream>
-#include "../../utils/include/magic_enum.hpp"
 
 namespace shaderpulse {
 
@@ -42,7 +41,7 @@ void PrinterASTVisitor::visit(TranslationUnit *unit) {
 
 
 void PrinterASTVisitor::visit(VariableDeclarationList *varDeclList) {
-  print("|-VariableDeclarationList: type=" + std::string(magic_enum::enum_name(varDeclList->getType()->getKind())));
+  print("|-VariableDeclarationList: type=" + varDeclList->getType()->toString());
   indent();
 
   for (auto &var : varDeclList->getDeclarations()) {
@@ -53,7 +52,7 @@ void PrinterASTVisitor::visit(VariableDeclarationList *varDeclList) {
 }
 
 void PrinterASTVisitor::visit(VariableDeclaration *varDecl) {
-  auto typeName = varDecl->getType() != nullptr ? std::string(magic_enum::enum_name(varDecl->getType()->getKind())) : "";
+  auto typeName = varDecl->getType() != nullptr ? varDecl->getType()->toString() : "";
   print("|-VariableDeclaration: name=" + varDecl->getIdentifierName() + ((typeName != "") ? (", type=" + typeName) : ""));
 
   indent();
@@ -269,14 +268,14 @@ void PrinterASTVisitor::visit(DiscardStatement *discardStmt) {
 }
 
 void PrinterASTVisitor::visit(FunctionDeclaration *funcDecl) {
-  print("|-FunctionDeclaration: name=" + funcDecl->getName() + ", return type=" + std::string(magic_enum::enum_name(funcDecl->getReturnType()->getKind())));
+  print("|-FunctionDeclaration: name=" + funcDecl->getName() + ", return type=" + funcDecl->getReturnType()->toString());
   indent();
 
   print("|-Args:");
   indent();
 
   for (auto &arg : funcDecl->getParams()) {
-    print("name=" + arg->getName() + ", type=" + std::string(magic_enum::enum_name(arg->getType()->getKind())));
+    print("name=" + arg->getName() + ", type=" + arg->getType()->toString());
   }
 
   resetIndent();

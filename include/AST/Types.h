@@ -148,6 +148,8 @@ public:
         return "mat";
       case TypeKind::Struct:
         return "struct";
+      case TypeKind::Void:
+        return "void";
       default:
         return "opaque";
     }
@@ -351,7 +353,7 @@ public:
   }
 
   std::string toString() override {
-    return structName;
+    return "struct '" + structName + "'";
   }
 
 private:

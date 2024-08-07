@@ -40,6 +40,23 @@ int main(int argc, char** argv) {
         return -1;
     }
     
+    bool printAST = false;
+    bool codeGen = true;
+
+    for (size_t i = 2; i < argc; i++) {
+        std::string arg = argv[i];
+
+        if (arg == "--print-ast") {
+            printAST = true;
+        } else if (arg == "--no-codegen") {
+            codeGen = false;
+        } else {
+            std::cout << "Unrecognized argument: '" << arg << "'." << std::endl;
+            return -1;
+        }
+    }
+
+
     std::ifstream glslIn(argv[1]);
     std::stringstream shaderCodeBuffer;
     shaderCodeBuffer << glslIn.rdbuf();
@@ -59,17 +76,23 @@ int main(int argc, char** argv) {
     auto &tokens = (*resp).get();
     auto parser = Parser(tokens);
     auto translationUnit = parser.parseTranslationUnit();
-    auto mlirCodeGen = std::make_unique<codegen::MLIRCodeGen>();
-    
-    translationUnit->accept(mlirCodeGen.get());
-    mlirCodeGen->dump();
-    
-    if (mlirCodeGen->verify()) {
-        std::cout << "SPIR-V module verified" << std::endl;
+
+    if (printAST) {
+        auto printer = PrinterASTVisitor();
+        translationUnit->accept(&printer);
     }
 
-    auto checker = std::make_unique<SemanticAnalyzer>();
-    translationUnit->accept(checker.get());
+    if (codeGen) {
+        auto analyzer =  SemanticAnalyzer();
+        translationUnit->accept(&analyzer);
+        auto mlirCodeGen = codegen::MLIRCodeGen();
+        translationUnit->accept(&mlirCodeGen);
+        mlirCodeGen.dump();
+
+        if (mlirCodeGen.verify()) {
+            std::cout << "SPIR-V module verified" << std::endl;
+        }
+    }
 
     return 0;
 }
