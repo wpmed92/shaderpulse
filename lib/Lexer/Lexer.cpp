@@ -114,8 +114,7 @@ bool Lexer::handleIdentifier(Error &error) {
     tok->setTokenKind(TokenKind::Identifier);
   }
 
-  int endCol = col;
-  tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, endCol));
+  tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, col));
   tok->setRawData(token);
   tokenStream.push_back(std::move(tok));
 
@@ -162,8 +161,7 @@ bool Lexer::handleHexLiteral(Error &error) {
 
     tok->setTokenKind(isUnsigned ? TokenKind::UnsignedIntegerConstant
                                  : TokenKind::IntegerConstant);
-    int endCol = col;
-    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, endCol));
+    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, col));
     tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
 
@@ -212,9 +210,7 @@ bool Lexer::handleOctalLiteral(Error &error) {
 
     tok->setTokenKind(isUnsigned ? TokenKind::UnsignedIntegerConstant
                                  : TokenKind::IntegerConstant);
-
-    int endCol = col;
-    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, endCol));
+    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, col));
     tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
 
@@ -276,8 +272,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
             std::make_unique<FloatLiteral>(std::stof(literalConstant)));
       }
 
-      int endCol = col;
-      tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, endCol));
+      tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, col));
       tok->setRawData(literalConstant);
       tokenStream.push_back(std::move(tok));
       return true;
@@ -296,8 +291,7 @@ bool Lexer::handleDecimalOrFloatLiteral(Error &error) {
       tok->setTokenKind(TokenKind::IntegerConstant);
     }
 
-    int endCol = col;
-    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, endCol));
+    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, col));
     tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
     return true;
@@ -353,8 +347,7 @@ bool Lexer::handleExponentialForm(std::string &literalConstant, Error &error) {
       tok->setTokenKind(TokenKind::FloatConstant);
     }
 
-    int endCol = col;
-    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, endCol));
+    tok->setSourceLocation(ast::SourceLocation(lineNum, startCol, lineNum, col));
     tok->setRawData(literalConstant);
     tokenStream.push_back(std::move(tok));
 
