@@ -760,6 +760,7 @@ std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
     return nullptr;
   }
 
+  auto startLoc = curToken->getSourceLocation();
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
@@ -788,7 +789,12 @@ std::unique_ptr<SwitchStatement> Parser::parseSwitchStatement() {
     return nullptr;
   }
 
-  return std::make_unique<SwitchStatement>(std::move(exp), std::move(stmt));
+  auto endLoc = peek(-1)->getSourceLocation();
+  return std::make_unique<SwitchStatement>(
+    SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.endLine, endLoc.endCol),
+    std::move(exp),
+    std::move(stmt)
+  );
 }
 
 std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
@@ -796,6 +802,7 @@ std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
     return nullptr;
   }
 
+  SourceLocation startLoc = curToken->getSourceLocation();
   advanceToken();
 
   if (!curToken->is(TokenKind::lParen)) {
@@ -815,7 +822,11 @@ std::unique_ptr<WhileStatement> Parser::parseWhileStatement() {
   advanceToken();
 
   if (auto stmt = parseStatement()) {
-    return std::make_unique<WhileStatement>(std::move(exp), std::move(stmt));
+    auto endLoc = peek(-1)->getSourceLocation();
+    return std::make_unique<WhileStatement>(
+      SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.endLine, endLoc.endCol),
+      std::move(exp),
+      std::move(stmt));
   } else {
     return nullptr;
   }

@@ -64,7 +64,7 @@ void PrinterASTVisitor::visit(VariableDeclaration *varDecl) {
 }
 
 void PrinterASTVisitor::visit(SwitchStatement *switchStmt) {
-  print("|-SwitchStatement");
+  print("|-SwitchStatement " + loc(switchStmt->getSourceLocation()));
 
   switchStmt->getExpression()->accept(this);
   indent();
@@ -72,7 +72,7 @@ void PrinterASTVisitor::visit(SwitchStatement *switchStmt) {
 }
 
 void PrinterASTVisitor::visit(WhileStatement *whileStmt) {
-  print("|-WhileStatement");
+  print("|-WhileStatement " + loc(whileStmt->getSourceLocation()));
 
   whileStmt->getCondition()->accept(this);
   indent();

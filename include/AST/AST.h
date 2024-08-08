@@ -446,9 +446,9 @@ private:
 class SwitchStatement : public Statement {
 
 public:
-  SwitchStatement(std::unique_ptr<Expression> expression,
+  SwitchStatement(SourceLocation location, std::unique_ptr<Expression> expression,
                   std::unique_ptr<Statement> statements)
-      : expression(std::move(expression)), statements(std::move(statements)) {}
+      : ASTNode(location), expression(std::move(expression)), statements(std::move(statements)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -496,9 +496,9 @@ private:
 class WhileStatement : public Statement {
 
 public:
-  WhileStatement(std::unique_ptr<Expression> condition,
+  WhileStatement(SourceLocation location, std::unique_ptr<Expression> condition,
                  std::unique_ptr<Statement> body)
-      : condition(std::move(condition)), body(std::move(body)) {}
+      : ASTNode(location), condition(std::move(condition)), body(std::move(body)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
