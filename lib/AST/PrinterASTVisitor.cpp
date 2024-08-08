@@ -54,7 +54,7 @@ void PrinterASTVisitor::visit(VariableDeclarationList *varDeclList) {
 
 void PrinterASTVisitor::visit(VariableDeclaration *varDecl) {
   auto typeName = varDecl->getType() != nullptr ? varDecl->getType()->toString() : "";
-  print("|-VariableDeclaration: name=" + varDecl->getIdentifierName() + ((typeName != "") ? (", type=" + typeName) : "") + loc(varDecl->getSourceLocation()));
+  print("|-VariableDeclaration: name=" + varDecl->getIdentifierName() + ((typeName != "") ? (", type=" + typeName) : "") + " " + loc(varDecl->getSourceLocation()));
 
   indent();
   if (auto exp = varDecl->getInitialzerExpression()) {
@@ -81,7 +81,7 @@ void PrinterASTVisitor::visit(WhileStatement *whileStmt) {
 }
 
 void PrinterASTVisitor::visit(DoStatement *doStmt) {
-  print("|-DoStatement");
+  print("|-DoStatement " + loc(doStmt->getSourceLocation()));
 
   doStmt->getCondition()->accept(this);
   indent();
@@ -300,9 +300,9 @@ void PrinterASTVisitor::visit(CaseLabel *caseLabel) {
 std::string PrinterASTVisitor::loc(const SourceLocation &sourceLoc) {
   std::stringstream ssLoc;
   if (sourceLoc.startLine == sourceLoc.endLine) {
-    ssLoc << "[line: " << sourceLoc.startLine << ", col:" << sourceLoc.startCol << " -> " << "col:" << sourceLoc.endCol << "]";
+    ssLoc << "[line:" << sourceLoc.startLine << ", col:" << sourceLoc.startCol << " -> " << "col:" << sourceLoc.endCol << "]";
   } else {
-    ssLoc << "[line: " << sourceLoc.startLine << ", col:" << sourceLoc.startCol << "] -> " << "[line: " << sourceLoc.endLine << ", col:" << sourceLoc.endCol << "]";
+    ssLoc << "[line:" << sourceLoc.startLine << ", col:" << sourceLoc.startCol << "] -> " << "[line: " << sourceLoc.endLine << ", col:" << sourceLoc.endCol << "]";
   }
 
   return ssLoc.str();

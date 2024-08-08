@@ -513,9 +513,9 @@ private:
 class DoStatement : public Statement {
 
 public:
-  DoStatement(std::unique_ptr<Statement> body,
+  DoStatement(SourceLocation location, std::unique_ptr<Statement> body,
               std::unique_ptr<Expression> condition)
-      : body(std::move(body)), condition(std::move(condition)) {}
+      : ASTNode(location), body(std::move(body)), condition(std::move(condition)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 

@@ -837,6 +837,7 @@ std::unique_ptr<DoStatement> Parser::parseDoStatement() {
     return nullptr;
   }
 
+  auto startLoc = curToken->getSourceLocation();
   advanceToken();
 
   if (auto stmt = parseStatement()) {
@@ -868,9 +869,14 @@ std::unique_ptr<DoStatement> Parser::parseDoStatement() {
       return nullptr;
     }
 
+    auto endLoc = curToken->getSourceLocation();
     advanceToken();
 
-    return std::make_unique<DoStatement>(std::move(stmt), std::move(exp));
+    return std::make_unique<DoStatement>(
+      SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.endLine, endLoc.endCol),
+      std::move(stmt),
+      std::move(exp)
+    );
   } else {
     return nullptr;
   }
