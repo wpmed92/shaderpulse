@@ -152,7 +152,7 @@ void PrinterASTVisitor::visit(ConditionalExpression *condExp) {
 }
 
 void PrinterASTVisitor::visit(CallExpression *callee) {
-  print("|-CallExpression: name=" + callee->getFunctionName());
+  print("|-CallExpression: name=" + callee->getFunctionName() + " " + loc(callee->getSourceLocation()));
 
   indent();
 

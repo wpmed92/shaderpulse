@@ -1217,30 +1217,21 @@ std::unique_ptr<Expression> Parser::parsePrimaryExpression() {
   } else if (auto callExp = parseCallExpression()) {
     return callExp;
   } else if (curToken->is(TokenKind::Identifier)) {
-    return std::make_unique<VariableExpression>(curToken->getIdentifierName(), parsingLhsExpression);
+    return std::make_unique<VariableExpression>(curToken->getSourceLocation(), curToken->getIdentifierName(), parsingLhsExpression);
   } else if (curToken->is(TokenKind::IntegerConstant)) {
     auto int_const = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
-
-    return std::make_unique<IntegerConstantExpression>(int_const->getVal());
+    return std::make_unique<IntegerConstantExpression>(curToken->getSourceLocation(), int_const->getVal());
   } else if (curToken->is(TokenKind::UnsignedIntegerConstant)) {
-    auto uint_const =
-        dynamic_cast<UnsignedIntegerLiteral *>(curToken->getLiteralData());
-
-    return std::make_unique<UnsignedIntegerConstantExpression>(
-        uint_const->getVal());
+    auto uint_const = dynamic_cast<UnsignedIntegerLiteral *>(curToken->getLiteralData());
+    return std::make_unique<UnsignedIntegerConstantExpression>(curToken->getSourceLocation(), uint_const->getVal());
   } else if (curToken->is(TokenKind::FloatConstant)) {
     auto float_const = dynamic_cast<FloatLiteral *>(curToken->getLiteralData());
-
-    return std::make_unique<FloatConstantExpression>(float_const->getVal());
+    return std::make_unique<FloatConstantExpression>(curToken->getSourceLocation(), float_const->getVal());
   } else if (curToken->is(TokenKind::DoubleConstant)) {
-    auto double_const =
-        dynamic_cast<DoubleLiteral *>(curToken->getLiteralData());
-
-    return std::make_unique<DoubleConstantExpression>(double_const->getVal());
-  } else if (curToken->is(TokenKind::kw_true) ||
-             curToken->is(TokenKind::kw_false)) {
-    return std::make_unique<BoolConstantExpression>(
-        curToken->is(TokenKind::kw_true));
+    auto double_const = dynamic_cast<DoubleLiteral *>(curToken->getLiteralData());
+    return std::make_unique<DoubleConstantExpression>(curToken->getSourceLocation(), double_const->getVal());
+  } else if (curToken->is(TokenKind::kw_true) || curToken->is(TokenKind::kw_false)) {
+    return std::make_unique<BoolConstantExpression>(curToken->getSourceLocation(), curToken->is(TokenKind::kw_true));
   } else if (curToken->is(TokenKind::lParen)) {
     advanceToken();
     auto exp = parseConditionalExpression();
@@ -1430,13 +1421,15 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
     return nullptr;
   }
 
+  auto startLoc = curToken->getSourceLocation();
   const std::string &name = curToken->getIdentifierName();
 
   advanceToken();
   advanceToken();
 
   if (curToken->is(TokenKind::rParen)) {
-    return std::make_unique<CallExpression>(name);
+    auto endLoc = curToken->getSourceLocation();
+    return std::make_unique<CallExpression>(SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.endLine, endLoc.endCol), name);
   }
 
   std::vector<std::unique_ptr<Expression>> arguments;
@@ -1462,7 +1455,8 @@ std::unique_ptr<CallExpression> Parser::parseCallExpression() {
     return nullptr;
   }
 
-  return std::make_unique<CallExpression>(name, std::move(arguments));
+  auto endLoc = curToken->getSourceLocation();
+  return std::make_unique<CallExpression>(SourceLocation(startLoc.startLine, startLoc.startCol, endLoc.endLine, endLoc.endCol), name, std::move(arguments));
 }
 
 std::unique_ptr<Expression> Parser::parseConditionalExpression() {

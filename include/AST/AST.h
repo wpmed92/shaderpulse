@@ -72,7 +72,7 @@ protected:
 
 class Expression : public ASTNode {
 public:
-  Expression(bool lhs = false) : lhs(lhs) { }
+  Expression(SourceLocation location = SourceLocation(), bool lhs = false) : ASTNode(location), lhs(lhs) { }
   virtual ~Expression() = default;
   bool isRhs() const { return !lhs; }
   bool isLhs() const { return lhs; }
@@ -85,7 +85,7 @@ private:
 class IntegerConstantExpression : public Expression {
 
 public:
-  IntegerConstantExpression(int32_t val) : val(val), type(std::make_unique<Type>(TypeKind::Integer)) {}
+  IntegerConstantExpression(SourceLocation location, int32_t val) : Expression(location), val(val), type(std::make_unique<Type>(TypeKind::Integer)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -101,7 +101,8 @@ private:
 class UnsignedIntegerConstantExpression : public Expression {
 
 public:
-  UnsignedIntegerConstantExpression(uint32_t val) : val(val), type(std::make_unique<Type>(TypeKind::UnsignedInteger)) {}
+  UnsignedIntegerConstantExpression(SourceLocation location, uint32_t val) :
+    Expression(location, false), val(val), type(std::make_unique<Type>(TypeKind::UnsignedInteger)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); } 
 
@@ -116,7 +117,7 @@ private:
 
 class FloatConstantExpression : public Expression {
 public:
-  FloatConstantExpression(float val) : val(val), type(std::make_unique<Type>(TypeKind::Float)) {}
+  FloatConstantExpression(SourceLocation location, float val) : Expression(location), val(val), type(std::make_unique<Type>(TypeKind::Float)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -131,7 +132,7 @@ private:
 
 class DoubleConstantExpression : public Expression {
 public:
-  DoubleConstantExpression(double val) : val(val), type(std::make_unique<Type>(TypeKind::Double)) {}
+  DoubleConstantExpression(SourceLocation location, double val) : Expression(location), val(val), type(std::make_unique<Type>(TypeKind::Double)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
   Type *getType() const { return type.get(); }
@@ -145,7 +146,7 @@ private:
 
 class BoolConstantExpression : public Expression {
 public:
-  BoolConstantExpression(bool val) : val(val), type(std::make_unique<Type>(TypeKind::Bool)) {}
+  BoolConstantExpression(SourceLocation location, bool val) : Expression(location), val(val), type(std::make_unique<Type>(TypeKind::Bool)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -160,7 +161,8 @@ private:
 
 class VariableExpression : public Expression {
 public:
-  VariableExpression(const std::string &name, bool isLhs = false) : Expression(isLhs), name(name) {}
+  VariableExpression(SourceLocation location, const std::string &name, bool isLhs = false) :
+    Expression(location, isLhs), name(name) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -174,7 +176,7 @@ class MemberAccessExpression : public Expression {
   
 public:
   MemberAccessExpression(std::unique_ptr<Expression> baseComposite, std::vector<std::unique_ptr<Expression>> members, bool lhs = false) :
-     Expression(lhs), baseComposite(std::move(baseComposite)), members(std::move(members)) {
+     Expression(SourceLocation(), lhs), baseComposite(std::move(baseComposite)), members(std::move(members)) {
 
   }
 
@@ -191,7 +193,7 @@ class ArrayAccessExpression : public Expression {
   
 public:
   ArrayAccessExpression(std::unique_ptr<Expression> array, std::vector<std::unique_ptr<Expression>> accessChain, bool lhs = false) :
-     Expression(lhs), array(std::move(array)), accessChain(std::move(accessChain)) {
+     Expression(SourceLocation(), lhs), array(std::move(array)), accessChain(std::move(accessChain)) {
 
   }
 
@@ -207,12 +209,12 @@ private:
 class CallExpression : public Expression {
 
 public:
-  CallExpression(const std::string &functionName)
-      : functionName(functionName) {}
+  CallExpression(SourceLocation location, const std::string &functionName)
+      : Expression(location), functionName(functionName) {}
 
-  CallExpression(const std::string &functionName,
+  CallExpression(SourceLocation location, const std::string &functionName,
                  std::vector<std::unique_ptr<Expression>> arguments)
-      : functionName(functionName), arguments(std::move(arguments)) {}
+      : Expression(location), functionName(functionName), arguments(std::move(arguments)) {}
 
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
@@ -230,16 +232,12 @@ class ConstructorExpression : public Expression {
 
 public:
     ConstructorExpression(std::unique_ptr<Type> type) : 
-      type(std::move(type))  {
-
-    }
+      type(std::move(type)) { }
 
   ConstructorExpression(std::unique_ptr<Type> type, 
     std::vector<std::unique_ptr<Expression>> arguments) : 
       type(std::move(type)), 
-      arguments(std::move(arguments))  {
-
-    }
+      arguments(std::move(arguments)) { }
 
   void accept(ASTVisitor *visitor) override {
     visitor->visit(this);
