@@ -33,29 +33,8 @@ struct SymbolTableEntry {
 class MLIRCodeGen : public ASTVisitor {
 
 public:
-  MLIRCodeGen() : builder(&context), globalScope(symbolTable) {
-    context.getOrLoadDialect<spirv::SPIRVDialect>();
-    initModuleOp();
-  }
-
-  void initModuleOp() {
-    OperationState state(UnknownLoc::get(&context),
-                         spirv::ModuleOp::getOperationName());
-    state.addAttribute("addressing_model",
-                       builder.getAttr<spirv::AddressingModelAttr>(
-                           spirv::AddressingModel::Logical));
-    state.addAttribute("memory_model", builder.getAttr<spirv::MemoryModelAttr>(
-                                           spirv::MemoryModel::GLSL450));
-                    
-    state.addAttribute("vce_triple",
-                       spirv::VerCapExtAttr::get(
-                           spirv::Version::V_1_0,
-                           { spirv::Capability::Shader },
-                           llvm::ArrayRef<spirv::Extension>(), &context));
-    spirv::ModuleOp::build(builder, state);
-    spirvModule = cast<spirv::ModuleOp>(Operation::create(state));
-  }
-
+  MLIRCodeGen();
+  void initModuleOp();
   void dump();
   bool verify();
   void visit(TranslationUnit *) override;
