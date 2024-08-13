@@ -7,6 +7,23 @@ using namespace ast;
 
 namespace parser {
 
+Parser::Parser(std::vector<std::unique_ptr<Token>> &tokens)
+  : tokenStream(tokens), cursor(-1), curToken(nullptr), parsingLhsExpression(false) {
+    advanceToken();
+}
+
+ParserError::ParserError() : kind(ParserErrorKind::None) {
+
+}
+
+ParserError::ParserError(ParserErrorKind kind, const std::string &msg) : kind(kind), msg(msg) {
+
+}
+
+bool ParserError::none() {
+  return kind == ParserErrorKind::None;
+}
+
 std::map<BinaryOperator, int> Parser::binopPrecedence = {
     {BinaryOperator::LogOr, 10},     {BinaryOperator::LogXor, 20},
     {BinaryOperator::LogAnd, 30},    {BinaryOperator::BitIor, 40},
@@ -1501,6 +1518,16 @@ const Token *Parser::peek(int k) {
 void Parser::reportError(ParserErrorKind kind, const std::string &msg) {
   std::cout << msg << ", at line: " << curToken->getSourceLocation().startLine << ", col: " << curToken->getSourceLocation().startCol << std::endl;
   error = ParserError(kind, msg);
+}
+
+void Parser::savePosition() {
+  savedPositions.push_back(cursor);
+}
+
+void Parser::rollbackPosition() {
+  cursor = savedPositions.back() - 1;
+  savedPositions.pop_back();
+  advanceToken();
 }
 
 }; // namespace parser

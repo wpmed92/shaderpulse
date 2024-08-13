@@ -21,23 +21,19 @@ enum ParserErrorKind {
 };
 
 struct ParserError {
-  ParserError() : kind(ParserErrorKind::None) {}
-  ParserError(ParserErrorKind kind, const std::string &msg) : kind(kind), msg(msg) {}
+  ParserError();
+  ParserError(ParserErrorKind kind, const std::string &msg);
 
   ParserErrorKind kind;
   std::string msg;
 
-  bool none() { return kind == ParserErrorKind::None; }
+  bool none();
 };
 
 class Parser {
 
 public:
-  Parser(std::vector<std::unique_ptr<Token>> &tokens)
-      : tokenStream(tokens), cursor(-1), curToken(nullptr), parsingLhsExpression(false) {
-    advanceToken();
-  }
-
+  Parser(std::vector<std::unique_ptr<Token>> &tokens);
   std::unique_ptr<TranslationUnit> parseTranslationUnit();
   std::unique_ptr<ExternalDeclaration> parseExternalDeclaration();
   std::unique_ptr<FunctionDeclaration> parseFunctionDeclaration();
@@ -108,15 +104,8 @@ private:
   makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>>, TypeKind, int,
                  int);
 
-  void savePosition() {
-    savedPositions.push_back(cursor);
-  }
-
-  void rollbackPosition() {
-    cursor = savedPositions.back() - 1;
-    savedPositions.pop_back();
-    advanceToken();
-  }
+  void savePosition();
+  void rollbackPosition();
 };
 
 } // namespace parser
