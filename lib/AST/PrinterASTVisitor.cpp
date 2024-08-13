@@ -185,11 +185,11 @@ void PrinterASTVisitor::visit(InitializerExpression *initExp) {
 }
 
 void PrinterASTVisitor::visit(VariableExpression *varExp) {
-  print("|-VariableExpression: name=" + varExp->getName());
+  print("|-VariableExpression: name=" + varExp->getName() + " " + loc(varExp->getSourceLocation()));
 }
 
 void PrinterASTVisitor::visit(IntegerConstantExpression *intExp) { 
-  print("|-IntegerConstantExpression: value=" + std::to_string(intExp->getVal()));
+  print("|-IntegerConstantExpression: value=" + std::to_string(intExp->getVal()) + " " + loc(intExp->getSourceLocation()));
 }
 
 void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
@@ -205,19 +205,19 @@ void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
 }
 
 void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintExp) {
-  print("|-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()));
+  print("|-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()) + " " + loc(uintExp->getSourceLocation()));
 }
 
 void PrinterASTVisitor::visit(FloatConstantExpression *floatExp) {
-  print("|-FloatConstantExpression: value=" + std::to_string(floatExp->getVal()));
+  print("|-FloatConstantExpression: value=" + std::to_string(floatExp->getVal()) + " " + loc(floatExp->getSourceLocation()));
 }
 
 void PrinterASTVisitor::visit(DoubleConstantExpression *doubleExp) {
-  print("|-DoubleConstantExpression: value=" + std::to_string(doubleExp->getVal()));
+  print("|-DoubleConstantExpression: value=" + std::to_string(doubleExp->getVal()) + " " + loc(doubleExp->getSourceLocation()));
 }
 
 void PrinterASTVisitor::visit(BoolConstantExpression *boolExp) {
-  print("|-BoolConstantExpression: value=" + std::to_string(boolExp->getVal()));
+  print("|-BoolConstantExpression: value=" + std::to_string(boolExp->getVal()) + " " + loc(boolExp->getSourceLocation()));
 }
 
 void PrinterASTVisitor::visit(MemberAccessExpression *memberExp) {
