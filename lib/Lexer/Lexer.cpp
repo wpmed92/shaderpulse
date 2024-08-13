@@ -8,6 +8,14 @@ namespace shaderpulse {
 
 namespace lexer {
 
+Lexer::Lexer(const std::string &characters) : characters(characters), curCharPos(0), savedCharPos(0), lineNum(1), col(1) { }
+
+Error::Error() : kind(ErrorKind::None) { }
+
+Error::Error(ErrorKind kind, const std::string &msg) : kind(kind), msg(msg) { }
+
+bool Error::none() { return kind == ErrorKind::None; }
+
 std::unordered_map<std::string, TokenKind> Lexer::stringKeywordToTokenKind = {
 #define KEYWORD(X) {TOSTRING(X), TokenKind::kw_##X},
 #include "Lexer/TokenDefs.h"

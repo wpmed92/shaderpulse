@@ -29,20 +29,18 @@ enum class SuffixCheckResult {
 };
 
 struct Error {
-  Error() : kind(ErrorKind::None) {}
-  Error(ErrorKind kind, const std::string &msg) : kind(kind), msg(msg) {}
+  Error();
+  Error(ErrorKind kind, const std::string &msg);
 
   ErrorKind kind;
   std::string msg;
 
-  bool none() { return kind == ErrorKind::None; }
+  bool none();
 };
 
 class Lexer {
 public:
-  Lexer(const std::string &characters)
-      : characters(characters), curCharPos(0), savedCharPos(0), lineNum(1), col(1) {}
-
+  Lexer(const std::string &characters);
   tl::expected<std::reference_wrapper<std::vector<std::unique_ptr<Token>>>,
                Error>
   lexCharacterStream();

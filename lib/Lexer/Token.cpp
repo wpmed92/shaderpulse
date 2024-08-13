@@ -4,8 +4,30 @@ namespace shaderpulse {
 
 namespace lexer {
 
+// Literals
 NumericLiteral::~NumericLiteral(){};
 
+// signed
+IntegerLiteral::IntegerLiteral(int32_t val) : val(val) {}
+
+int32_t IntegerLiteral:: getVal() { return val; }
+
+// unsigned
+UnsignedIntegerLiteral::UnsignedIntegerLiteral(uint32_t val) : val(val) {}
+
+uint32_t UnsignedIntegerLiteral::getVal() { return val; }
+
+// float
+FloatLiteral::FloatLiteral(float val) : val(val) {}
+
+float FloatLiteral::getVal() { return val; }
+
+// double
+DoubleLiteral::DoubleLiteral(double val) : val(val) {}
+
+double DoubleLiteral::getVal() { return val; }
+
+// Token
 void Token::setTokenKind(TokenKind kind) { tokenKind = kind; }
 
 TokenKind Token::getTokenKind() const { return tokenKind; }

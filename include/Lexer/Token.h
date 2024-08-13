@@ -14,8 +14,8 @@ public:
 
 class IntegerLiteral : public NumericLiteral {
 public:
-  IntegerLiteral(int32_t val) : val(val) {}
-  int32_t getVal() { return val; }
+  IntegerLiteral(int32_t val);
+  int32_t getVal();
 
 private:
   int32_t val;
@@ -23,8 +23,8 @@ private:
 
 class UnsignedIntegerLiteral : public NumericLiteral {
 public:
-  UnsignedIntegerLiteral(uint32_t val) : val(val) {}
-  uint32_t getVal() { return val; }
+  UnsignedIntegerLiteral(uint32_t val);
+  uint32_t getVal();
 
 private:
   uint32_t val;
@@ -32,8 +32,8 @@ private:
 
 class FloatLiteral : public NumericLiteral {
 public:
-  FloatLiteral(float val) : val(val) {}
-  float getVal() { return val; }
+  FloatLiteral(float val);
+  float getVal();
 
 private:
   float val;
@@ -41,8 +41,8 @@ private:
 
 class DoubleLiteral : public NumericLiteral {
 public:
-  DoubleLiteral(double val) : val(val) {}
-  double getVal() { return val; }
+  DoubleLiteral(double val);
+  double getVal();
 
 private:
   double val;
