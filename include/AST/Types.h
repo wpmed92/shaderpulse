@@ -128,6 +128,18 @@ public:
     return other.kind == kind;
   }
 
+  virtual bool isIntLike() {
+    return kind == TypeKind::Integer || kind == TypeKind::UnsignedInteger;
+  }
+
+  virtual bool isUintLike() {
+    return kind == TypeKind::UnsignedInteger;
+  }
+
+  virtual bool isFloatLike() {
+    return kind == TypeKind::Float || kind == TypeKind::Double;
+  }
+
   virtual std::string toString() {
     switch (kind) {
       case TypeKind::Integer:
@@ -215,6 +227,18 @@ public:
     }
 
     return false;
+  }
+
+  bool isIntLike() override {
+    return elementType->getKind() == TypeKind::Integer || elementType->getKind() == TypeKind::UnsignedInteger;
+  }
+
+  bool isUintLike() override {
+    return elementType->getKind() == TypeKind::UnsignedInteger;
+  }
+
+  bool isFloatLike() override {
+    return elementType->getKind() == TypeKind::Float || elementType->getKind() == TypeKind::Double;
   }
 
   std::string toString() override {

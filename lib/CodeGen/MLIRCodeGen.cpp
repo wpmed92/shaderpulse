@@ -77,23 +77,49 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
 
   switch (binExp->getOp()) {
   case BinaryOperator::Add:
-    val = builder.create<spirv::FAddOp>(loc, lhs, rhs);
+    if (typeContext->isIntLike()) {
+      val = builder.create<spirv::IAddOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::FAddOp>(loc, lhs, rhs);
+    }
     expressionStack.push_back(val);
     break;
   case BinaryOperator::Sub:
-    val = builder.create<spirv::FSubOp>(loc, lhs, rhs);
+    if (typeContext->isIntLike()) {
+      val = builder.create<spirv::ISubOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::FSubOp>(loc, lhs, rhs);
+    }
+
     expressionStack.push_back(val);
     break;
   case BinaryOperator::Mul:
-    val = builder.create<spirv::FMulOp>(loc, lhs, rhs);
+  if (typeContext->isIntLike()) {
+      val = builder.create<spirv::IMulOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::FMulOp>(loc, lhs, rhs);
+    }
+
     expressionStack.push_back(val);
     break;
   case BinaryOperator::Div:
-    val = builder.create<spirv::FDivOp>(loc, lhs, rhs);
+    if (typeContext->isUintLike()) {
+      val = builder.create<spirv::UDivOp>(loc, lhs, rhs);
+    } else if (typeContext->isIntLike()) {
+      val = builder.create<spirv::SDivOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::FDivOp>(loc, lhs, rhs);
+    }
+
     expressionStack.push_back(val);
     break;
   case BinaryOperator::Mod:
-    val = builder.create<spirv::FRemOp>(loc, lhs, rhs);
+    if (typeContext->isIntLike()) {
+      val = builder.create<spirv::SRemOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::FRemOp>(loc, lhs, rhs);
+    }
+
     expressionStack.push_back(val);
     break;
   case BinaryOperator::ShiftLeft:
@@ -240,6 +266,7 @@ void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
 void MLIRCodeGen::createVariable(shaderpulse::Type *type,
                                  VariableDeclaration *varDecl) {
   shaderpulse::Type *varType = (type) ? type : varDecl->getType();
+  typeContext = varType;
 
   if (inGlobalScope) {
     std::cout << "In global scope" << std::endl;

@@ -97,6 +97,7 @@ private:
   
   mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;
+  Type* typeContext;
 };
 
 }; // namespace codegen
