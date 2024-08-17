@@ -10,6 +10,9 @@ struct Color {
 
 void main() {
   Color color = Color(1.0, 0.0, 0.0, 1.0);
+  uint b = 1u;
+  uint c = 2u;
+  bool a = c < b;
   outColor = vec4(color.r, color.g, color.b, color.a);
   return;
 }

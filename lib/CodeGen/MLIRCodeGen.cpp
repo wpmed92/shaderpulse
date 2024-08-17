@@ -54,8 +54,8 @@ void MLIRCodeGen::visit(TranslationUnit *unit) {
   insertEntryPoint();
 }
 
-Value MLIRCodeGen::popExpressionStack() {
-  Value val = expressionStack.back();
+std::pair<Type*, Value> MLIRCodeGen::popExpressionStack() {
+  auto val = expressionStack.back();
   expressionStack.pop_back();
   return val;
 }
@@ -64,12 +64,12 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   binExp->getLhs()->accept(this);
   binExp->getRhs()->accept(this);
 
-  Value rhs = popExpressionStack();
-  Value lhs = popExpressionStack();
+  std::pair<Type*, Value> rhsPair = popExpressionStack();
+  std::pair<Type*, Value> lhsPair = popExpressionStack();
 
-  // TODO: handle other types than float. Need to figure out the expression this
-  // BinaryExpression is part of to know what kind of spirv op to use. (float,
-  // int?)
+  Value rhs = rhsPair.second;
+  Value lhs = lhsPair.second;
+  Type* typeContext = lhsPair.first;
 
   // TODO: implement source location
   auto loc = builder.getUnknownLoc();
@@ -82,7 +82,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
     } else {
       val = builder.create<spirv::FAddOp>(loc, lhs, rhs);
     }
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Sub:
     if (typeContext->isIntLike()) {
@@ -91,7 +91,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
       val = builder.create<spirv::FSubOp>(loc, lhs, rhs);
     }
 
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Mul:
   if (typeContext->isIntLike()) {
@@ -100,7 +100,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
       val = builder.create<spirv::FMulOp>(loc, lhs, rhs);
     }
 
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Div:
     if (typeContext->isUintLike()) {
@@ -111,7 +111,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
       val = builder.create<spirv::FDivOp>(loc, lhs, rhs);
     }
 
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Mod:
     if (typeContext->isIntLike()) {
@@ -120,62 +120,94 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
       val = builder.create<spirv::FRemOp>(loc, lhs, rhs);
     }
 
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::ShiftLeft:
     val = builder.create<spirv::ShiftLeftLogicalOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::ShiftRight:
     val = builder.create<spirv::ShiftRightLogicalOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Lt:
-    val = builder.create<spirv::FOrdLessThanOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    if (typeContext->isFloatLike()) {
+      val = builder.create<spirv::FOrdLessThanOp>(loc, lhs, rhs);
+    } else if (typeContext->isUintLike()) {
+      val = builder.create<spirv::ULessThanOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::SLessThanOp>(loc, lhs, rhs);
+    }
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Gt:
-    val = builder.create<spirv::FOrdGreaterThanOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    if (typeContext->isFloatLike()) {
+      val = builder.create<spirv::FOrdGreaterThanOp>(loc, lhs, rhs);
+    } else if (typeContext->isUintLike()) {
+      val = builder.create<spirv::UGreaterThanOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::SGreaterThanOp>(loc, lhs, rhs);
+    }
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::LtEq:
-    val = builder.create<spirv::FOrdLessThanEqualOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    if (typeContext->isFloatLike()) {
+      val = builder.create<spirv::FOrdLessThanEqualOp>(loc, lhs, rhs);
+    } else if (typeContext->isUintLike()) {
+      val = builder.create<spirv::ULessThanEqualOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::SLessThanEqualOp>(loc, lhs, rhs);
+    }
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::GtEq:
-    val = builder.create<spirv::FOrdGreaterThanEqualOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    if (typeContext->isFloatLike()) {
+      val = builder.create<spirv::FOrdGreaterThanEqualOp>(loc, lhs, rhs);
+    } else if (typeContext->isUintLike()) {
+      val = builder.create<spirv::UGreaterThanEqualOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::SGreaterThanEqualOp>(loc, lhs, rhs);
+    }
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Eq:
-    val = builder.create<spirv::FOrdEqualOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    if (typeContext->isFloatLike()) {
+      val = builder.create<spirv::FOrdEqualOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::IEqualOp>(loc, lhs, rhs);
+    }
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Neq:
-    val = builder.create<spirv::FOrdNotEqualOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    if (typeContext->isFloatLike()) {
+      val = builder.create<spirv::FOrdNotEqualOp>(loc, lhs, rhs);
+    } else {
+      val = builder.create<spirv::INotEqualOp>(loc, lhs, rhs);
+    }
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::BitAnd:
     val = builder.create<spirv::BitwiseAndOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::BitXor:
     val = builder.create<spirv::BitwiseXorOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::BitIor:
     val = builder.create<spirv::BitwiseOrOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::LogAnd:
     val = builder.create<spirv::LogicalAndOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::LogXor:
     // TODO: not implemented in current spirv dialect
     break;
   case BinaryOperator::LogOr:
     val = builder.create<spirv::LogicalOrOp>(loc, lhs, rhs);
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   }
 }
@@ -185,18 +217,18 @@ void MLIRCodeGen::visit(ConditionalExpression *condExp) {
   condExp->getTruePart()->accept(this);
   condExp->getCondition()->accept(this);
 
-  Value condition = popExpressionStack();
-  Value truePart = popExpressionStack();
-  Value falsePart = popExpressionStack();
+  std::pair<Type*, Value> condition = popExpressionStack();
+  std::pair<Type*, Value> truePart = popExpressionStack();
+  std::pair<Type*, Value> falsePart = popExpressionStack();
 
   Value res = builder.create<spirv::SelectOp>(
     builder.getUnknownLoc(),
-    /* Harcoded, fix me */ mlir::FloatType::getF32(&context),
-    condition,
-    truePart,
-    falsePart);
+    convertShaderPulseType(&context, truePart.first, structDeclarations),
+    condition.second,
+    truePart.second,
+    falsePart.second);
 
-  expressionStack.push_back(res);
+  expressionStack.push_back(std::make_pair(truePart.first, res));
 }
 
 void MLIRCodeGen::visit(ForStatement *forStmt) {
@@ -213,12 +245,12 @@ void MLIRCodeGen::visit(InitializerExpression *initExp) {
       builder.getUnknownLoc(), type,
       IntegerAttr::get(type, APInt(32, 0, true)));
 
-  expressionStack.push_back(val);
+  expressionStack.push_back(std::make_pair(nullptr, val));
 }
 
 void MLIRCodeGen::visit(UnaryExpression *unExp) {
   unExp->getExpression()->accept(this);
-  Value rhs = popExpressionStack();
+  std::pair<Type*, Value> rhs = popExpressionStack();
 
   auto loc = builder.getUnknownLoc();
   Value val;
@@ -234,16 +266,16 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
     expressionStack.push_back(rhs);
     break;
   case UnaryOperator::Dash:
-    val = builder.create<spirv::FNegateOp>(loc, rhs);
-    expressionStack.push_back(val);
+    val = builder.create<spirv::FNegateOp>(loc, rhs.second);
+    expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   case UnaryOperator::Bang:
-    val = builder.create<spirv::LogicalNotOp>(loc, rhs);
-    expressionStack.push_back(val);
+    val = builder.create<spirv::LogicalNotOp>(loc, rhs.second);
+    expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   case UnaryOperator::Tilde:
-    val = builder.create<spirv::NotOp>(loc, rhs);
-    expressionStack.push_back(val);
+    val = builder.create<spirv::NotOp>(loc, rhs.second);
+    expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   }
 }
@@ -286,7 +318,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     Operation *initializerOp = nullptr;
 
     if (expressionStack.size() > 0) {
-      Value val = popExpressionStack();
+      Value val = popExpressionStack().second;
       initializerOp = val.getDefiningOp();
     }
 
@@ -316,7 +348,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     Value val;
 
     if (expressionStack.size() > 0) {
-      val = popExpressionStack();
+      val = popExpressionStack().second;
     }
 
     spirv::PointerType ptrType = spirv::PointerType::get(
@@ -346,7 +378,7 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
 
   whileStmt->getCondition()->accept(this);
 
-  auto conditionOp = popExpressionStack();
+  auto conditionOp = popExpressionStack().second;
 
   auto loc = builder.getUnknownLoc();
 
@@ -392,7 +424,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
   if (constructorExp->getArguments().size() > 0) {
     for (auto &arg : constructorExp->getArguments()) {
       arg->accept(this);
-      operands.push_back(popExpressionStack());
+      operands.push_back(popExpressionStack().second);
     }
   }
 
@@ -403,7 +435,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       if (structDeclarations.find(structName) != structDeclarations.end()) {
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
               builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
-        expressionStack.push_back(val);
+        expressionStack.push_back(std::make_pair(constructorType, val));
       }
 
       break;
@@ -413,7 +445,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
     case TypeKind::Array: {
       mlir::Value val = builder.create<spirv::CompositeConstructOp>(
             builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
-      expressionStack.push_back(val);
+      expressionStack.push_back(std::make_pair(constructorType, val));
       break;
     }
 
@@ -438,7 +470,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       mlir::Value val = builder.create<spirv::CompositeConstructOp>(
         builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), columnVectors);
 
-      expressionStack.push_back(val);
+      expressionStack.push_back(std::make_pair(constructorType, val));
       break;
     }
 
@@ -451,29 +483,31 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
   auto array = arrayAccess->getArray();
   array->accept(this);
-  Value mlirArray = popExpressionStack();
+  std::pair<Type*, Value> mlirArray = popExpressionStack();
+  Type* elementType = dynamic_cast<ArrayType*>(mlirArray.first)->getElementType();
   std::vector<mlir::Value> indices;
 
   for (auto &access : arrayAccess->getAccessChain()) {
     access->accept(this);
-    indices.push_back(popExpressionStack());
+    indices.push_back(popExpressionStack().second);
   }
 
-  Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), mlirArray, indices);
+  Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), mlirArray.second, indices);
 
   if (arrayAccess->isLhs()) {
-    expressionStack.push_back(accessChain);
+    expressionStack.push_back(std::make_pair(elementType, accessChain));
   } else {
-    expressionStack.push_back(builder.create<spirv::LoadOp>(builder.getUnknownLoc(), accessChain)->getResult(0));
+    expressionStack.push_back(std::make_pair(elementType, builder.create<spirv::LoadOp>(builder.getUnknownLoc(), accessChain)->getResult(0)));
   }
 }
 
 void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
   auto baseComposite = memberAccess->getBaseComposite();
   baseComposite->accept(this);
-  Value baseCompositeValue = popExpressionStack();
+  Value baseCompositeValue = popExpressionStack().second;
   std::vector<int> memberIndices;
   std::vector<mlir::Value> memberIndicesAcc;
+  Type* memberType;
 
   if (currentBaseComposite) {
     for (auto &member : memberAccess->getMembers()) {
@@ -489,15 +523,17 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
             currentBaseComposite = structDeclarations[structName];
           }
         }
+
+        memberType = memberIndexPair.second->getType();
       }
     }
 
     if (memberAccess->isLhs()) {
       Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
-      expressionStack.push_back(accessChain);
+      expressionStack.push_back(std::make_pair(memberType, accessChain));
     } else {
       Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
-      expressionStack.push_back(compositeElement);
+      expressionStack.push_back(std::make_pair(memberType, compositeElement));
     }
   }
 }
@@ -518,7 +554,7 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
   auto loc = builder.getUnknownLoc();
 
   ifStmt->getCondition()->accept(this);
-  Value condition = popExpressionStack();
+  Value condition = popExpressionStack().second;
 
   auto selectionOp = builder.create<spirv::SelectionOp>(loc, spirv::SelectionControl::None);
   selectionOp.addMergeBlock();
@@ -563,8 +599,8 @@ void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
   assignmentExp->getUnaryExpression()->accept(this);
   assignmentExp->getExpression()->accept(this);
 
-  Value val = popExpressionStack();
-  Value ptr = popExpressionStack();
+  Value val = popExpressionStack().second;
+  Value ptr = popExpressionStack().second;
 
   builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptr, val);
 }
@@ -584,7 +620,7 @@ void MLIRCodeGen::visit(CallExpression *callExp) {
     if (callExp->getArguments().size() > 0) {
       for (auto &arg : callExp->getArguments()) {
         arg->accept(this);
-        operands.push_back(popExpressionStack());
+        operands.push_back(popExpressionStack().second);
       }
     }
 
@@ -594,7 +630,7 @@ void MLIRCodeGen::visit(CallExpression *callExp) {
         builder.getUnknownLoc(), calledFunc.getFunctionType().getResults(),
         SymbolRefAttr::get(&context, calledFunc.getSymName()), operands);
 
-    expressionStack.push_back(funcCall.getResult(0));
+    expressionStack.push_back(std::make_pair(nullptr, funcCall.getResult(0)));
   } else {
     std::cout << "Function not found." << callExp->getFunctionName()
               << std::endl;
@@ -629,7 +665,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
       }
     }
 
-    expressionStack.push_back(val);
+    expressionStack.push_back(std::make_pair(entry.variable->getType(), val));
   } else {
     std::cout << "Unable to find variable: " << varExp->getName() << std::endl;
   }
@@ -641,7 +677,7 @@ void MLIRCodeGen::visit(IntegerConstantExpression *intConstExp) {
       builder.getUnknownLoc(), type,
       IntegerAttr::get(type, APInt(32, intConstExp->getVal(), true)));
 
-  expressionStack.push_back(val);
+  expressionStack.push_back(std::make_pair(intConstExp->getType(), val));
 }
 
 void MLIRCodeGen::visit(UnsignedIntegerConstantExpression *uintConstExp) {
@@ -650,7 +686,7 @@ void MLIRCodeGen::visit(UnsignedIntegerConstantExpression *uintConstExp) {
       builder.getUnknownLoc(), type,
       IntegerAttr::get(type, APInt(32, uintConstExp->getVal(), false)));
 
-  expressionStack.push_back(val);
+  expressionStack.push_back(std::make_pair(uintConstExp->getType(), val));
 }
 
 void MLIRCodeGen::visit(FloatConstantExpression *floatConstExp) {
@@ -659,7 +695,7 @@ void MLIRCodeGen::visit(FloatConstantExpression *floatConstExp) {
       builder.getUnknownLoc(), type,
       FloatAttr::get(type, APFloat(floatConstExp->getVal())));
 
-  expressionStack.push_back(val);
+  expressionStack.push_back(std::make_pair(floatConstExp->getType(), val));
 }
 
 void MLIRCodeGen::visit(DoubleConstantExpression *doubleConstExp) {
@@ -668,7 +704,7 @@ void MLIRCodeGen::visit(DoubleConstantExpression *doubleConstExp) {
       builder.getUnknownLoc(), type,
       FloatAttr::get(type, APFloat(doubleConstExp->getVal())));
 
-  expressionStack.push_back(val);
+  expressionStack.push_back(std::make_pair(doubleConstExp->getType(), val));
 }
 
 void MLIRCodeGen::visit(BoolConstantExpression *boolConstExp) {
@@ -677,7 +713,7 @@ void MLIRCodeGen::visit(BoolConstantExpression *boolConstExp) {
       builder.getUnknownLoc(), type,
       IntegerAttr::get(type, APInt(1, boolConstExp->getVal())));
 
-  expressionStack.push_back(val);
+  expressionStack.push_back(std::make_pair(boolConstExp->getType(), val));
 }
 
 void MLIRCodeGen::visit(ReturnStatement *returnStmt) {
@@ -687,7 +723,7 @@ void MLIRCodeGen::visit(ReturnStatement *returnStmt) {
   if (expressionStack.empty()) {
     builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
   } else {
-    Value val = popExpressionStack();
+    Value val = popExpressionStack().second;
     builder.create<spirv::ReturnValueOp>(builder.getUnknownLoc(), val);
   }
 }
