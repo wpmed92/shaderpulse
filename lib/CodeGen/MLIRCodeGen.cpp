@@ -266,7 +266,11 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
     expressionStack.push_back(rhs);
     break;
   case UnaryOperator::Dash:
-    val = builder.create<spirv::FNegateOp>(loc, rhs.second);
+    if (rhs.first->isFloatLike()) {
+      val = builder.create<spirv::FNegateOp>(loc, rhs.second);
+    } else {
+      val = builder.create<spirv::SNegateOp>(loc, rhs.second);
+    }
     expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   case UnaryOperator::Bang:
@@ -630,6 +634,7 @@ void MLIRCodeGen::visit(CallExpression *callExp) {
         builder.getUnknownLoc(), calledFunc.getFunctionType().getResults(),
         SymbolRefAttr::get(&context, calledFunc.getSymName()), operands);
 
+    // TODO: get return type of callee
     expressionStack.push_back(std::make_pair(nullptr, funcCall.getResult(0)));
   } else {
     std::cout << "Function not found." << callExp->getFunctionName()
