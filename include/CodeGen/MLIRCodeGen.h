@@ -14,6 +14,7 @@
 #include "llvm/ADT/ScopedHashTable.h"
 #include <vector>
 #include <map>
+#include <utility>
 
 using namespace mlir;
 
@@ -35,7 +36,7 @@ class MLIRCodeGen : public ASTVisitor {
 public:
   MLIRCodeGen();
   void initModuleOp();
-  void dump();
+  void print();
   bool verify();
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
@@ -80,7 +81,7 @@ private:
   bool inGlobalScope = true;
   llvm::StringMap<spirv::FuncOp> functionMap;
   llvm::StringMap<StructDeclaration*> structDeclarations;
-  std::vector<Value> expressionStack;
+  std::vector<std::pair<Type*, Value>> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
@@ -95,7 +96,7 @@ private:
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
   
-  mlir::Value popExpressionStack();
+  std::pair<Type*, Value> popExpressionStack();
   mlir::Value currentBasePointer;
   Type* typeContext;
 };
