@@ -31,8 +31,8 @@ void MLIRCodeGen::initModuleOp() {
   spirvModule = cast<spirv::ModuleOp>(Operation::create(state));
 }
 
-void MLIRCodeGen::dump() {
-  spirvModule.dump();
+void MLIRCodeGen::print() {
+  spirvModule.print(llvm::outs());
 }
 
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
@@ -288,8 +288,6 @@ void MLIRCodeGen::declare(SymbolTableEntry entry) {
   if (symbolTable.count(entry.variable->getIdentifierName()))
     return;
 
-
-  std::cout << "Declaring " << entry.variable->getIdentifierName() << std::endl;
   symbolTable.insert(entry.variable->getIdentifierName(), entry);
 }
 
@@ -345,7 +343,6 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     // builder.getUnitAttr());
   } else {
     if (varDecl->getInitialzerExpression()) {
-      std::cout << "Accept init" << std::endl;
       varDecl->getInitialzerExpression()->accept(this);
     }
 
@@ -643,11 +640,9 @@ void MLIRCodeGen::visit(CallExpression *callExp) {
 }
 
 void MLIRCodeGen::visit(VariableExpression *varExp) {
-  std::cout << "Looking up " << varExp->getName() << std::endl;
   auto entry = symbolTable.lookup(varExp->getName());
 
   if (entry.variable) {
-    std::cout << "Looked up and found " << varExp->getName() << std::endl;
     Value val;
 
     if (entry.isGlobal) {

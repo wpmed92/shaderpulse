@@ -36,7 +36,7 @@ class MLIRCodeGen : public ASTVisitor {
 public:
   MLIRCodeGen();
   void initModuleOp();
-  void dump();
+  void print();
   bool verify();
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;

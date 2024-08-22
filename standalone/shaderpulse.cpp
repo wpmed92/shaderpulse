@@ -7,27 +7,6 @@
 #include <iostream>
 #include <fstream>
 
-static std::string functionDeclarationTestString = 
-R"( 
-    uniform highp float a;
-    uniform int b;
-    uint c;
-    vec3 d;
-    mat2x2 e;
-
-    float foo() {
-        return 1.0;
-    }
-
-    float myFunc(vec2 arg1, bool arg2) {
-        float f;
-        float g;
-        f = 1.0;
-        g = f + 2.0;
-        return g + foo();
-    }
-)";
-
 using namespace shaderpulse;
 using namespace shaderpulse::ast;
 using namespace shaderpulse::lexer;
@@ -39,9 +18,10 @@ int main(int argc, char** argv) {
         std::cout << "Missing input file." << std::endl;
         return -1;
     }
-    
+
     bool printAST = false;
     bool codeGen = true;
+    bool analyze = true;
 
     for (size_t i = 2; i < argc; i++) {
         std::string arg = argv[i];
@@ -50,12 +30,13 @@ int main(int argc, char** argv) {
             printAST = true;
         } else if (arg == "--no-codegen") {
             codeGen = false;
+        } else if (arg == "--no-analyze") {
+            analyze = false;
         } else {
             std::cout << "Unrecognized argument: '" << arg << "'." << std::endl;
             return -1;
         }
     }
-
 
     std::ifstream glslIn(argv[1]);
     std::stringstream shaderCodeBuffer;
@@ -65,7 +46,6 @@ int main(int argc, char** argv) {
     auto preprocessor = preprocessor::Preprocessor(sourceCode);
     preprocessor.process();
     auto processedCode = preprocessor.getProcessedSource();
-    std::cout << processedCode;
     auto lexer = Lexer(processedCode);
     auto resp = lexer.lexCharacterStream();
     if (!resp.has_value()) {
@@ -83,14 +63,17 @@ int main(int argc, char** argv) {
     }
 
     if (codeGen) {
-        auto analyzer =  SemanticAnalyzer();
-        translationUnit->accept(&analyzer);
+        if (analyze) {
+            auto analyzer = SemanticAnalyzer();
+            translationUnit->accept(&analyzer);
+        }
+
         auto mlirCodeGen = codegen::MLIRCodeGen();
         translationUnit->accept(&mlirCodeGen);
-        mlirCodeGen.dump();
+        mlirCodeGen.print();
 
-        if (mlirCodeGen.verify()) {
-            std::cout << "SPIR-V module verified" << std::endl;
+        if (!mlirCodeGen.verify()) {
+            std::cout << "Error verifying the SPIR-V module" << std::endl;
         }
     }
 
