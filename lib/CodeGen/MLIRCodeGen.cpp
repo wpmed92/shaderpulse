@@ -303,7 +303,6 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
   typeContext = varType;
 
   if (inGlobalScope) {
-    std::cout << "In global scope" << std::endl;
     spirv::StorageClass storageClass;
 
     if (auto st = getSpirvStorageClass(varType->getQualifier(TypeQualifierKind::Storage))) {
