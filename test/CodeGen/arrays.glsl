@@ -31,5 +31,22 @@ void main() {
     // CHECK-NEXT: spirv.Store "Function" %14, %cst_f32_5 : f32
     myArray[varIdx] = 0.02;
 
+    // Multi dimensional array tests
+
+    // CHECK: %17 = spirv.CompositeConstruct %15, %16 : (!spirv.array<3 x f32>, !spirv.array<3 x f32>) -> !spirv.array<2 x !spirv.array<3 x f32>>
+    float[2][3] multiArr = float[2][3](float[3](0.1, 0.2, 0.3), float[3](0.4, 0.5, 0.6));
+
+    // CHECK: %cst0_si32_12 = spirv.Constant 0 : si32
+    // CHECK-NEXT: %cst1_si32_13 = spirv.Constant 1 : si32
+    // CHECK-NEXT: %19 = spirv.AccessChain %18[%cst0_si32_12, %cst1_si32_13] : !spirv.ptr<!spirv.array<2 x !spirv.array<3 x f32>>, Function>, si32, si32
+    float multiElem = multiArr[0][1];
+
+    // CHECK: %cst0_si32_14 = spirv.Constant 0 : si32
+    // CHECK-NEXT: %cst1_si32_15 = spirv.Constant 1 : si32
+    // CHECK-NEXT: %22 = spirv.AccessChain %18[%cst0_si32_14, %cst1_si32_15] : !spirv.ptr<!spirv.array<2 x !spirv.array<3 x f32>>, Function>, si32, si32
+    // CHECK-NEXT: %cst_f32_16 = spirv.Constant 1.000000e+00 : f32
+    // CHECK-NEXT: spirv.Store "Function" %22, %cst_f32_16 : f32
+    multiArr[0][1] = 1.0;
+
     return;
 }
