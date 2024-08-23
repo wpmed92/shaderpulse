@@ -774,6 +774,19 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
 
   funcDecl->getBody()->accept(this);
 
+  // Return insertion for void functions
+  if (funcDecl->getReturnType()->getKind() == TypeKind::Void) {
+    if (auto stmts = dynamic_cast<StatementList*>(funcDecl->getBody())) {
+      auto &lastStmt = stmts->getStatements().back();
+
+      if (!dynamic_cast<ReturnStatement*>(lastStmt.get())) {
+        builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+      }
+    } else if (dynamic_cast<Statement*>(funcDecl->getBody()) && !dynamic_cast<ReturnStatement*>(funcDecl->getBody())) {
+        builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+    }
+  }
+
   inGlobalScope = true;
 
   functionMap.insert({funcDecl->getName(), funcOp});

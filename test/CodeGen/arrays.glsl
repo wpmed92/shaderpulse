@@ -47,6 +47,4 @@ void main() {
     // CHECK-NEXT: %cst_f32_16 = spirv.Constant 1.000000e+00 : f32
     // CHECK-NEXT: spirv.Store "Function" %22, %cst_f32_16 : f32
     multiArr[0][1] = 1.0;
-
-    return;
 }

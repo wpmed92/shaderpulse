@@ -28,6 +28,4 @@ void main() {
     // CHECK-NEXT: %13 = spirv.Variable : !spirv.ptr<i1, Function>
     // CHECK-NEXT: spirv.Store "Function" %13, %12 : i1
     bool d = myStruct.d;
-
-    return;
 }

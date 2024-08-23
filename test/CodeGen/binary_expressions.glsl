@@ -10,6 +10,4 @@ void main() {
 
     // CHECK: %6 = spirv.FAdd %cst_f64, %cst_f64_1 : f64
     double d = 1.0lf + 2.0lf;
-
-    return;
 }

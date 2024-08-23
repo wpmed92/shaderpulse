@@ -25,6 +25,4 @@ int myFunc() {
 
     // error: boolean expression expected
     e = d ? 1 : 2;
-
-    return;
 }
