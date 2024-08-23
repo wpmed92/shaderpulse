@@ -489,7 +489,15 @@ void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
 
   for (auto &access : arrayAccess->getAccessChain()) {
     access->accept(this);
-    indices.push_back(popExpressionStack().second);
+    auto val = popExpressionStack().second;
+
+    // If it's a variable index, load it first
+    if (val.getType().isa<spirv::PointerType>()) {
+      auto loadedIdx = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), val);
+      indices.push_back(loadedIdx);
+    } else {
+      indices.push_back(val);
+    }
   }
 
   Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), mlirArray.second, indices);

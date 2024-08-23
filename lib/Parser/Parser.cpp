@@ -470,6 +470,10 @@ std::unique_ptr<Type> Parser::parseType() {
   auto qualifiers = parseQualifiers();
   auto type = getTypeFromTokenKind(std::move(qualifiers), curToken->getTokenKind());
 
+  if (!type) {
+    return nullptr;
+  }
+
   std::vector<int> dimensions;
 
   // Parse array type
@@ -1095,9 +1099,10 @@ std::unique_ptr<ReturnStatement> Parser::parseReturn() {
 std::unique_ptr<AssignmentExpression> Parser::parseAssignmentExpression() {
   parsingLhsExpression = true;
   savePosition();
-  auto unaryExpression = parseUnaryExpression();
 
+  auto unaryExpression = parseUnaryExpression();
   advanceToken();
+
   if (!curToken->is(TokenKind::assign)) {
     rollbackPosition();
     parsingLhsExpression = false;
@@ -1297,7 +1302,6 @@ std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingSubExpres
     } else if (auto members = parseMemberAccessChain()) {
       return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members), parsingLhsExpression);
     } else if (auto access = parseArrayAccess()) {
-      std::cout << "Found array access" << std::endl;
       return std::make_unique<ArrayAccessExpression>(std::move(primary), std::move(*access), parsingLhsExpression);
     } else {
       return primary;
