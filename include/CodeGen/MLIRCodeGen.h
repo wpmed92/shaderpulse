@@ -29,6 +29,8 @@ struct SymbolTableEntry {
   VariableDeclaration* variable = nullptr;
   spirv::PointerType ptrType = nullptr;
   bool isGlobal = false;
+  bool isFunctionParam = false;
+  Type* type = nullptr;
 };
 
 class MLIRCodeGen : public ASTVisitor {
@@ -92,7 +94,7 @@ private:
   SymbolTableScopeT globalScope;
   SmallVector<Attribute, 4> interface;
 
-  void declare(SymbolTableEntry);
+  void declare(StringRef name, SymbolTableEntry entry);
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
   

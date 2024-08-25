@@ -284,11 +284,12 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
   }
 }
 
-void MLIRCodeGen::declare(SymbolTableEntry entry) {
-  if (symbolTable.count(entry.variable->getIdentifierName()))
+void MLIRCodeGen::declare(StringRef name, SymbolTableEntry entry) {
+  if (symbolTable.count(name)) {
     return;
+  }
 
-  symbolTable.insert(entry.variable->getIdentifierName(), entry);
+  symbolTable.insert(name, entry);
 }
 
 void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
@@ -335,7 +336,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
       varOp->setAttr("location", *locationOpt);
     }
 
-    declare({ mlir::Value(), varDecl, ptrType, /*isGlobal*/ true});
+    declare(varDecl->getIdentifierName(), { mlir::Value(), varDecl, ptrType, /*isGlobal*/ true});
     // Set OpDecorate through attributes
     // example:
     // varOp->setAttr(spirv::stringifyDecoration(spirv::Decoration::Invariant),
@@ -361,7 +362,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
       builder.create<spirv::StoreOp>(builder.getUnknownLoc(), var, val);
     }
 
-    declare({ var, varDecl, nullptr, /*isGlobal*/ false});
+    declare(varDecl->getIdentifierName(), { var, varDecl, nullptr, /*isGlobal*/ false});
   }
 }
 
@@ -649,7 +650,9 @@ void MLIRCodeGen::visit(CallExpression *callExp) {
 void MLIRCodeGen::visit(VariableExpression *varExp) {
   auto entry = symbolTable.lookup(varExp->getName());
 
-  if (entry.variable) {
+  if (entry.isFunctionParam) {
+    expressionStack.push_back(std::make_pair(entry.type, entry.value));
+  } else if (entry.variable) {
     Value val;
 
     if (entry.isGlobal) {
@@ -743,7 +746,6 @@ void MLIRCodeGen::visit(DiscardStatement *discardStmt) {}
 
 void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   insideEntryPoint = funcDecl->getName() == "main";
-
   SymbolTableScopeT varScope(symbolTable);
   std::vector<mlir::Type> paramTypes;
 
@@ -759,7 +761,7 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
     }
   }
 
-  auto funcOp = builder.create<spirv::FuncOp>(
+  spirv::FuncOp funcOp = builder.create<spirv::FuncOp>(
       builder.getUnknownLoc(), funcDecl->getName(),
       builder.getFunctionType(
           paramTypes,
@@ -771,6 +773,12 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
 
   auto entryBlock = funcOp.addEntryBlock();
   builder.setInsertionPointToStart(entryBlock);
+
+  // Declare params as variables in the current scope
+  for (int i = 0; i < funcDecl->getParams().size(); i++) {
+    auto &param = funcDecl->getParams()[i];
+    declare(param->getName(), {funcOp.getArgument(i), nullptr, nullptr, false, true, param->getType()});
+  }
 
   funcDecl->getBody()->accept(this);
 
