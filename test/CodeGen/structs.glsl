@@ -56,9 +56,9 @@ void main() {
     // CHECK-NEXT: %18 = spirv.CompositeExtract %17[0 : i32, 3 : i32] : !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
     d = myStruct2.structMember.d;
 
-    /*int[2] arr = int[2](1,2);
+    int[2] arr = int[2](1,2);
     Indices idxs = Indices(0,1);
-    arr[idxs.idx1] = 12;*/
+    arr[idxs.idx1] = 12;
 
     // Struct with array
     // CHECK: %19 = spirv.CompositeConstruct %cst1_si32_6, %cst2_si32_7, %cst3_si32, %cst4_si32 : (si32, si32, si32, si32) -> !spirv.array<4 x si32>
