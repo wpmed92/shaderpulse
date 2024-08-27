@@ -1209,7 +1209,7 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseArrayAccess
     do {
       advanceToken();
 
-      if (auto access = parsePostfixExpression(/*parsingSubExpression*/ true)) {
+      if (auto access = parsePostfixExpression()) {
         accessChain.push_back(std::move(access));
         advanceToken();
 

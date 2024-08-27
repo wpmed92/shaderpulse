@@ -97,6 +97,7 @@ private:
   void declare(StringRef name, SymbolTableEntry entry);
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
+  mlir::Value load(mlir::Value);
   
   std::pair<Type*, Value> popExpressionStack();
   mlir::Value currentBasePointer;

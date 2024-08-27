@@ -14,6 +14,11 @@ struct StructWithArr {
   int[4] a;
 }
 
+struct Indices {
+  int idx1;
+  int idx2;
+}
+
 void main() {
     // CHECK: %0 = spirv.CompositeConstruct %cst_f32, %cst2_si32, %cst3_ui32, %true : (f32, si32, ui32, i1) -> !spirv.struct<(f32, si32, ui32, i1)>
     MyStruct myStruct = MyStruct(0.1, 2, 3u, true);
@@ -47,10 +52,13 @@ void main() {
 
     // CHECK: %17 = spirv.Load "Function" %16 : !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
     // CHECK-NEXT: %cst0_i32_4 = spirv.Constant 0 : i32
-    // CHECK-NEXT: %cst1_i32_5 = spirv.Constant 1 : i32
-    // CHECK-NEXT: %18 = spirv.CompositeExtract %17[0 : i32, 1 : i32] : !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
-    b = myStruct2.structMember.b;
+    // CHECK-NEXT: %cst3_i32_5 = spirv.Constant 3 : i32
+    // CHECK-NEXT: %18 = spirv.CompositeExtract %17[0 : i32, 3 : i32] : !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
+    d = myStruct2.structMember.d;
 
+    /*int[2] arr = int[2](1,2);
+    Indices idxs = Indices(0,1);
+    arr[idxs.idx1] = 12;*/
 
     // Struct with array
     // CHECK: %19 = spirv.CompositeConstruct %cst1_si32_6, %cst2_si32_7, %cst3_si32, %cst4_si32 : (si32, si32, si32, si32) -> !spirv.array<4 x si32>
@@ -58,5 +66,5 @@ void main() {
     StructWithArr structWithArr = StructWithArr(int[4](1, 2, 3, 4));
 
     // TODO: This currently fails at the Parser level. Implement member parsing for arrays.
-    // int arrElemFromStruct = structWithArr.a[0];
+    int arrElemFromStruct = structWithArr.a[3];
 }

@@ -67,8 +67,8 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   std::pair<Type*, Value> rhsPair = popExpressionStack();
   std::pair<Type*, Value> lhsPair = popExpressionStack();
 
-  Value rhs = rhsPair.second;
-  Value lhs = lhsPair.second;
+  Value rhs = load(rhsPair.second);
+  Value lhs = load(lhsPair.second);
   Type* typeContext = lhsPair.first;
 
   // TODO: implement source location
@@ -254,6 +254,7 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
 
   auto loc = builder.getUnknownLoc();
   Value val;
+  Value rhsVal = load(rhs.second);
 
   switch (unExp->getOp()) {
   case UnaryOperator::Inc:
@@ -263,22 +264,22 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
     // TODO: implement post-, pre-fix decrement
     break;
   case UnaryOperator::Plus:
-    expressionStack.push_back(rhs);
+    expressionStack.push_back(std::make_pair(rhs.first, rhsVal));
     break;
   case UnaryOperator::Dash:
     if (rhs.first->isFloatLike()) {
-      val = builder.create<spirv::FNegateOp>(loc, rhs.second);
+      val = builder.create<spirv::FNegateOp>(loc, rhsVal);
     } else {
-      val = builder.create<spirv::SNegateOp>(loc, rhs.second);
+      val = builder.create<spirv::SNegateOp>(loc, rhsVal);
     }
     expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   case UnaryOperator::Bang:
-    val = builder.create<spirv::LogicalNotOp>(loc, rhs.second);
+    val = builder.create<spirv::LogicalNotOp>(loc, rhsVal);
     expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   case UnaryOperator::Tilde:
-    val = builder.create<spirv::NotOp>(loc, rhs.second);
+    val = builder.create<spirv::NotOp>(loc, rhsVal);
     expressionStack.push_back(std::make_pair(rhs.first, val));
     break;
   }
@@ -349,7 +350,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     Value val;
 
     if (expressionStack.size() > 0) {
-      val = popExpressionStack().second;
+      val = load(popExpressionStack().second);
     }
 
     spirv::PointerType ptrType = spirv::PointerType::get(
@@ -491,30 +492,17 @@ void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
   for (auto &access : arrayAccess->getAccessChain()) {
     access->accept(this);
     auto val = popExpressionStack().second;
-
-    // If it's a variable index, load it first
-    if (val.getType().isa<spirv::PointerType>()) {
-      auto loadedIdx = builder.create<spirv::LoadOp>(builder.getUnknownLoc(), val);
-      indices.push_back(loadedIdx);
-    } else {
-      indices.push_back(val);
-    }
+    indices.push_back(load(val));
   }
 
   Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), mlirArray.second, indices);
-
-  if (arrayAccess->isLhs()) {
-    expressionStack.push_back(std::make_pair(elementType, accessChain));
-  } else {
-    expressionStack.push_back(std::make_pair(elementType, builder.create<spirv::LoadOp>(builder.getUnknownLoc(), accessChain)->getResult(0)));
-  }
+  expressionStack.push_back(std::make_pair(elementType, accessChain));
 }
 
 void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
   auto baseComposite = memberAccess->getBaseComposite();
   baseComposite->accept(this);
   Value baseCompositeValue = popExpressionStack().second;
-  std::vector<int> memberIndices;
   std::vector<mlir::Value> memberIndicesAcc;
   Type* memberType;
 
@@ -522,7 +510,6 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
     for (auto &member : memberAccess->getMembers()) {
       if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
         auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
-        memberIndices.push_back(memberIndexPair.first);
         memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
 
         if (memberIndexPair.second->getType()->getKind() == TypeKind::Struct) {
@@ -534,16 +521,23 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
         }
 
         memberType = memberIndexPair.second->getType();
+      // This is a duplicate of ArrayAccessExpression, idially we want to reuse that.
+      } else if (auto arrayAccess = dynamic_cast<ArrayAccessExpression*>(member.get())) {
+        auto varName = dynamic_cast<VariableExpression*>(arrayAccess->getArray())->getName();
+        auto memberIndexPair = currentBaseComposite->getMemberWithIndex(varName);
+        memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
+        memberType = dynamic_cast<ArrayType*>(memberIndexPair.second->getType())->getElementType();
+
+        for (auto &access : arrayAccess->getAccessChain()) {
+          access->accept(this);
+          auto val = popExpressionStack().second;
+          memberIndicesAcc.push_back(load(val));
+        }
       }
     }
 
-    if (memberAccess->isLhs()) {
-      Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
-      expressionStack.push_back(std::make_pair(memberType, accessChain));
-    } else {
-      Value compositeElement = builder.create<spirv::CompositeExtractOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndices);
-      expressionStack.push_back(std::make_pair(memberType, compositeElement));
-    }
+    Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
+    expressionStack.push_back(std::make_pair(memberType, accessChain));
   }
 }
 
@@ -608,7 +602,7 @@ void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
   assignmentExp->getUnaryExpression()->accept(this);
   assignmentExp->getExpression()->accept(this);
 
-  Value val = popExpressionStack().second;
+  Value val = load(popExpressionStack().second);
   Value ptr = popExpressionStack().second;
 
   builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptr, val);
@@ -657,14 +651,14 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
 
     if (entry.isGlobal) {
       auto addressOfGlobal = builder.create<mlir::spirv::AddressOfOp>(builder.getUnknownLoc(), entry.ptrType, varExp->getName());
-      val = varExp->isLhs() ? addressOfGlobal->getResult(0) : builder.create<spirv::LoadOp>(builder.getUnknownLoc(), addressOfGlobal)->getResult(0);
+      val = addressOfGlobal->getResult(0);
 
       // If we're inside the entry point function, collect the used global variables
       if (insideEntryPoint) {
         interface.push_back(SymbolRefAttr::get(&context, varExp->getName()));
       }
     } else {
-      val = (varExp->isLhs() || (entry.variable->getType()->getKind() == TypeKind::Array)) ? entry.value : builder.create<spirv::LoadOp>(builder.getUnknownLoc(), entry.value);
+      val = entry.value;
     }
 
     if (entry.variable->getType()->getKind() == TypeKind::Struct) {
@@ -805,6 +799,14 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
 void MLIRCodeGen::visit(DefaultLabel *defaultLabel) {}
 
 void MLIRCodeGen::visit(CaseLabel *defaultLabel) {}
+
+mlir::Value MLIRCodeGen::load(mlir::Value val) {
+  if (val.getType().isa<spirv::PointerType>()) {
+    return builder.create<spirv::LoadOp>(builder.getUnknownLoc(), val);
+  }
+
+  return val;
+}
 
 }; // namespace codegen
 
