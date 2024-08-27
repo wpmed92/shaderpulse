@@ -1209,7 +1209,7 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseArrayAccess
     do {
       advanceToken();
 
-      if (auto access = parsePostfixExpression(/*parsingSubExpression*/ true)) {
+      if (auto access = parsePostfixExpression()) {
         accessChain.push_back(std::move(access));
         advanceToken();
 
@@ -1297,12 +1297,12 @@ std::unique_ptr<Expression> Parser::parseUnaryExpression() {
 
 std::unique_ptr<Expression> Parser::parsePostfixExpression(bool parsingSubExpression) {
   if (auto primary = parsePrimaryExpression()) {
-    if (parsingSubExpression) {
+    if (auto access = parseArrayAccess()) {
+      return std::make_unique<ArrayAccessExpression>(std::move(primary), std::move(*access), parsingLhsExpression);
+    } else if (parsingSubExpression) {
       return primary;
     } else if (auto members = parseMemberAccessChain()) {
       return std::make_unique<MemberAccessExpression>(std::move(primary), std::move(*members), parsingLhsExpression);
-    } else if (auto access = parseArrayAccess()) {
-      return std::make_unique<ArrayAccessExpression>(std::move(primary), std::move(*access), parsingLhsExpression);
     } else {
       return primary;
     }

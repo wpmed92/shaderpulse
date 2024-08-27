@@ -14,28 +14,32 @@ struct StructWithArr {
   int[4] a;
 }
 
+struct Indices {
+  int idx1;
+  int idx2;
+}
+
 void main() {
     // CHECK: %0 = spirv.CompositeConstruct %cst_f32, %cst2_si32, %cst3_ui32, %true : (f32, si32, ui32, i1) -> !spirv.struct<(f32, si32, ui32, i1)>
+    // CHECK-NEXT: %1 = spirv.Variable : !spirv.ptr<!spirv.struct<(f32, si32, ui32, i1)>, Function>
     MyStruct myStruct = MyStruct(0.1, 2, 3u, true);
 
-    // CHECK: %3 = spirv.CompositeExtract %2[0 : i32] : !spirv.struct<(f32, si32, ui32, i1)>
-    // CHECK-NEXT: %4 = spirv.Variable : !spirv.ptr<f32, Function>
-    // CHECK-NEXT: spirv.Store "Function" %4, %3 : f32
+    // Basic member access
+
+    // CHECK: %cst0_i32 = spirv.Constant 0 : i32
+    // CHECK-NEXT: %2 = spirv.AccessChain %1[%cst0_i32] : !spirv.ptr<!spirv.struct<(f32, si32, ui32, i1)>, Function>, i32
     float a = myStruct.a;
 
-    // CHECK: %6 = spirv.CompositeExtract %5[1 : i32] : !spirv.struct<(f32, si32, ui32, i1)>
-    // CHECK-NEXT: %7 = spirv.Variable : !spirv.ptr<si32, Function>
-    // CHECK-NEXT: spirv.Store "Function" %7, %6 : si32
+    // CHECK: %cst1_i32 = spirv.Constant 1 : i32
+    // CHECK-NEXT: %5 = spirv.AccessChain %1[%cst1_i32] : !spirv.ptr<!spirv.struct<(f32, si32, ui32, i1)>, Function>, i32
     int b = myStruct.b;
 
-    // CHECK: %9 = spirv.CompositeExtract %8[2 : i32] : !spirv.struct<(f32, si32, ui32, i1)>
-    // CHECK-NEXT: %10 = spirv.Variable : !spirv.ptr<ui32, Function>
-    // CHECK-NEXT: spirv.Store "Function" %10, %9 : ui32
+    // CHECK: %cst2_i32 = spirv.Constant 2 : i32
+    // CHECK-NEXT: %8 = spirv.AccessChain %1[%cst2_i32] : !spirv.ptr<!spirv.struct<(f32, si32, ui32, i1)>, Function>, i32
     uint c = myStruct.c;
 
-    // CHECK: %12 = spirv.CompositeExtract %11[3 : i32] : !spirv.struct<(f32, si32, ui32, i1)>
-    // CHECK-NEXT: %13 = spirv.Variable : !spirv.ptr<i1, Function>
-    // CHECK-NEXT: spirv.Store "Function" %13, %12 : i1
+    // CHECK: %cst3_i32 = spirv.Constant 3 : i32
+    // CHECK-NEXT: %11 = spirv.AccessChain %1[%cst3_i32] : !spirv.ptr<!spirv.struct<(f32, si32, ui32, i1)>, Function>, i32
     bool d = myStruct.d;
 
     // Struct in struct
@@ -45,18 +49,34 @@ void main() {
     // CHECK-NEXT: %15 = spirv.CompositeConstruct %14, %cst1_si32 : (!spirv.struct<(f32, si32, ui32, i1)>, si32) -> !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
     MyStruct2 myStruct2 = MyStruct2(MyStruct(0.1, 2, 3u, true), 1);
 
-    // CHECK: %17 = spirv.Load "Function" %16 : !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
-    // CHECK-NEXT: %cst0_i32_4 = spirv.Constant 0 : i32
-    // CHECK-NEXT: %cst1_i32_5 = spirv.Constant 1 : i32
-    // CHECK-NEXT: %18 = spirv.CompositeExtract %17[0 : i32, 1 : i32] : !spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>
-    b = myStruct2.structMember.b;
-
+    // CHECK: %cst0_i32_4 = spirv.Constant 0 : i32
+    // CHECK-NEXT: %cst3_i32_5 = spirv.Constant 3 : i32
+    // CHECK-NEXT: %17 = spirv.AccessChain %16[%cst0_i32_4, %cst3_i32_5] : !spirv.ptr<!spirv.struct<(!spirv.struct<(f32, si32, ui32, i1)>, si32)>, Function>, i32, i32
+    d = myStruct2.structMember.d;
 
     // Struct with array
+
     // CHECK: %19 = spirv.CompositeConstruct %cst1_si32_6, %cst2_si32_7, %cst3_si32, %cst4_si32 : (si32, si32, si32, si32) -> !spirv.array<4 x si32>
     // CHECK-NEXT: %20 = spirv.CompositeConstruct %19 : (!spirv.array<4 x si32>) -> !spirv.struct<(!spirv.array<4 x si32>)>
     StructWithArr structWithArr = StructWithArr(int[4](1, 2, 3, 4));
 
-    // TODO: This currently fails at the Parser level. Implement member parsing for arrays.
-    // int arrElemFromStruct = structWithArr.a[0];
+    // CHECK: %cst0_i32_8 = spirv.Constant 0 : i32
+    // CHECK-NEXT: %cst2_si32_9 = spirv.Constant 2 : si32
+    // CHECK-NEXT: %22 = spirv.AccessChain %21[%cst0_i32_8, %cst2_si32_9] : !spirv.ptr<!spirv.struct<(!spirv.array<4 x si32>)>, Function>, i32, si32
+    int arrElemFromStruct = structWithArr.a[2];
+
+    // Member access as array index
+
+    // CHECK: %25 = spirv.CompositeConstruct %cst1_si32_10, %cst2_si32_11 : (si32, si32) -> !spirv.array<2 x si32>
+    // CHECK-NEXT: %26 = spirv.Variable : !spirv.ptr<!spirv.array<2 x si32>, Function>
+    int[2] arr = int[2](1, 2);
+
+    // CHECK: %28 = spirv.Variable : !spirv.ptr<!spirv.struct<(si32, si32)>, Function>
+    Indices indices = Indices(0, 1);
+
+    // CHECK: %cst1_i32_13 = spirv.Constant 1 : i32
+    // CHECK-NEXT: %29 = spirv.AccessChain %28[%cst1_i32_13] : !spirv.ptr<!spirv.struct<(si32, si32)>, Function>, i32
+    // CHECK-NEXT:%30 = spirv.Load "Function" %29 : si32
+    // CHECK-NEXT:%31 = spirv.AccessChain %26[%30] : !spirv.ptr<!spirv.array<2 x si32>, Function>, si32
+    arr[indices.idx2] = 24;
 }

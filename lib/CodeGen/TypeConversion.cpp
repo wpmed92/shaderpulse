@@ -45,7 +45,6 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, Type *shaderPulseType,
 
     for (auto &member : structDecl->getMembers()) {
       auto varMember = dynamic_cast<ast::VariableDeclaration*>(member.get());
-      std::cout << "Converting member type: " << varMember->getIdentifierName() << std::endl;
       memberTypes.push_back(convertShaderPulseType(ctx, varMember->getType(), structDeclarations));
     }
 
