@@ -101,7 +101,6 @@ private:
   
   std::pair<Type*, Value> popExpressionStack();
   mlir::Value currentBasePointer;
-  Type* typeContext;
 };
 
 }; // namespace codegen

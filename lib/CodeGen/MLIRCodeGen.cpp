@@ -258,12 +258,45 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
   Type* rhsType = rhsPair.first;
 
   switch (unExp->getOp()) {
-  case UnaryOperator::Inc:
-    // TODO: implement post-, pre-fix increment
+  // TODO: refactor Inc/Dec into a common function
+  case UnaryOperator::Inc: {
+    mlir::Value ptrRhs = rhsPair.second;
+
+    if (rhsType->isIntLike()) {
+      auto one = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        mlir::IntegerType::get(&context, 32, rhsType->isUintLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+        rhsType->isUintLike() ? builder.getUI32IntegerAttr(1) :builder.getSI32IntegerAttr(1)
+      );
+      result = builder.create<spirv::IAddOp>(loc, rhs, one);
+    } else {
+      auto one = builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::FloatType::getF32(&context), builder.getF32FloatAttr(1.0f));
+      result = builder.create<spirv::FAddOp>(loc, rhs, one);
+    }
+
+    builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptrRhs, result);
+    expressionStack.push_back(std::make_pair(rhsType, result));
     break;
-  case UnaryOperator::Dec:
-    // TODO: implement post-, pre-fix decrement
+  }
+  case UnaryOperator::Dec: {
+    mlir::Value ptrRhs = rhsPair.second;
+
+    if (rhsType->isIntLike()) {
+      auto one = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        mlir::IntegerType::get(&context, 32, rhsType->isUintLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+        rhsType->isUintLike() ? builder.getUI32IntegerAttr(1) :builder.getSI32IntegerAttr(1)
+      );
+      result = builder.create<spirv::ISubOp>(loc, rhs, one);
+    } else {
+      auto one = builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::FloatType::getF32(&context), builder.getF32FloatAttr(1.0f));
+      result = builder.create<spirv::FSubOp>(loc, rhs, one);
+    }
+
+    builder.create<spirv::StoreOp>(builder.getUnknownLoc(), ptrRhs, result);
+    expressionStack.push_back(std::make_pair(rhsType, result));
     break;
+  }
   case UnaryOperator::Plus:
     expressionStack.push_back(std::make_pair(rhsPair.first, rhs));
     break;
@@ -304,7 +337,6 @@ void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
 void MLIRCodeGen::createVariable(shaderpulse::Type *type,
                                  VariableDeclaration *varDecl) {
   shaderpulse::Type *varType = (type) ? type : varDecl->getType();
-  typeContext = varType;
 
   if (inGlobalScope) {
     spirv::StorageClass storageClass;
