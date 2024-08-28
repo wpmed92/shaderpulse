@@ -2,7 +2,7 @@
 
 set -e
 
-SHADERPULSE="../../build/shaderpulse-standalone"
+SHADERPULSE="../../build/shaderpulse"
 FILECHECK="../../llvm-project/build/bin/FileCheck"
 
 if [ ! -x "$SHADERPULSE" ]; then

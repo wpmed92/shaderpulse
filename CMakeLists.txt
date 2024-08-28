@@ -65,8 +65,8 @@ add_subdirectory(lib/AST)
 add_subdirectory(lib/Analysis)
 
 if(ENABLE_CODEGEN)
-  add_executable(shaderpulse-standalone standalone/shaderpulse.cpp)
-  target_link_libraries(shaderpulse-standalone
+  add_executable(shaderpulse compiler/shaderpulse.cpp)
+  target_link_libraries(shaderpulse
     PRIVATE
       Preprocessor
       Lexer
