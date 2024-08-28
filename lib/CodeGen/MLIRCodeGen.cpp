@@ -382,7 +382,7 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
 
   whileStmt->getCondition()->accept(this);
 
-  auto conditionOp = popExpressionStack().second;
+  auto conditionOp = load(popExpressionStack().second);
 
   auto loc = builder.getUnknownLoc();
 
@@ -559,7 +559,7 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
   auto loc = builder.getUnknownLoc();
 
   ifStmt->getCondition()->accept(this);
-  mlir::Value condition = popExpressionStack().second;
+  mlir::Value condition = load(popExpressionStack().second);
 
   auto selectionOp = builder.create<spirv::SelectionOp>(loc, spirv::SelectionControl::None);
   selectionOp.addMergeBlock();
