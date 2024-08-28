@@ -3,21 +3,21 @@ struct MyStruct {
   int b;
   uint c;
   bool d;
-}
+};
 
 struct MyStruct2 {
   MyStruct structMember;
   int b;
-}
+};
 
 struct StructWithArr {
   int[4] a;
-}
+};
 
 struct Indices {
   int idx1;
   int idx2;
-}
+};
 
 void main() {
     // CHECK: %0 = spirv.CompositeConstruct %cst_f32, %cst2_si32, %cst3_ui32, %true : (f32, si32, ui32, i1) -> !spirv.struct<(f32, si32, ui32, i1)>

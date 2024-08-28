@@ -1429,6 +1429,13 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
 
   advanceToken();
 
+  if (!curToken->is(TokenKind::semiColon)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ';' after struct declaration.");
+    return nullptr;
+  }
+
+  advanceToken();
+
   if (structDeclarations.find(structName) == structDeclarations.end()) {
     structDeclarations.insert({structName, true});
   }
