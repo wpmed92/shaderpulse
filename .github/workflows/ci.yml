@@ -33,8 +33,15 @@ jobs:
     - name: Build LLVM and MLIR
       if: steps.llvm-cache.outputs.cache-hit != 'true'
       run: |
-        cmake -S llvm-project/llvm -B llvm-project/build -DLLVM_ENABLE_PROJECTS=mlir -G Ninja
-        cmake --build llvm-project/build
+        mkdir -p llvm-project/build
+        cd llvm-project/build
+        cmake -G Ninja ../llvm \
+          -DLLVM_ENABLE_PROJECTS=mlir \
+          -DLLVM_BUILD_EXAMPLES=ON \
+          -DLLVM_TARGETS_TO_BUILD="Native" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_ENABLE_ASSERTIONS=ON
+        cmake --build . --target check-mlir
 
     - name: Configure CMake for Shaderpulse
       run: cmake -B build -DENABLE_CODEGEN=ON -DCMAKE_BUILD_TYPE=Release
