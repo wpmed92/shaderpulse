@@ -56,4 +56,6 @@ jobs:
       run: ctest --test-dir build/test --output-on-failure
 
     - name: Run CodeGen tests
-      run: test/CodeGen/run_tests.sh
+      run: |
+        cd test/CodeGen/
+        ./run_tests.sh
