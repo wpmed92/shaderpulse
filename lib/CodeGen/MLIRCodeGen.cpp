@@ -503,9 +503,26 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       break;
     }
 
-    default:
-      // Unsupported composite construct
+    // Scalar type conversions
+    case TypeKind::Float:
+    case TypeKind::Double: {
+      if (constructorExp->getArguments().size() > 0) {
+        constructorExp->getArguments()[0]->accept(this);
+        auto typeValPair = popExpressionStack();
+        Type* fromType = typeValPair.first;
+        mlir::Value val = load(typeValPair.second);
+        mlir::Type resultType = convertShaderPulseType(&context, constructorType, structDeclarations);
+
+        if (fromType->isUintLike()) {
+          expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::ConvertUToFOp>(builder.getUnknownLoc(), resultType, val)));
+        } else if (fromType->isIntLike()) {
+          expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::ConvertSToFOp>(builder.getUnknownLoc(), resultType, val)));
+        } else {
+          expressionStack.push_back(typeValPair);
+        }
+      }
       break;
+    }
   }
 }
 
