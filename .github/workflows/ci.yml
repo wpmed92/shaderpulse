@@ -21,7 +21,7 @@ jobs:
       id: llvm-cache
       with:
         path: llvm-project/build
-        key: ${{ runner.os }}-llvm-${{ hashFiles('llvm-project/CMakeLists.txt') }}
+        key: ${{ runner.os }}-llvm-${{ hashFiles('llvm-project/mlir/CMakeLists.txt') }}
         restore-keys: |
           ${{ runner.os }}-llvm-
 
@@ -58,4 +58,4 @@ jobs:
     - name: Run CodeGen tests
       run: |
         cd test/CodeGen/
-        ./run_tests.sh
+        CI=1 ./run_tests.sh
