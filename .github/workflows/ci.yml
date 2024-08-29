@@ -25,6 +25,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-llvm-
 
+    - name: Install Ninja
+      run: sudo apt-get install ninja-build
+
     - name: Set up CMake
       uses: jwlawson/actions-setup-cmake@v1
       with:
