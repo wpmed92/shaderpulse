@@ -128,11 +128,19 @@ public:
     return other.kind == kind;
   }
 
+  virtual bool isBoolLike() {
+    return kind == TypeKind::Bool;
+  }
+
   virtual bool isIntLike() {
     return kind == TypeKind::Integer || kind == TypeKind::UnsignedInteger;
   }
 
-  virtual bool isUintLike() {
+  virtual bool isSIntLike() {
+    return kind == TypeKind::Integer;
+  }
+
+  virtual bool isUIntLike() {
     return kind == TypeKind::UnsignedInteger;
   }
 
@@ -229,11 +237,19 @@ public:
     return false;
   }
 
+  bool isBoolLike() override {
+    return elementType->getKind() == TypeKind::Bool;
+  }
+
   bool isIntLike() override {
     return elementType->getKind() == TypeKind::Integer || elementType->getKind() == TypeKind::UnsignedInteger;
   }
 
-  bool isUintLike() override {
+  bool isSIntLike() override {
+    return elementType->getKind() == TypeKind::Integer;
+  }
+
+  bool isUIntLike() override {
     return elementType->getKind() == TypeKind::UnsignedInteger;
   }
 
@@ -295,6 +311,26 @@ public:
     return false;
   }
 
+  bool isBoolLike() override {
+    return elementType->getKind() == TypeKind::Bool;
+  }
+
+  bool isIntLike() override {
+    return elementType->getKind() == TypeKind::Integer || elementType->getKind() == TypeKind::UnsignedInteger;
+  }
+
+  bool isSIntLike() override {
+    return elementType->getKind() == TypeKind::Integer;
+  }
+
+  bool isUIntLike() override {
+    return elementType->getKind() == TypeKind::UnsignedInteger;
+  }
+
+  bool isFloatLike() override {
+    return elementType->getKind() == TypeKind::Float || elementType->getKind() == TypeKind::Double;
+  }
+
   std::string toString() override {
     std::string arrStr = elementType->toString();
 
@@ -335,6 +371,26 @@ public:
     }
 
     return false;
+  }
+
+  bool isBoolLike() override {
+    return elementType->getKind() == TypeKind::Bool;
+  }
+
+  bool isIntLike() override {
+    return elementType->getKind() == TypeKind::Integer || elementType->getKind() == TypeKind::UnsignedInteger;
+  }
+
+  bool isSIntLike() override {
+    return elementType->getKind() == TypeKind::Integer;
+  }
+
+  bool isUIntLike() override {
+    return elementType->getKind() == TypeKind::UnsignedInteger;
+  }
+
+  bool isFloatLike() override {
+    return elementType->getKind() == TypeKind::Float || elementType->getKind() == TypeKind::Double;
   }
 
   std::string toString() override {
