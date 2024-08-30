@@ -28,12 +28,31 @@ for TEST_FILE in *.glsl; do
   fi
 
   echo "Running test on $TEST_FILE"
-  $SHADERPULSE "$TEST_FILE" --no-analyze | $FILECHECK "$TEST_FILE"
+  
+  # Create a temporary file to capture output and errors
+  OUTPUT_FILE=$(mktemp)
+  STDERR_FILE=$(mktemp)
 
+  # Run shaderpulse and redirect both stdout and stderr
+  $SHADERPULSE "$TEST_FILE" --no-analyze > "$OUTPUT_FILE" 2> "$STDERR_FILE"
+
+  # Display stderr content if there are issues
+  if [ -s "$STDERR_FILE" ]; then
+    echo "Shaderpulse stderr output:"
+    cat "$STDERR_FILE"
+  fi
+
+  # Run FileCheck with the captured output
+  $FILECHECK "$TEST_FILE" < "$OUTPUT_FILE"
+
+  # Check if FileCheck passed
   if [ $? -eq 0 ]; then
     echo "Test passed for $TEST_FILE"
   else
     echo "Test failed for $TEST_FILE"
     exit 1
   fi
+
+  # Clean up temporary files
+  rm "$OUTPUT_FILE" "$STDERR_FILE"
 done
