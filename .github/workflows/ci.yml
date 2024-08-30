@@ -11,19 +11,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: Checkout repository with submodules
       uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Cache LLVM build
+      uses: actions/cache@v3
+      id: llvm-cache
+      with:
+        path: llvm-project/build
+        key: ${{ runner.os }}-llvm-${{ hashFiles('llvm-project/mlir/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-llvm-
+
+    - name: Install Ninja
+      run: sudo apt-get install ninja-build
 
     - name: Set up CMake
       uses: jwlawson/actions-setup-cmake@v1
       with:
         cmake-version: '3.25'
 
-    - name: Configure CMake
-      run: cmake -B build -DENABLE_CODEGEN=OFF -DCMAKE_BUILD_TYPE=Release
+    - name: Build LLVM and MLIR
+      if: steps.llvm-cache.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p llvm-project/build
+        cd llvm-project/build
+        cmake -G Ninja ../llvm \
+          -DLLVM_ENABLE_PROJECTS=mlir \
+          -DLLVM_BUILD_EXAMPLES=ON \
+          -DLLVM_TARGETS_TO_BUILD="Native" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_ENABLE_ASSERTIONS=ON
+        cmake --build . --target check-mlir
 
-    - name: Build
+    - name: Configure CMake for Shaderpulse
+      run: cmake -B build -DENABLE_CODEGEN=ON -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build Shaderpulse
       run: cmake --build build --config Release
 
-    - name: Run tests
+    - name: Run CTest
       run: ctest --test-dir build/test --output-on-failure
+
+    - name: Run CodeGen tests
+      run: |
+        cd test/CodeGen/
+        CI=1 ./run_tests.sh
