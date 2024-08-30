@@ -148,6 +148,14 @@ public:
     return kind == TypeKind::Float || kind == TypeKind::Double;
   }
 
+  virtual bool isF32Like() {
+    return kind == TypeKind::Float;
+  }
+
+  virtual bool isF64Like() {
+    return kind == TypeKind::Double;
+  }
+
   virtual std::string toString() {
     switch (kind) {
       case TypeKind::Integer:
@@ -257,6 +265,14 @@ public:
     return elementType->getKind() == TypeKind::Float || elementType->getKind() == TypeKind::Double;
   }
 
+  bool isF32Like() override {
+    return elementType->getKind() == TypeKind::Float;
+  }
+
+  bool isF64Like() override {
+    return elementType->getKind() == TypeKind::Double;
+  }
+
   std::string toString() override {
     std::string prefix = "";
 
@@ -331,6 +347,14 @@ public:
     return elementType->getKind() == TypeKind::Float || elementType->getKind() == TypeKind::Double;
   }
 
+  bool isF32Like() override {
+    return elementType->getKind() == TypeKind::Float;
+  }
+
+  bool isF64Like() override {
+    return elementType->getKind() == TypeKind::Double;
+  }
+
   std::string toString() override {
     std::string arrStr = elementType->toString();
 
@@ -391,6 +415,14 @@ public:
 
   bool isFloatLike() override {
     return elementType->getKind() == TypeKind::Float || elementType->getKind() == TypeKind::Double;
+  }
+
+  bool isF32Like() override {
+    return elementType->getKind() == TypeKind::Float;
+  }
+
+  bool isF64Like() override {
+    return elementType->getKind() == TypeKind::Double;
   }
 
   std::string toString() override {

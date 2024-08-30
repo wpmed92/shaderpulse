@@ -550,6 +550,8 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp) {
         zero
       );
       expressionStack.push_back(std::make_pair(constructorExp->getType(), res));
+    } else if ((fromType->isF32Like() && toType->isF64Like()) || (fromType->isF64Like() && toType->isF32Like())) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::FConvertOp>(builder.getUnknownLoc(), resultType, val)));
     } else {
       expressionStack.push_back(typeValPair);
     }
