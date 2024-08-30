@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - name: Checkout repository with submodules
@@ -26,7 +26,7 @@ jobs:
           ${{ runner.os }}-llvm-
 
     - name: Install Ninja
-      run: sudo apt-get install ninja-build
+      run: brew install ninja
 
     - name: Set up CMake
       uses: jwlawson/actions-setup-cmake@v1
