@@ -552,6 +552,26 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp) {
       expressionStack.push_back(std::make_pair(constructorExp->getType(), res));
     } else if ((fromType->isF32Like() && toType->isF64Like()) || (fromType->isF64Like() && toType->isF32Like())) {
       expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::FConvertOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if (toType->isBoolLike()) {
+      spirv::ConstantOp zero;
+
+      if (fromType->isIntLike()) {
+        zero = builder.create<spirv::ConstantOp>(
+          builder.getUnknownLoc(),
+          mlir::IntegerType::get(&context, 32, fromType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+          fromType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
+        );
+
+        expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::INotEqualOp>(builder.getUnknownLoc(), val, zero)));
+      } else if (fromType->isFloatLike()) {
+        zero = builder.create<spirv::ConstantOp>(
+          builder.getUnknownLoc(), 
+          fromType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context), 
+          fromType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
+        );
+
+        expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::FOrdNotEqualOp>(builder.getUnknownLoc(), val, zero)));
+      }
     } else {
       expressionStack.push_back(typeValPair);
     }

@@ -39,13 +39,6 @@ void main() {
     // CHECK: %27 = spirv.ConvertFToU %26 : f64 to ui32
     uint l = uint(_double);
 
-    /*
-        bool(int)
-        bool(uint)
-        bool(float)
-        bool(double)
-    */
-
     // CHECK: %30 = spirv.ConvertSToF %29 : si32 to f32
     float k = float(_int);
 
@@ -67,4 +60,20 @@ void main() {
 
     // CHECK: %45 = spirv.FConvert %44 : f32 to f64
     double s = double(_float);
+
+    // CHECK: %cst0_si32_1 = spirv.Constant 0 : si32
+    // CHECK-NEXT: %48 = spirv.INotEqual %47, %cst0_si32_1 : si32
+    bool t = bool(_int);
+
+    // CHECK: %cst0_ui32_2 = spirv.Constant 0 : ui32
+    // CHECK-NEXT: %51 = spirv.INotEqual %50, %cst0_ui32_2 : ui32
+    bool u = bool(_uint);
+
+    // CHECK: %cst_f32_3 = spirv.Constant 0.000000e+00 : f32
+    // CHECK-NEXT: %54 = spirv.FOrdNotEqual %53, %cst_f32_3 : f32
+    bool v = bool(_float);
+
+    // CHECK: %cst_f64_4 = spirv.Constant 0.000000e+00 : f64
+    // CHECK-NEXT: %57 = spirv.FOrdNotEqual %56, %cst_f64_4 : f64
+    bool w = bool(_double);
 }
