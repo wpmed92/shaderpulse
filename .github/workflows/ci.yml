@@ -44,7 +44,7 @@ jobs:
           -DLLVM_TARGETS_TO_BUILD="Native" \
           -DCMAKE_BUILD_TYPE=Release \
           -DLLVM_ENABLE_ASSERTIONS=ON
-        cmake --build . --target check-mlir
+        cmake --build .
 
     - name: Configure CMake for Shaderpulse
       run: cmake -B build -DENABLE_CODEGEN=ON -DCMAKE_BUILD_TYPE=Release
