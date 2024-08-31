@@ -45,35 +45,37 @@ void main() {
     // CHECK: %33 = spirv.ConvertUToF %32 : ui32 to f32
     float m = float(_uint);
 
-    // float n = float(_bool);
+    // CHECK: %36 = spirv.Select %35, %cst_f32_1, %cst_f32_2 : i1, f32
+    float n = float(_bool);
 
-    // CHECK: %36 = spirv.FConvert %35 : f64 to f32
+    // CHECK: %39 = spirv.FConvert %38 : f64 to f32
     float o = float(_double);
 
-    // CHECK: %39 = spirv.ConvertSToF %38 : si32 to f64
+    // CHECK: %42 = spirv.ConvertSToF %41 : si32 to f64
     double p = double(_int);
 
-    // CHECK: %42 = spirv.ConvertUToF %41 : ui32 to f64
+    // CHECK: %45 = spirv.ConvertUToF %44 : ui32 to f64
     double q = double(_uint);
 
-    // double r = double(_bool);
+    // CHECK: %48 = spirv.Select %47, %cst_f64_3, %cst_f64_4 : i1, f64
+    double r = double(_bool);
 
-    // CHECK: %45 = spirv.FConvert %44 : f32 to f64
+    // CHECK: %51 = spirv.FConvert %50 : f32 to f64
     double s = double(_float);
 
-    // CHECK: %cst0_si32_1 = spirv.Constant 0 : si32
-    // CHECK-NEXT: %48 = spirv.INotEqual %47, %cst0_si32_1 : si32
+    // CHECK:  %cst0_si32_5 = spirv.Constant 0 : si32
+    // CHECK-NEXT: %54 = spirv.INotEqual %53, %cst0_si32_5 : si32
     bool t = bool(_int);
 
-    // CHECK: %cst0_ui32_2 = spirv.Constant 0 : ui32
-    // CHECK-NEXT: %51 = spirv.INotEqual %50, %cst0_ui32_2 : ui32
+    // CHECK: %cst0_ui32_6 = spirv.Constant 0 : ui32
+    // CHECK-NEXT: %57 = spirv.INotEqual %56, %cst0_ui32_6 : ui32
     bool u = bool(_uint);
 
-    // CHECK: %cst_f32_3 = spirv.Constant 0.000000e+00 : f32
-    // CHECK-NEXT: %54 = spirv.FOrdNotEqual %53, %cst_f32_3 : f32
+    // CHECK: %cst_f32_7 = spirv.Constant 0.000000e+00 : f32
+    // CHECK-NEXT: %60 = spirv.FOrdNotEqual %59, %cst_f32_7 : f32
     bool v = bool(_float);
 
-    // CHECK: %cst_f64_4 = spirv.Constant 0.000000e+00 : f64
-    // CHECK-NEXT: %57 = spirv.FOrdNotEqual %56, %cst_f64_4 : f64
+    // CHECK: %cst_f64_8 = spirv.Constant 0.000000e+00 : f64
+    // CHECK-NEXT: %63 = spirv.FOrdNotEqual %62, %cst_f64_8 : f64
     bool w = bool(_double);
 }
