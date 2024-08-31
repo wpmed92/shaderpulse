@@ -103,7 +103,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
     expressionStack.push_back(std::make_pair(typeContext, val));
     break;
   case BinaryOperator::Div:
-    if (typeContext->isUintLike()) {
+    if (typeContext->isUIntLike()) {
       val = builder.create<spirv::UDivOp>(loc, lhs, rhs);
     } else if (typeContext->isIntLike()) {
       val = builder.create<spirv::SDivOp>(loc, lhs, rhs);
@@ -133,7 +133,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   case BinaryOperator::Lt:
     if (typeContext->isFloatLike()) {
       val = builder.create<spirv::FOrdLessThanOp>(loc, lhs, rhs);
-    } else if (typeContext->isUintLike()) {
+    } else if (typeContext->isUIntLike()) {
       val = builder.create<spirv::ULessThanOp>(loc, lhs, rhs);
     } else {
       val = builder.create<spirv::SLessThanOp>(loc, lhs, rhs);
@@ -143,7 +143,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   case BinaryOperator::Gt:
     if (typeContext->isFloatLike()) {
       val = builder.create<spirv::FOrdGreaterThanOp>(loc, lhs, rhs);
-    } else if (typeContext->isUintLike()) {
+    } else if (typeContext->isUIntLike()) {
       val = builder.create<spirv::UGreaterThanOp>(loc, lhs, rhs);
     } else {
       val = builder.create<spirv::SGreaterThanOp>(loc, lhs, rhs);
@@ -153,7 +153,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   case BinaryOperator::LtEq:
     if (typeContext->isFloatLike()) {
       val = builder.create<spirv::FOrdLessThanEqualOp>(loc, lhs, rhs);
-    } else if (typeContext->isUintLike()) {
+    } else if (typeContext->isUIntLike()) {
       val = builder.create<spirv::ULessThanEqualOp>(loc, lhs, rhs);
     } else {
       val = builder.create<spirv::SLessThanEqualOp>(loc, lhs, rhs);
@@ -163,7 +163,7 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   case BinaryOperator::GtEq:
     if (typeContext->isFloatLike()) {
       val = builder.create<spirv::FOrdGreaterThanEqualOp>(loc, lhs, rhs);
-    } else if (typeContext->isUintLike()) {
+    } else if (typeContext->isUIntLike()) {
       val = builder.create<spirv::UGreaterThanEqualOp>(loc, lhs, rhs);
     } else {
       val = builder.create<spirv::SGreaterThanEqualOp>(loc, lhs, rhs);
@@ -267,8 +267,8 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
     if (rhsType->isIntLike()) {
       auto one = builder.create<spirv::ConstantOp>(
         builder.getUnknownLoc(),
-        mlir::IntegerType::get(&context, 32, rhsType->isUintLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
-        rhsType->isUintLike() ? builder.getUI32IntegerAttr(1) :builder.getSI32IntegerAttr(1)
+        mlir::IntegerType::get(&context, 32, rhsType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+        rhsType->isUIntLike() ? builder.getUI32IntegerAttr(1) :builder.getSI32IntegerAttr(1)
       );
 
       if (op == UnaryOperator::Inc) {
@@ -503,9 +503,78 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       break;
     }
 
+    // Scalar type conversions
     default:
-      // Unsupported composite construct
+      convertOp(constructorExp);
       break;
+  }
+}
+
+mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp) {
+  if (constructorExp->getArguments().size() > 0) {
+    constructorExp->getArguments()[0]->accept(this);
+    auto typeValPair = popExpressionStack();
+    shaderpulse::Type* toType = constructorExp->getType();
+    shaderpulse::Type* fromType = typeValPair.first;
+    mlir::Value val = load(typeValPair.second);
+    mlir::Type resultType = convertShaderPulseType(&context, toType, structDeclarations);
+
+    if (fromType->isUIntLike() && toType->isFloatLike()) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::ConvertUToFOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if (fromType->isIntLike() && toType->isFloatLike()) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::ConvertSToFOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if (fromType->isFloatLike() && toType->isUIntLike()) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::ConvertFToUOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if (fromType->isFloatLike() && toType->isIntLike()) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::ConvertFToSOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if ((fromType->isSIntLike() && toType->isUIntLike()) || (fromType->isUIntLike() && toType->isSIntLike())) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::BitcastOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if (fromType->isBoolLike() && toType->isIntLike()) {
+      auto one = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        mlir::IntegerType::get(&context, 32, toType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+        toType->isUIntLike() ? builder.getUI32IntegerAttr(1) : builder.getSI32IntegerAttr(1)
+      );
+
+      auto zero = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        mlir::IntegerType::get(&context, 32, toType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+        toType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
+      );
+
+       mlir::Value res = builder.create<spirv::SelectOp>(
+        builder.getUnknownLoc(),
+        resultType,
+        val,
+        one,
+        zero
+      );
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), res));
+    } else if ((fromType->isF32Like() && toType->isF64Like()) || (fromType->isF64Like() && toType->isF32Like())) {
+      expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::FConvertOp>(builder.getUnknownLoc(), resultType, val)));
+    } else if (toType->isBoolLike()) {
+      spirv::ConstantOp zero;
+
+      if (fromType->isIntLike()) {
+        zero = builder.create<spirv::ConstantOp>(
+          builder.getUnknownLoc(),
+          mlir::IntegerType::get(&context, 32, fromType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+          fromType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
+        );
+
+        expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::INotEqualOp>(builder.getUnknownLoc(), val, zero)));
+      } else if (fromType->isFloatLike()) {
+        zero = builder.create<spirv::ConstantOp>(
+          builder.getUnknownLoc(), 
+          fromType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context), 
+          fromType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
+        );
+
+        expressionStack.push_back(std::make_pair(constructorExp->getType(), builder.create<spirv::FOrdNotEqualOp>(builder.getUnknownLoc(), val, zero)));
+      }
+    } else {
+      expressionStack.push_back(typeValPair);
+    }
   }
 }
 

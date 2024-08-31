@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - name: Checkout repository with submodules
@@ -26,7 +26,7 @@ jobs:
           ${{ runner.os }}-llvm-
 
     - name: Install Ninja
-      run: sudo apt-get install ninja-build
+      run: brew install ninja
 
     - name: Set up CMake
       uses: jwlawson/actions-setup-cmake@v1
@@ -44,7 +44,7 @@ jobs:
           -DLLVM_TARGETS_TO_BUILD="Native" \
           -DCMAKE_BUILD_TYPE=Release \
           -DLLVM_ENABLE_ASSERTIONS=ON
-        cmake --build . --target check-mlir
+        cmake --build .
 
     - name: Configure CMake for Shaderpulse
       run: cmake -B build -DENABLE_CODEGEN=ON -DCMAKE_BUILD_TYPE=Release

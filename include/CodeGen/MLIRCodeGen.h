@@ -101,6 +101,7 @@ private:
   
   std::pair<Type*, Value> popExpressionStack();
   mlir::Value currentBasePointer;
+  mlir::Value convertOp(ConstructorExpression* constructorExp);
 };
 
 }; // namespace codegen
