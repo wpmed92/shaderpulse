@@ -101,7 +101,7 @@ private:
   
   std::pair<Type*, Value> popExpressionStack();
   mlir::Value currentBasePointer;
-  mlir::Value convertOp(ConstructorExpression* constructorExp);
+  mlir::Value convertOp(ConstructorExpression* constructorExp, std::pair<shaderpulse::Type*, mlir::Value> operand);
 };
 
 }; // namespace codegen

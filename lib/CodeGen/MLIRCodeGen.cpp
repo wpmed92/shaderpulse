@@ -449,15 +449,20 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
   auto constructorType = constructorExp->getType();
 
   std::vector<mlir::Value> operands;
+  std::vector<shaderpulse::Type*> operandTypes;
 
   if (constructorExp->getArguments().size() > 0) {
     for (auto &arg : constructorExp->getArguments()) {
       arg->accept(this);
-      operands.push_back(popExpressionStack().second);
+      auto typeValPair = popExpressionStack();
+      operands.push_back(load(typeValPair.second));
+      operandTypes.push_back(typeValPair.first);
     }
   }
 
-  switch (constructorType->getKind()) {
+  auto constructorTypeKind = constructorType->getKind();
+
+  switch (constructorTypeKind) {
     case TypeKind::Struct: {
       auto structName = dynamic_cast<StructType*>(constructorType)->getName();
 
@@ -472,9 +477,20 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 
     case TypeKind::Vector:
     case TypeKind::Array: {
-      mlir::Value val = builder.create<spirv::CompositeConstructOp>(
-            builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
-      expressionStack.push_back(std::make_pair(constructorType, val));
+      // If the vector constructor has a single argument, and it is the same length as the current vector,
+      // but the element type is different, than it is a type conversion and not a composite construction.
+      if (constructorTypeKind == TypeKind::Vector && (operands.size() == 1) && (operandTypes[0]->getKind() == TypeKind::Vector)) {
+        auto argVecType = dynamic_cast<VectorType*>(operandTypes[0]);
+        auto constrVecType = dynamic_cast<VectorType*>(constructorType);
+
+        if ((argVecType->getLength() == constrVecType->getLength()) && !argVecType->getElementType()->isEqual(*constrVecType->getElementType())) {
+          convertOp(constructorExp, std::make_pair(operandTypes[0], operands[0]));
+        }
+      } else {
+        mlir::Value val = builder.create<spirv::CompositeConstructOp>(
+              builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
+        expressionStack.push_back(std::make_pair(constructorType, val));
+      }
       break;
     }
 
@@ -505,98 +521,152 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 
     // Scalar type conversions
     default:
-      convertOp(constructorExp);
+      convertOp(constructorExp, std::make_pair(operandTypes[0], operands[0]));
       break;
   }
 }
 
-mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp) {
-  if (constructorExp->getArguments().size() > 0) {
-    constructorExp->getArguments()[0]->accept(this);
-    auto typeValPair = popExpressionStack();
-    shaderpulse::Type* toType = constructorExp->getType();
-    shaderpulse::Type* fromType = typeValPair.first;
-    mlir::Value val = load(typeValPair.second);
-    mlir::Type resultType = convertShaderPulseType(&context, toType, structDeclarations);
+mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp, std::pair<shaderpulse::Type*, mlir::Value> operand) {
+  shaderpulse::Type* toType = constructorExp->getType();
+  shaderpulse::Type* fromType = operand.first;
+  mlir::Value val = operand.second;
+  mlir::Type resultType = convertShaderPulseType(&context, toType, structDeclarations);
 
-    if (fromType->isUIntLike() && toType->isFloatLike()) {
-      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertUToFOp>(builder.getUnknownLoc(), resultType, val)));
-    } else if (fromType->isIntLike() && toType->isFloatLike()) {
-      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertSToFOp>(builder.getUnknownLoc(), resultType, val)));
-    } else if (fromType->isFloatLike() && toType->isUIntLike()) {
-      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertFToUOp>(builder.getUnknownLoc(), resultType, val)));
-    } else if (fromType->isFloatLike() && toType->isIntLike()) {
-      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertFToSOp>(builder.getUnknownLoc(), resultType, val)));
-    } else if ((fromType->isSIntLike() && toType->isUIntLike()) || (fromType->isUIntLike() && toType->isSIntLike())) {
-      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::BitcastOp>(builder.getUnknownLoc(), resultType, val)));
-    } else if (fromType->isBoolLike() && toType->isIntLike()) {
-      auto one = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(),
-        mlir::IntegerType::get(&context, 32, toType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
-        toType->isUIntLike() ? builder.getUI32IntegerAttr(1) : builder.getSI32IntegerAttr(1)
-      );
+  if (fromType->isUIntLike() && toType->isFloatLike()) {
+    expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertUToFOp>(builder.getUnknownLoc(), resultType, val)));
+  } else if (fromType->isIntLike() && toType->isFloatLike()) {
+    expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertSToFOp>(builder.getUnknownLoc(), resultType, val)));
+  } else if (fromType->isFloatLike() && toType->isUIntLike()) {
+    expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertFToUOp>(builder.getUnknownLoc(), resultType, val)));
+  } else if (fromType->isFloatLike() && toType->isIntLike()) {
+    expressionStack.push_back(std::make_pair(toType, builder.create<spirv::ConvertFToSOp>(builder.getUnknownLoc(), resultType, val)));
+  } else if ((fromType->isSIntLike() && toType->isUIntLike()) || (fromType->isUIntLike() && toType->isSIntLike())) {
+    expressionStack.push_back(std::make_pair(toType, builder.create<spirv::BitcastOp>(builder.getUnknownLoc(), resultType, val)));
+  } else if (fromType->isBoolLike() && toType->isIntLike()) {
+    mlir::Value one;
+    auto constOne = builder.create<spirv::ConstantOp>(
+      builder.getUnknownLoc(),
+      mlir::IntegerType::get(&context, 32, toType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+      toType->isUIntLike() ? builder.getUI32IntegerAttr(1) : builder.getSI32IntegerAttr(1)
+    );
 
-      auto zero = builder.create<spirv::ConstantOp>(
-        builder.getUnknownLoc(),
-        mlir::IntegerType::get(&context, 32, toType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
-        toType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
-      );
+    mlir::Value zero;
+    auto constZero = builder.create<spirv::ConstantOp>(
+      builder.getUnknownLoc(),
+      mlir::IntegerType::get(&context, 32, toType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+      toType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
+    );
 
-       mlir::Value res = builder.create<spirv::SelectOp>(
-        builder.getUnknownLoc(),
-        resultType,
-        val,
-        one,
-        zero
-      );
-      expressionStack.push_back(std::make_pair(toType, res));
-    } else if (fromType->isBoolLike() && toType->isFloatLike()) {
-      auto one = builder.create<spirv::ConstantOp>(
-          builder.getUnknownLoc(),
-          toType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context),
-          toType->isF32Like() ? builder.getF32FloatAttr(1.0f) : builder.getF64FloatAttr(1.0)
-      );
+    if (fromType->getKind() == TypeKind::Vector) {
+      std::vector<mlir::Value> operandsZero;
+      std::vector<mlir::Value> operandsOne;
 
-      auto zero = builder.create<spirv::ConstantOp>(
-          builder.getUnknownLoc(),
-          toType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context),
-          toType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
-      );
-
-       mlir::Value res = builder.create<spirv::SelectOp>(
-        builder.getUnknownLoc(),
-        resultType,
-        val,
-        one,
-        zero
-      );
-
-      expressionStack.push_back(std::make_pair(toType, res));
-    } else if ((fromType->isF32Like() && toType->isF64Like()) || (fromType->isF64Like() && toType->isF32Like())) {
-      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::FConvertOp>(builder.getUnknownLoc(), resultType, val)));
-    } else if (toType->isBoolLike()) {
-      spirv::ConstantOp zero;
-
-      if (fromType->isIntLike()) {
-        zero = builder.create<spirv::ConstantOp>(
-          builder.getUnknownLoc(),
-          mlir::IntegerType::get(&context, 32, fromType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
-          fromType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
-        );
-
-        expressionStack.push_back(std::make_pair(toType, builder.create<spirv::INotEqualOp>(builder.getUnknownLoc(), val, zero)));
-      } else if (fromType->isFloatLike()) {
-        zero = builder.create<spirv::ConstantOp>(
-          builder.getUnknownLoc(), 
-          fromType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context), 
-          fromType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
-        );
-
-        expressionStack.push_back(std::make_pair(toType, builder.create<spirv::FOrdNotEqualOp>(builder.getUnknownLoc(), val, zero)));
+      for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+        operandsZero.push_back(constZero);
+        operandsOne.push_back(constOne);
       }
+      zero = builder.create<spirv::CompositeConstructOp>(
+            builder.getUnknownLoc(), convertShaderPulseType(&context, toType, structDeclarations), operandsZero);
+      one = builder.create<spirv::CompositeConstructOp>(
+            builder.getUnknownLoc(), convertShaderPulseType(&context, toType, structDeclarations), operandsOne);
     } else {
-      expressionStack.push_back(typeValPair);
+      one = constOne;
+      zero = constZero;
     }
+
+    mlir::Value res = builder.create<spirv::SelectOp>(
+      builder.getUnknownLoc(),
+      resultType,
+      val,
+      one,
+      zero
+    );
+    expressionStack.push_back(std::make_pair(toType, res));
+  } else if (fromType->isBoolLike() && toType->isFloatLike()) {
+    mlir::Value one;
+    auto constOne = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        toType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context),
+        toType->isF32Like() ? builder.getF32FloatAttr(1.0f) : builder.getF64FloatAttr(1.0)
+    );
+
+    mlir::Value zero;
+    auto constZero = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        toType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context),
+        toType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
+    );
+
+    if (fromType->getKind() == TypeKind::Vector) {
+      std::vector<mlir::Value> operandsZero;
+      std::vector<mlir::Value> operandsOne;
+
+      for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+        operandsZero.push_back(constZero);
+        operandsOne.push_back(constOne);
+      }
+      zero = builder.create<spirv::CompositeConstructOp>(
+            builder.getUnknownLoc(), convertShaderPulseType(&context, toType, structDeclarations), operandsZero);
+      one = builder.create<spirv::CompositeConstructOp>(
+            builder.getUnknownLoc(), convertShaderPulseType(&context, toType, structDeclarations), operandsOne);
+    } else {
+      one = constOne;
+      zero = constZero;
+    }
+
+    mlir::Value res = builder.create<spirv::SelectOp>(
+      builder.getUnknownLoc(),
+      resultType,
+      val,
+      one,
+      zero
+    );
+
+    expressionStack.push_back(std::make_pair(toType, res));
+  } else if ((fromType->isF32Like() && toType->isF64Like()) || (fromType->isF64Like() && toType->isF32Like())) {
+    expressionStack.push_back(std::make_pair(toType, builder.create<spirv::FConvertOp>(builder.getUnknownLoc(), resultType, val)));
+  } else if (toType->isBoolLike()) {
+    mlir::Value zero;
+
+    if (fromType->isIntLike()) {
+      zero = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        mlir::IntegerType::get(&context, 32, fromType->isUIntLike() ? mlir::IntegerType::Unsigned : mlir::IntegerType::Signed),
+        fromType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
+      );
+
+      if (fromType->getKind() == TypeKind::Vector) {
+        std::vector<mlir::Value> operandsZero;
+
+        for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+          operandsZero.push_back(zero);
+        }
+        zero = builder.create<spirv::CompositeConstructOp>(
+              builder.getUnknownLoc(), convertShaderPulseType(&context, fromType, structDeclarations), operandsZero);
+      }
+
+      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::INotEqualOp>(builder.getUnknownLoc(), val, zero)));
+    } else if (fromType->isFloatLike()) {
+      zero = builder.create<spirv::ConstantOp>(
+        builder.getUnknownLoc(),
+        fromType->isF32Like() ? mlir::FloatType::getF32(&context) : mlir::FloatType::getF64(&context),
+        fromType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
+      );
+
+      if (fromType->getKind() == TypeKind::Vector) {
+        std::vector<mlir::Value> operandsZero;
+
+        for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+          operandsZero.push_back(zero);
+        }
+        zero = builder.create<spirv::CompositeConstructOp>(
+              builder.getUnknownLoc(), convertShaderPulseType(&context, fromType, structDeclarations), operandsZero);
+      }
+
+      expressionStack.push_back(std::make_pair(toType, builder.create<spirv::FOrdNotEqualOp>(builder.getUnknownLoc(), val, zero)));
+    }
+  } else {
+    expressionStack.push_back(operand);
   }
 }
 
