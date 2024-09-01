@@ -485,6 +485,10 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
 
         if ((argVecType->getLength() == constrVecType->getLength()) && !argVecType->getElementType()->isEqual(*constrVecType->getElementType())) {
           convertOp(constructorExp, std::make_pair(operandTypes[0], operands[0]));
+        } else {
+          mlir::Value val = builder.create<spirv::CompositeConstructOp>(
+                builder.getUnknownLoc(), convertShaderPulseType(&context, constructorType, structDeclarations), operands);
+          expressionStack.push_back(std::make_pair(constructorType, val));
         }
       } else {
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
