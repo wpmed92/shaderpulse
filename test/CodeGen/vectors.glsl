@@ -23,7 +23,7 @@ void main() {
     vec4 _vec4_3_1 = vec4(_vec3, 1.0);
 
     // CHECK: %21 = spirv.CompositeConstruct %cst_f32_10, %20 : (f32, vector<3xf32>) -> vector<4xf32>
-    vec4 _vec4_3_1 = vec4(1.0, _vec3);
+    vec4 _vec4_1_3 = vec4(1.0, _vec3);
 
     // CHECK: %24 = spirv.CompositeConstruct %cst_f32_11, %23, %cst_f32_12 : (f32, vector<2xf32>, f32) -> vector<4xf32>
     vec4 _vec4_1_2_1 = vec4(1.0, _vec2, 1.0);
