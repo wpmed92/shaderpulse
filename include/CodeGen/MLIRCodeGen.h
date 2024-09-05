@@ -89,7 +89,7 @@ private:
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
   using SymbolTableScopeT =
-      llvm::ScopedHashTableScope<StringRef, SymbolTableEntry>;
+      llvm::ScopedHashTableScope<llvm::StringRef, SymbolTableEntry>;
 
   SymbolTableScopeT globalScope;
   SmallVector<Attribute, 4> interface;
