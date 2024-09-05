@@ -313,11 +313,7 @@ void MLIRCodeGen::visit(UnaryExpression *unExp) {
   }
 }
 
-void MLIRCodeGen::declare(StringRef name, SymbolTableEntry entry) {
-  if (symbolTable.count(name)) {
-    return;
-  }
-
+void MLIRCodeGen::declare(llvm::StringRef name, SymbolTableEntry entry) {
   symbolTable.insert(name, entry);
 }
 
@@ -405,6 +401,7 @@ void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
 void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   Block *restoreInsertionBlock = builder.getInsertionBlock();
 
+  SymbolTableScopeT varScope(symbolTable);
   whileStmt->getCondition()->accept(this);
 
   auto conditionOp = load(popExpressionStack().second);
@@ -745,29 +742,41 @@ void MLIRCodeGen::visit(DoStatement *doStmt) {
 
 void MLIRCodeGen::visit(IfStatement *ifStmt) {
   Block *restoreInsertionBlock = builder.getInsertionBlock();
-
   auto loc = builder.getUnknownLoc();
+  spirv::SelectionOp selectionOp;
+  mlir::Value condition;
+  Block* selectionHeaderBlock;
+  Block* thenBlock;
+  Block* mergeBlock;
 
-  ifStmt->getCondition()->accept(this);
-  mlir::Value condition = load(popExpressionStack().second);
+  // Scope for true part
+  {
+    SymbolTableScopeT varScope(symbolTable);
+    ifStmt->getCondition()->accept(this);
+    condition = load(popExpressionStack().second);
+    selectionOp = builder.create<spirv::SelectionOp>(loc, spirv::SelectionControl::None);
+    selectionOp.addMergeBlock();
 
-  auto selectionOp = builder.create<spirv::SelectionOp>(loc, spirv::SelectionControl::None);
-  selectionOp.addMergeBlock();
+    // Merge
+    mergeBlock = selectionOp.getMergeBlock();
 
-  // Merge
-  auto *mergeBlock = selectionOp.getMergeBlock();
+    // Selection header
+    selectionHeaderBlock = new Block();
+    selectionOp.getBody().getBlocks().push_front(selectionHeaderBlock);
 
-  // Selection header
-  auto *selectionHeaderBlock = new Block();
-  selectionOp.getBody().getBlocks().push_front(selectionHeaderBlock);
+    // True part
+    thenBlock = new Block();
+    selectionOp.getBody().getBlocks().insert(std::next(selectionOp.getBody().begin(), 1), thenBlock);
+    builder.setInsertionPointToStart(thenBlock);
 
-  // True part
-  auto *thenBlock = new Block();
-  selectionOp.getBody().getBlocks().insert(std::next(selectionOp.getBody().begin(), 1), thenBlock);
-  builder.setInsertionPointToStart(thenBlock);
+    ifStmt->getTruePart()->accept(this);
+    builder.create<spirv::BranchOp>(loc, mergeBlock);
 
-  ifStmt->getTruePart()->accept(this);
-  builder.create<spirv::BranchOp>(loc, mergeBlock);
+    // If scope destroyed here
+  }
+
+  // Scope for else part
+  SymbolTableScopeT varScope(symbolTable);
 
   // False part
   auto *elseBlock = new Block();
@@ -788,6 +797,8 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
       loc, condition, thenBlock, ArrayRef<mlir::Value>(), elseBlock, ArrayRef<mlir::Value>());
   
   builder.setInsertionPointToEnd(restoreInsertionBlock);
+
+  // Else scope destroyed here
 }
 
 void MLIRCodeGen::visit(AssignmentExpression *assignmentExp) {
