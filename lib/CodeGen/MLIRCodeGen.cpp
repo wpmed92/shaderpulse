@@ -2,6 +2,7 @@
 #include "AST/AST.h"
 #include "CodeGen/TypeConversion.h"
 #include <iostream>
+#include <cassert>
 
 namespace shaderpulse {
 
@@ -54,7 +55,8 @@ void MLIRCodeGen::visit(TranslationUnit *unit) {
   insertEntryPoint();
 }
 
-std::pair<Type*, mlir::Value> MLIRCodeGen::popExpressionStack() {
+std::pair<shaderpulse::Type*, mlir::Value> MLIRCodeGen::popExpressionStack() {
+  assert(expressionStack.size() > 0 && "Expression stack is empty");
   auto val = expressionStack.back();
   expressionStack.pop_back();
   return val;
@@ -341,12 +343,13 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     spirv::PointerType ptrType = spirv::PointerType::get(
       convertShaderPulseType(&context, varType, structDeclarations), storageClass);
 
-    Operation *initializerOp = nullptr;
+    // TODO: check global initialization
+    mlir::Operation *initializerOp {};
 
-    if (expressionStack.size() > 0) {
-      mlir::Value val = popExpressionStack().second;
-      initializerOp = val.getDefiningOp();
-    }
+    /*
+     * mlir::Value val = popExpressionStack().second;
+     * initializerOp = val.getDefiningOp();
+    */
 
     auto varOp = builder.create<spirv::GlobalVariableOp>(
         UnknownLoc::get(&context), TypeAttr::get(ptrType),
@@ -366,13 +369,10 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
     // varOp->setAttr(spirv::stringifyDecoration(spirv::Decoration::Invariant),
     // builder.getUnitAttr());
   } else {
+    mlir::Value val {};
+
     if (varDecl->getInitialzerExpression()) {
       varDecl->getInitialzerExpression()->accept(this);
-    }
-
-    mlir::Value val;
-
-    if (expressionStack.size() > 0) {
       val = load(popExpressionStack().second);
     }
 
