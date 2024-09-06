@@ -1218,9 +1218,8 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseArrayAccess
     do {
       advanceToken();
 
-      if (auto access = parsePostfixExpression()) {
+      if (auto access = parseExpression()) {
         accessChain.push_back(std::move(access));
-        advanceToken();
 
         if (!curToken->is(TokenKind::rBracket)) {
           reportError(ParserErrorKind::ExpectedToken, "Expected a ']");
@@ -1234,6 +1233,7 @@ std::optional<std::vector<std::unique_ptr<Expression>>> Parser::parseArrayAccess
     } while (curToken->is(TokenKind::lBracket));
 
     cursor = cursor - 1;
+
     return std::move(accessChain);
   }
 
