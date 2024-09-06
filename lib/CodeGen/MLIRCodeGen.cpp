@@ -402,9 +402,6 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   Block *restoreInsertionBlock = builder.getInsertionBlock();
 
   SymbolTableScopeT varScope(symbolTable);
-  whileStmt->getCondition()->accept(this);
-
-  auto conditionOp = load(popExpressionStack().second);
 
   auto loc = builder.getUnknownLoc();
 
@@ -428,6 +425,9 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   builder.setInsertionPointToEnd(header);
 
   Block *merge = loopOp.getMergeBlock();
+  whileStmt->getCondition()->accept(this);
+
+  auto conditionOp = load(popExpressionStack().second);
   builder.create<spirv::BranchConditionalOp>(
       loc, conditionOp, body, ArrayRef<mlir::Value>(), merge, ArrayRef<mlir::Value>());
 
