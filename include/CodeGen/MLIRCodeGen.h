@@ -83,7 +83,7 @@ private:
   bool inGlobalScope = true;
   llvm::StringMap<spirv::FuncOp> functionMap;
   llvm::StringMap<StructDeclaration*> structDeclarations;
-  std::vector<std::pair<Type*, Value>> expressionStack;
+  std::vector<std::pair<shaderpulse::Type*, Value>> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
@@ -99,7 +99,7 @@ private:
   void insertEntryPoint();
   mlir::Value load(mlir::Value);
   
-  std::pair<Type*, Value> popExpressionStack();
+  std::pair<shaderpulse::Type*, Value> popExpressionStack();
   mlir::Value currentBasePointer;
   mlir::Value convertOp(ConstructorExpression* constructorExp, std::pair<shaderpulse::Type*, mlir::Value> operand);
 };

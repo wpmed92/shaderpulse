@@ -64,12 +64,12 @@ void MLIRCodeGen::visit(BinaryExpression *binExp) {
   binExp->getLhs()->accept(this);
   binExp->getRhs()->accept(this);
 
-  std::pair<Type*, mlir::Value> rhsPair = popExpressionStack();
-  std::pair<Type*, mlir::Value> lhsPair = popExpressionStack();
+  std::pair<shaderpulse::Type*, mlir::Value> rhsPair = popExpressionStack();
+  std::pair<shaderpulse::Type*, mlir::Value> lhsPair = popExpressionStack();
 
   mlir::Value rhs = load(rhsPair.second);
   mlir::Value lhs = load(lhsPair.second);
-  Type* typeContext = lhsPair.first;
+  shaderpulse::Type* typeContext = lhsPair.first;
 
   // TODO: implement source location
   auto loc = builder.getUnknownLoc();
@@ -217,9 +217,9 @@ void MLIRCodeGen::visit(ConditionalExpression *condExp) {
   condExp->getTruePart()->accept(this);
   condExp->getCondition()->accept(this);
 
-  std::pair<Type*, mlir::Value> condition = popExpressionStack();
-  std::pair<Type*, mlir::Value> truePart = popExpressionStack();
-  std::pair<Type*, mlir::Value> falsePart = popExpressionStack();
+  std::pair<shaderpulse::Type*, mlir::Value> condition = popExpressionStack();
+  std::pair<shaderpulse::Type*, mlir::Value> truePart = popExpressionStack();
+  std::pair<shaderpulse::Type*, mlir::Value> falsePart = popExpressionStack();
 
   mlir::Value res = builder.create<spirv::SelectOp>(
     builder.getUnknownLoc(),
@@ -250,12 +250,12 @@ void MLIRCodeGen::visit(InitializerExpression *initExp) {
 
 void MLIRCodeGen::visit(UnaryExpression *unExp) {
   unExp->getExpression()->accept(this);
-  std::pair<Type*, mlir::Value> rhsPair = popExpressionStack();
+  std::pair<shaderpulse::Type*, mlir::Value> rhsPair = popExpressionStack();
 
   auto loc = builder.getUnknownLoc();
   mlir::Value rhs = load(rhsPair.second);
   mlir::Value result;
-  Type* rhsType = rhsPair.first;
+  shaderpulse::Type* rhsType = rhsPair.first;
 
   auto op = unExp->getOp();
 
@@ -330,7 +330,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
   if (inGlobalScope) {
     spirv::StorageClass storageClass;
 
-    if (auto st = getSpirvStorageClass(varType->getQualifier(TypeQualifierKind::Storage))) {
+    if (auto st = getSpirvStorageClass(varType->getQualifier(shaderpulse::TypeQualifierKind::Storage))) {
       storageClass = *st;
     } else {
       storageClass = spirv::StorageClass::Private;
@@ -354,7 +354,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
         (initializerOp) ? FlatSymbolRefAttr::get(initializerOp) : nullptr);
 
 
-    auto locationOpt = getLocationFromTypeQualifier(&context, varType->getQualifier(TypeQualifierKind::Layout));
+    auto locationOpt = getLocationFromTypeQualifier(&context, varType->getQualifier(shaderpulse::TypeQualifierKind::Layout));
 
     if (locationOpt) {
       varOp->setAttr("location", *locationOpt);
@@ -460,8 +460,8 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
   auto constructorTypeKind = constructorType->getKind();
 
   switch (constructorTypeKind) {
-    case TypeKind::Struct: {
-      auto structName = dynamic_cast<StructType*>(constructorType)->getName();
+    case shaderpulse::TypeKind::Struct: {
+      auto structName = dynamic_cast<shaderpulse::StructType*>(constructorType)->getName();
 
       if (structDeclarations.find(structName) != structDeclarations.end()) {
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
@@ -472,13 +472,13 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       break;
     }
 
-    case TypeKind::Vector:
-    case TypeKind::Array: {
+    case shaderpulse::TypeKind::Vector:
+    case shaderpulse::TypeKind::Array: {
       // If the vector constructor has a single argument, and it is the same length as the current vector,
       // but the element type is different, than it is a type conversion and not a composite construction.
-      if (constructorTypeKind == TypeKind::Vector && (operands.size() == 1) && (operandTypes[0]->getKind() == TypeKind::Vector)) {
-        auto argVecType = dynamic_cast<VectorType*>(operandTypes[0]);
-        auto constrVecType = dynamic_cast<VectorType*>(constructorType);
+      if (constructorTypeKind == shaderpulse::TypeKind::Vector && (operands.size() == 1) && (operandTypes[0]->getKind() == shaderpulse::TypeKind::Vector)) {
+        auto argVecType = dynamic_cast<shaderpulse::VectorType*>(operandTypes[0]);
+        auto constrVecType = dynamic_cast<shaderpulse::VectorType*>(constructorType);
 
         if ((argVecType->getLength() == constrVecType->getLength()) && !argVecType->getElementType()->isEqual(*constrVecType->getElementType())) {
           convertOp(constructorExp, std::make_pair(operandTypes[0], operands[0]));
@@ -495,7 +495,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       break;
     }
 
-    case TypeKind::Matrix: {
+    case shaderpulse::TypeKind::Matrix: {
       auto matrixType = dynamic_cast<shaderpulse::MatrixType *>(constructorType);
       std::vector<mlir::Value> columnVectors;
 
@@ -506,7 +506,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
           col.push_back(operands[j*matrixType->getCols() + i]);
         }
 
-        auto elementType = std::make_unique<Type>(matrixType->getElementType()->getKind());
+        auto elementType = std::make_unique<shaderpulse::Type>(matrixType->getElementType()->getKind());
         auto vecType = std::make_unique<shaderpulse::VectorType>(std::move(elementType), col.size());
         mlir::Value val = builder.create<spirv::CompositeConstructOp>(
           builder.getUnknownLoc(), convertShaderPulseType(&context, vecType.get(), structDeclarations), col);
@@ -558,11 +558,11 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp, std::p
       toType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
     );
 
-    if (fromType->getKind() == TypeKind::Vector) {
+    if (fromType->getKind() == shaderpulse::TypeKind::Vector) {
       std::vector<mlir::Value> operandsZero;
       std::vector<mlir::Value> operandsOne;
 
-      for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+      for (int i = 0; i < dynamic_cast<shaderpulse::VectorType*>(fromType)->getLength(); i++) {
         operandsZero.push_back(constZero);
         operandsOne.push_back(constOne);
       }
@@ -598,11 +598,11 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp, std::p
         toType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
     );
 
-    if (fromType->getKind() == TypeKind::Vector) {
+    if (fromType->getKind() == shaderpulse::TypeKind::Vector) {
       std::vector<mlir::Value> operandsZero;
       std::vector<mlir::Value> operandsOne;
 
-      for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+      for (int i = 0; i < dynamic_cast<shaderpulse::VectorType*>(fromType)->getLength(); i++) {
         operandsZero.push_back(constZero);
         operandsOne.push_back(constOne);
       }
@@ -636,10 +636,10 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp, std::p
         fromType->isUIntLike() ? builder.getUI32IntegerAttr(0) : builder.getSI32IntegerAttr(0)
       );
 
-      if (fromType->getKind() == TypeKind::Vector) {
+      if (fromType->getKind() == shaderpulse::TypeKind::Vector) {
         std::vector<mlir::Value> operandsZero;
 
-        for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+        for (int i = 0; i < dynamic_cast<shaderpulse::VectorType*>(fromType)->getLength(); i++) {
           operandsZero.push_back(zero);
         }
         zero = builder.create<spirv::CompositeConstructOp>(
@@ -654,10 +654,10 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp, std::p
         fromType->isF32Like() ? builder.getF32FloatAttr(0.0f) : builder.getF64FloatAttr(0.0)
       );
 
-      if (fromType->getKind() == TypeKind::Vector) {
+      if (fromType->getKind() == shaderpulse::TypeKind::Vector) {
         std::vector<mlir::Value> operandsZero;
 
-        for (int i = 0; i < dynamic_cast<VectorType*>(fromType)->getLength(); i++) {
+        for (int i = 0; i < dynamic_cast<shaderpulse::VectorType*>(fromType)->getLength(); i++) {
           operandsZero.push_back(zero);
         }
         zero = builder.create<spirv::CompositeConstructOp>(
@@ -674,8 +674,8 @@ mlir::Value MLIRCodeGen::convertOp(ConstructorExpression* constructorExp, std::p
 void MLIRCodeGen::visit(ArrayAccessExpression *arrayAccess) {
   auto array = arrayAccess->getArray();
   array->accept(this);
-  std::pair<Type*, mlir::Value> mlirArray = popExpressionStack();
-  Type* elementType = dynamic_cast<ArrayType*>(mlirArray.first)->getElementType();
+  std::pair<shaderpulse::Type*, mlir::Value> mlirArray = popExpressionStack();
+  shaderpulse::Type* elementType = dynamic_cast<shaderpulse::ArrayType*>(mlirArray.first)->getElementType();
   std::vector<mlir::Value> indices;
 
   for (auto &access : arrayAccess->getAccessChain()) {
@@ -693,7 +693,7 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
   baseComposite->accept(this);
   mlir::Value baseCompositeValue = popExpressionStack().second;
   std::vector<mlir::Value> memberIndicesAcc;
-  Type* memberType;
+  shaderpulse::Type* memberType;
 
   if (currentBaseComposite) {
     for (auto &member : memberAccess->getMembers()) {
@@ -701,8 +701,8 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
         auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
         memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
 
-        if (memberIndexPair.second->getType()->getKind() == TypeKind::Struct) {
-          auto structName = dynamic_cast<StructType*>(memberIndexPair.second->getType())->getName();
+        if (memberIndexPair.second->getType()->getKind() == shaderpulse::TypeKind::Struct) {
+          auto structName = dynamic_cast<shaderpulse::StructType*>(memberIndexPair.second->getType())->getName();
 
           if (structDeclarations.find(structName) != structDeclarations.end()) {
             currentBaseComposite = structDeclarations[structName];
@@ -715,7 +715,7 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
         auto varName = dynamic_cast<VariableExpression*>(arrayAccess->getArray())->getName();
         auto memberIndexPair = currentBaseComposite->getMemberWithIndex(varName);
         memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
-        memberType = dynamic_cast<ArrayType*>(memberIndexPair.second->getType())->getElementType();
+        memberType = dynamic_cast<shaderpulse::ArrayType*>(memberIndexPair.second->getType())->getElementType();
 
         for (auto &access : arrayAccess->getAccessChain()) {
           access->accept(this);
@@ -864,8 +864,8 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
       val = entry.value;
     }
 
-    if (entry.variable->getType()->getKind() == TypeKind::Struct) {
-      auto structName = dynamic_cast<StructType*>(entry.variable->getType())->getName();
+    if (entry.variable->getType()->getKind() == shaderpulse::TypeKind::Struct) {
+      auto structName = dynamic_cast<shaderpulse::StructType*>(entry.variable->getType())->getName();
 
       if (structDeclarations.find(structName) != structDeclarations.end()) {
         currentBaseComposite = structDeclarations[structName];
@@ -950,10 +950,10 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
     paramTypes.push_back(convertShaderPulseType(&context, param->getType(), structDeclarations));
   }
 
-  TypeRange resultTypeRange;
+  mlir::TypeRange resultTypeRange;
   
   if (auto resultType = convertShaderPulseType(&context, funcDecl->getReturnType(), structDeclarations)) {
-    if (!resultType.isa<NoneType>()) {
+    if (!resultType.isa<mlir::NoneType>()) {
       resultTypeRange = { resultType };
     }
   }
@@ -980,7 +980,7 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   funcDecl->getBody()->accept(this);
 
   // Return insertion for void functions
-  if (funcDecl->getReturnType()->getKind() == TypeKind::Void) {
+  if (funcDecl->getReturnType()->getKind() == shaderpulse::TypeKind::Void) {
     if (auto stmts = dynamic_cast<StatementList*>(funcDecl->getBody())) {
       auto &lastStmt = stmts->getStatements().back();
 
