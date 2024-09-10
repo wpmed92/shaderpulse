@@ -78,9 +78,9 @@ public:
 private:
   bool insideEntryPoint = false;
 
-  MLIRContext context;
+  mlir::MLIRContext context;
   spirv::ModuleOp spirvModule;
-  OpBuilder builder;
+  mlir::OpBuilder builder;
 
   bool inGlobalScope = true;
   llvm::StringMap<spirv::FuncOp> functionMap;
@@ -92,7 +92,7 @@ private:
       symbolTable;
   using SymbolTableScopeT =
       llvm::ScopedHashTableScope<llvm::StringRef, SymbolTableEntry>;
-  using BuiltInFunc = std::function<mlir::Value(mlir::OpBuilder &, mlir::ValueRange)>;
+  using BuiltInFunc = std::function<mlir::Value(mlir::MLIRContext &, mlir::OpBuilder &, mlir::ValueRange)>;
 
   std::unordered_map<std::string, BuiltInFunc> builtInFuncMap;
   SymbolTableScopeT globalScope;

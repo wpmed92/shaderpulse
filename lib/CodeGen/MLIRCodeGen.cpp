@@ -18,113 +18,120 @@ MLIRCodeGen::MLIRCodeGen() : builder(&context), globalScope(symbolTable) {
 
 void MLIRCodeGen::initBuiltinFuncMap() {
   builtInFuncMap = {
-    {"acos", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"acos", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLAcosOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"asin", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"asin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLAsinOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"atan", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"atan", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLAtanOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"ceil", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"ceil", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLCeilOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"cos", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"cos", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLCosOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"cosh", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"cosh", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLCoshOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"exp", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"exp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLExpOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"fabs", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"exp2", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      auto two = builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::FloatType::getF32(&context), builder.getF32FloatAttr(2.0f));
+      return builder.create<spirv::GLPowOp>(builder.getUnknownLoc(), operands[0].getType(), two, operands[0]);
+    }},
+    {"fabs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFAbsOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"fclamp", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"fabs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      return builder.create<spirv::GLFAbsOp>(builder.getUnknownLoc(), operands[0]);
+    }},
+    {"fclamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
     }},
-    {"fmax", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"fmax", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFMaxOp>(builder.getUnknownLoc(),operands[0].getType(), operands[0], operands[1]);
     }},
-    {"fmin", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"fmin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
-    {"fmix", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"fmix", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFMixOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
     }},
-    {"fsign", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"fsign", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFSignOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"findumsb", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"findumsb", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFindUMsbOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"floor", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"floor", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFloorOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"fma", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"fma", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFmaOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
     }},
-    {"frexpstruct", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"frexpstruct", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       // TODO: implement me
       return mlir::Value();
     }},
-    {"inversesqrt", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"inversesqrt", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLInverseSqrtOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"ldexp", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"ldexp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLLdexpOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
-    {"log", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"log", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLLogOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"pow", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"pow", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLPowOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
-    {"roundeven", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"roundeven", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLRoundEvenOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"round", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"round", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLRoundOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"sabs", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"sabs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSAbsOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"sclamp", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"sclamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
     }},
-    {"smax", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"smax", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
-    {"smin", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"smin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
-    {"ssign", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"ssign", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSSignOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"sin", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"sin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSinOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"sinh", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"sinh", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSinhOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"sqrt", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"sqrt", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSqrtOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"tan", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"tan", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLTanOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"tanh", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"tanh", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLTanhOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"uclamp", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"uclamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLUClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
     }},
-    {"umax", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"umax", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLUMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
-    {"umin", [](mlir::OpBuilder &builder, mlir::ValueRange operands) {
+    {"umin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLUMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }}
   };
@@ -1138,7 +1145,7 @@ bool MLIRCodeGen::callBuiltIn(CallExpression* exp) {
       types.push_back(typeValPair.first);
       operands.push_back(load(typeValPair.second));
     }
-    expressionStack.push_back(std::make_pair(types[0], builtinFuncIt->second(builder, operands)));
+    expressionStack.push_back(std::make_pair(types[0], builtinFuncIt->second(context, builder, operands)));
     return true;
   } else {
     return false;
