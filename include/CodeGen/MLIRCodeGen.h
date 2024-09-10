@@ -14,7 +14,6 @@
 #include "llvm/ADT/ScopedHashTable.h"
 #include <vector>
 #include <map>
-#include <utility>
 #include <functional>
 #include <unordered_map>
 
@@ -85,7 +84,7 @@ private:
   bool inGlobalScope = true;
   llvm::StringMap<spirv::FuncOp> functionMap;
   llvm::StringMap<StructDeclaration*> structDeclarations;
-  std::vector<std::pair<shaderpulse::Type*, Value>> expressionStack;
+  std::vector<mlir::Value> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
@@ -104,10 +103,9 @@ private:
   void initBuiltinFuncMap();
   bool callBuiltIn(CallExpression* exp);
   mlir::Value load(mlir::Value);
-  
-  std::pair<shaderpulse::Type*, Value> popExpressionStack();
+  mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;
-  mlir::Value convertOp(ConstructorExpression* constructorExp, std::pair<shaderpulse::Type*, mlir::Value> operand);
+  mlir::Value convertOp(ConstructorExpression* constructorExp, mlir::Value val);
 };
 
 }; // namespace codegen
