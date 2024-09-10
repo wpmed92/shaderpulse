@@ -591,7 +591,7 @@ void MLIRCodeGen::visit(ConstructorExpression *constructorExp) {
       // but the element type is different, than it is a type conversion and not a composite construction.
       if (constructorTypeKind == shaderpulse::TypeKind::Vector && (operands.size() == 1) && (operands[0].getType().isa<mlir::VectorType>())) {
         auto argVecType = operands[0].getType().dyn_cast<mlir::VectorType>();
-        auto constrVecType = convertShaderPulseType(&context, dynamic_cast<shaderpulse::VectorType*>(constructorType), structDeclarations).dyn_cast<mlir::VectorType>();
+        auto constrVecType = convertShaderPulseType(&context, constructorType, structDeclarations).dyn_cast<mlir::VectorType>();
 
         if ((argVecType.getShape()[0] == constrVecType.getShape()[0]) && (argVecType.getElementType() != constrVecType.getElementType())) {
           convertOp(constructorExp, operands[0]);

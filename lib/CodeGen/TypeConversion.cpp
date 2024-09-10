@@ -5,7 +5,7 @@ namespace shaderpulse {
 
 namespace codegen {
 
-mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, Type *shaderPulseType, llvm::StringMap<ast::StructDeclaration*> &structDeclarations) {
+mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, shaderpulse::Type *shaderPulseType, llvm::StringMap<ast::StructDeclaration*> &structDeclarations) {
   switch (shaderPulseType->getKind()) {
   case TypeKind::Void:
     return mlir::NoneType::get(ctx);
@@ -64,7 +64,7 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, Type *shaderPulseType,
 }
 
 std::optional<mlir::spirv::StorageClass>
-getSpirvStorageClass(TypeQualifier *typeQualifier) {
+getSpirvStorageClass(shaderpulse::TypeQualifier *typeQualifier) {
   if (!typeQualifier) {
     return std::nullopt;
   }
