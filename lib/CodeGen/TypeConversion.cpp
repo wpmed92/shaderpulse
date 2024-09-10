@@ -110,6 +110,45 @@ getLocationFromTypeQualifier(mlir::MLIRContext *ctx, TypeQualifier *typeQualifie
   return std::nullopt;
 }
 
+mlir::Type getElementType(mlir::Type type) {
+  if (type.isa<mlir::VectorType>() || type.isa<mlir::spirv::ArrayType>() || type.isa<mlir::spirv::MatrixType>()) {
+    auto compositeType = type.dyn_cast<mlir::spirv::CompositeType>();
+    return compositeType.getElementType(0);
+  } else {
+    return type;
+  }
+}
+
+// Emulate the <type>Like concept from shaderpulse::Type
+bool isBoolLike(mlir::Type type) {
+  return getElementType(type).isSignlessInteger(1);
+}
+
+bool isIntLike(mlir::Type type) {
+  return getElementType(type).isInteger(32);
+}
+
+bool isSIntLike(mlir::Type type) {
+  return getElementType(type).isSignedInteger(32);
+}
+
+bool isUIntLike(mlir::Type type) {
+  return getElementType(type).isUnsignedInteger(32);
+}
+
+bool isFloatLike(mlir::Type type) {
+  auto _type = getElementType(type);
+  return _type.isF32() || _type.isF64();
+}
+
+bool isF32Like(mlir::Type type) {
+  return getElementType(type).isF32();
+}
+
+bool isF64Like(mlir::Type type) {
+  return getElementType(type).isF64();
+}
+
 }; // namespace codegen
 
 }; // namespace shaderpulse
