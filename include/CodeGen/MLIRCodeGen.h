@@ -15,6 +15,8 @@
 #include <vector>
 #include <map>
 #include <utility>
+#include <functional>
+#include <unordered_map>
 
 using namespace mlir;
 
@@ -90,13 +92,17 @@ private:
       symbolTable;
   using SymbolTableScopeT =
       llvm::ScopedHashTableScope<llvm::StringRef, SymbolTableEntry>;
+  using BuiltInFunc = std::function<mlir::Value(mlir::OpBuilder &, mlir::ValueRange)>;
 
+  std::unordered_map<std::string, BuiltInFunc> builtInFuncMap;
   SymbolTableScopeT globalScope;
   SmallVector<Attribute, 4> interface;
 
   void declare(StringRef name, SymbolTableEntry entry);
   void createVariable(shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
+  void initBuiltinFuncMap();
+  bool callBuiltIn(CallExpression* exp);
   mlir::Value load(mlir::Value);
   
   std::pair<shaderpulse::Type*, Value> popExpressionStack();
