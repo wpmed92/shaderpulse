@@ -18,6 +18,17 @@ MLIRCodeGen::MLIRCodeGen() : builder(&context), globalScope(symbolTable) {
 
 void MLIRCodeGen::initBuiltinFuncMap() {
   builtInFuncMap = {
+    {"abs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      mlir::Value result {};
+
+      if (isFloatLike(operands[0].getType())) {
+        result = builder.create<spirv::GLFAbsOp>(builder.getUnknownLoc(), operands[0]);
+      } else {
+        result = builder.create<spirv::GLSAbsOp>(builder.getUnknownLoc(), operands[0]);
+      }
+
+      return result;
+    }},
     {"acos", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLAcosOp>(builder.getUnknownLoc(), operands[0]);
     }},
@@ -29,6 +40,20 @@ void MLIRCodeGen::initBuiltinFuncMap() {
     }},
     {"ceil", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLCeilOp>(builder.getUnknownLoc(), operands[0]);
+    }},
+    {"clamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      mlir::Type type = operands[0].getType();
+      mlir::Value result {};
+
+      if (isFloatLike(type)) {
+        result = builder.create<spirv::GLFClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+      } else if (isUIntLike(type)) {
+        result = builder.create<spirv::GLUClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+      } else {
+        result = builder.create<spirv::GLSClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+      }
+
+      return result;
     }},
     {"cos", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLCosOp>(builder.getUnknownLoc(), operands[0]);
@@ -42,27 +67,6 @@ void MLIRCodeGen::initBuiltinFuncMap() {
     {"exp2", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       auto two = builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::FloatType::getF32(&context), builder.getF32FloatAttr(2.0f));
       return builder.create<spirv::GLPowOp>(builder.getUnknownLoc(), operands[0].getType(), two, operands[0]);
-    }},
-    {"fabs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFAbsOp>(builder.getUnknownLoc(), operands[0]);
-    }},
-    {"fabs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFAbsOp>(builder.getUnknownLoc(), operands[0]);
-    }},
-    {"fclamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
-    }},
-    {"fmax", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFMaxOp>(builder.getUnknownLoc(),operands[0].getType(), operands[0], operands[1]);
-    }},
-    {"fmin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
-    }},
-    {"fmix", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFMixOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
-    }},
-    {"fsign", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLFSignOp>(builder.getUnknownLoc(), operands[0]);
     }},
     {"findumsb", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLFindUMsbOp>(builder.getUnknownLoc(), operands[0]);
@@ -86,6 +90,37 @@ void MLIRCodeGen::initBuiltinFuncMap() {
     {"log", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLLogOp>(builder.getUnknownLoc(), operands[0]);
     }},
+    {"max", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      mlir::Type type = operands[0].getType();
+      mlir::Value result {};
+
+      if (isFloatLike(type)) {
+        result = builder.create<spirv::GLFMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+      } else if (isUIntLike(type)) {
+        result = builder.create<spirv::GLUMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+      } else {
+        result = builder.create<spirv::GLSMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+      }
+
+      return result;
+    }},
+    {"min", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      mlir::Type type = operands[0].getType();
+      mlir::Value result {};
+
+      if (isFloatLike(type)) {
+        result = builder.create<spirv::GLFMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+      } else if (isUIntLike(type)) {
+        result = builder.create<spirv::GLUMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+      } else {
+        result = builder.create<spirv::GLSMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+      }
+
+      return result;
+    }},
+    {"mix", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      return builder.create<spirv::GLFMixOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+    }},
     {"pow", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLPowOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }},
@@ -95,20 +130,16 @@ void MLIRCodeGen::initBuiltinFuncMap() {
     {"round", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLRoundOp>(builder.getUnknownLoc(), operands[0]);
     }},
-    {"sabs", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLSAbsOp>(builder.getUnknownLoc(), operands[0]);
-    }},
-    {"sclamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLSClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
-    }},
-    {"smax", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLSMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
-    }},
-    {"smin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLSMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
-    }},
-    {"ssign", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLSSignOp>(builder.getUnknownLoc(), operands[0]);
+    {"sign", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      mlir::Value result {};
+
+      if (isFloatLike(operands[0].getType())) {
+        result = builder.create<spirv::GLFSignOp>(builder.getUnknownLoc(), operands[0]);
+      } else {
+        result = builder.create<spirv::GLSSignOp>(builder.getUnknownLoc(), operands[0]);
+      }
+
+      return result;
     }},
     {"sin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLSinOp>(builder.getUnknownLoc(), operands[0]);
@@ -124,15 +155,6 @@ void MLIRCodeGen::initBuiltinFuncMap() {
     }},
     {"tanh", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLTanhOp>(builder.getUnknownLoc(), operands[0]);
-    }},
-    {"uclamp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLUClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
-    }},
-    {"umax", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLUMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
-    }},
-    {"umin", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
-      return builder.create<spirv::GLUMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
     }}
   };
 }

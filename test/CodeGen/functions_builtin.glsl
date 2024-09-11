@@ -51,13 +51,53 @@ void main() {
 
     // CHECK: %cst_f32_12 = spirv.Constant 8.000000e-01 : f32
     // CHECK-NEXT: %13 = spirv.GL.FAbs %cst_f32_12 : f32
-    a = fabs(0.8);
+    a = abs(0.8);
+
+    // CHECK: %cst1_si32 = spirv.Constant 1 : si32
+    // CHECK-NEXT: %14 = spirv.GL.SAbs %cst1_si32 : si32
+    int b = abs(1);
 
     // CHECK: %cst_f32_13 = spirv.Constant 1.500000e+00 : f32
-    // CHECK-NEXT: %14 = spirv.GL.Ceil %cst_f32_13 : f32
+    // CHECK-NEXT: %16 = spirv.GL.Ceil %cst_f32_13 : f32
     a = ceil(1.5);
 
     // CHECK: %cst_f32_14 = spirv.Constant 2.700000e+00 : f32
-    // CHECK-NEXT: %15 = spirv.GL.Floor %cst_f32_14 : f32
+    // CHECK-NEXT: %17 = spirv.GL.Floor %cst_f32_14 : f32
     a = floor(2.7);
+
+    // CHECK: %18 = spirv.GL.FClamp %cst_f32_15, %cst_f32_16, %cst_f32_17 : f32
+    a = clamp(1.2, 0.1, 1.0);
+
+    // CHECK: %19 = spirv.GL.SClamp %cst10_si32, %cst2_si32, %cst8_si32 : si32
+    b = clamp(10, 2, 8);
+
+    // CHECK: %20 = spirv.GL.UClamp %cst10_ui32, %cst2_ui32, %cst8_ui32 : ui32
+    uint c = clamp(10u, 2u, 8u);
+
+    // CHECK: %22 = spirv.GL.FMax %cst_f32_18, %cst_f32_19 : f32
+    a = max(0.1, 1.1);
+
+    // CHECK: %24 = spirv.GL.SMax %23, %cst10_si32_21 : si32
+    b = max(-1, 10);
+
+    // CHECK: %25 = spirv.GL.UMax %cst1_ui32, %cst10_ui32_22 : ui32
+    c = max(1u, 10u);
+
+    // CHECK: %26 = spirv.GL.FMin %cst_f32_23, %cst_f32_24 : f32
+    a = min(0.1, 1.1);
+
+    // CHECK: %28 = spirv.GL.SMin %27, %cst10_si32_26 : si32
+    b = min(-1, 10);
+
+    // CHECK: %29 = spirv.GL.UMin %cst1_ui32_27, %cst10_ui32_28 : ui32
+    c = min(1u, 10u);
+
+    // CHECK: %30 = spirv.GL.FMix %cst_f32_29 : f32, %cst_f32_30 : f32, %cst_f32_31 : f32 -> f32
+    a = mix(2.1, 3.8, 0.1);
+
+    // CHECK: %32 = spirv.GL.FSign %31 : f32
+    a = sign(-1.1);
+
+    // CHECK: %34 = spirv.GL.SSign %33 : si32
+    b = sign(-1);
 }

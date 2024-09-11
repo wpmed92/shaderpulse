@@ -111,7 +111,7 @@ getLocationFromTypeQualifier(mlir::MLIRContext *ctx, TypeQualifier *typeQualifie
 }
 
 mlir::Type getElementType(mlir::Type type) {
-  if (type.isa<mlir::VectorType>() || type.isa<mlir::spirv::ArrayType>() || type.isa<mlir::spirv::MatrixType>()) {
+  if (type.isa<mlir::VectorType>() || type.isa<mlir::spirv::MatrixType>()) {
     auto compositeType = type.dyn_cast<mlir::spirv::CompositeType>();
     return compositeType.getElementType(0);
   } else {
