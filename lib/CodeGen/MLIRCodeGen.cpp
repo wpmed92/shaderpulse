@@ -46,11 +46,11 @@ void MLIRCodeGen::initBuiltinFuncMap() {
       mlir::Value result {};
 
       if (isFloatLike(type)) {
-        result = builder.create<spirv::GLFClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+        result = builder.create<spirv::GLFClampOp>(builder.getUnknownLoc(), type, operands[0], operands[1], operands[2]);
       } else if (isUIntLike(type)) {
-        result = builder.create<spirv::GLUClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+        result = builder.create<spirv::GLUClampOp>(builder.getUnknownLoc(), type, operands[0], operands[1], operands[2]);
       } else {
-        result = builder.create<spirv::GLSClampOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1], operands[2]);
+        result = builder.create<spirv::GLSClampOp>(builder.getUnknownLoc(), type, operands[0], operands[1], operands[2]);
       }
 
       return result;
@@ -95,11 +95,11 @@ void MLIRCodeGen::initBuiltinFuncMap() {
       mlir::Value result {};
 
       if (isFloatLike(type)) {
-        result = builder.create<spirv::GLFMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+        result = builder.create<spirv::GLFMaxOp>(builder.getUnknownLoc(), type, operands[0], operands[1]);
       } else if (isUIntLike(type)) {
-        result = builder.create<spirv::GLUMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+        result = builder.create<spirv::GLUMaxOp>(builder.getUnknownLoc(), type, operands[0], operands[1]);
       } else {
-        result = builder.create<spirv::GLSMaxOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+        result = builder.create<spirv::GLSMaxOp>(builder.getUnknownLoc(), type, operands[0], operands[1]);
       }
 
       return result;
@@ -109,11 +109,11 @@ void MLIRCodeGen::initBuiltinFuncMap() {
       mlir::Value result {};
 
       if (isFloatLike(type)) {
-        result = builder.create<spirv::GLFMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+        result = builder.create<spirv::GLFMinOp>(builder.getUnknownLoc(), type, operands[0], operands[1]);
       } else if (isUIntLike(type)) {
-        result = builder.create<spirv::GLUMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+        result = builder.create<spirv::GLUMinOp>(builder.getUnknownLoc(), type, operands[0], operands[1]);
       } else {
-        result = builder.create<spirv::GLSMinOp>(builder.getUnknownLoc(), operands[0].getType(), operands[0], operands[1]);
+        result = builder.create<spirv::GLSMinOp>(builder.getUnknownLoc(), type, operands[0], operands[1]);
       }
 
       return result;
