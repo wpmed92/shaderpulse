@@ -5,4 +5,5 @@ include_directories(${PROJECT_SOURCE_DIR}/utils/include)
 add_library(CodeGen
   TypeConversion.cpp
   MLIRCodeGen.cpp
+  Swizzle.cpp
 )
