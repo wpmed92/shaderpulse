@@ -846,6 +846,41 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
 
     mlir::Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
     expressionStack.push_back(accessChain);
+  } else {
+    // Swizzle
+    std::unordered_map<char, int> swizzleMap = {
+      {'x', 0},
+      {'y', 1},
+      {'z', 2},
+      {'w', 3},
+      {'r', 0},
+      {'g', 1},
+      {'b', 2},
+      {'a', 3}
+    };
+    mlir::Value loadedComposite = load(baseCompositeValue);
+
+    for (auto &member : memberAccess->getMembers()) {
+      if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
+        std::vector<int> indices;
+        auto swizzle = var->getName();
+        for (auto c : swizzle) {
+          indices.push_back(swizzleMap.find(c)->second);
+        }
+
+        llvm::ArrayRef<int64_t> shape(static_cast<int64_t>(swizzle.length()));
+        mlir::Type elementType = loadedComposite.getType().dyn_cast<mlir::VectorType>().getElementType();
+
+        std::cout << "Have element type" << std::endl;
+        mlir::VectorType shuffleType = mlir::VectorType::get(shape, elementType);
+
+
+        std::cout << "shuffling " << std::endl;
+        loadedComposite = builder.create<spirv::VectorShuffleOp>(builder.getUnknownLoc(), shuffleType, loadedComposite, loadedComposite, builder.getI32ArrayAttr(indices));
+      }
+    }
+
+    expressionStack.push_back(loadedComposite);
   }
 }
 
@@ -989,6 +1024,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
       }
     }
 
+    std::cout << "Found var" << std::endl;
     expressionStack.push_back(val);
   } else {
     std::cout << "Unable to find variable: " << varExp->getName() << std::endl;
