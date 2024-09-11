@@ -993,7 +993,6 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
       }
     }
 
-    std::cout << "Found var" << std::endl;
     expressionStack.push_back(val);
   } else {
     std::cout << "Unable to find variable: " << varExp->getName() << std::endl;
