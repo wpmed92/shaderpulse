@@ -36,6 +36,7 @@ mlir::Value swizzle(mlir::OpBuilder &builder, mlir::Value composite, ast::Member
                 }
 
                 int64_t len = static_cast<int64_t>(swizzle.length());
+                std::cerr << "Swizz length " << len << std::endl;
                 llvm::ArrayRef<int64_t> shape(&len, 1);
                 mlir::Type elementType = currentComposite.getType().dyn_cast<mlir::VectorType>().getElementType();
                 mlir::VectorType shuffleType = mlir::VectorType::get(shape, elementType);
