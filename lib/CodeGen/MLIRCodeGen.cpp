@@ -1,5 +1,6 @@
 #include "CodeGen/MLIRCodeGen.h"
 #include "AST/AST.h"
+#include "CodeGen/Swizzle.h"
 #include "CodeGen/TypeConversion.h"
 #include <iostream>
 #include <cassert>
@@ -819,8 +820,18 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
   std::vector<mlir::Value> memberIndicesAcc;
 
   if (currentBaseComposite) {
-    for (auto &member : memberAccess->getMembers()) {
+    std::pair<int, VariableDeclaration*> prevMemberIndexPair;
+    for (int i = 0; i < memberAccess->getMembers().size(); i++) {
+      auto &member  = memberAccess->getMembers()[i];
       if (auto var = dynamic_cast<VariableExpression*>(member.get())) {
+        // Swizzle detected
+        if (prevMemberIndexPair.second && prevMemberIndexPair.second->getType()->getKind() == shaderpulse::TypeKind::Vector) {
+          mlir::Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
+          mlir::Value swizzled = swizzle(builder, load(accessChain), memberAccess, i);
+          expressionStack.push_back(swizzled);
+          return;
+        }
+
         auto memberIndexPair = currentBaseComposite->getMemberWithIndex(var->getName());
         memberIndicesAcc.push_back(builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), mlir::IntegerType::get(&context, 32, mlir::IntegerType::Signless), builder.getI32IntegerAttr(memberIndexPair.first)));
 
@@ -831,6 +842,8 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
             currentBaseComposite = structDeclarations[structName];
           }
         }
+
+        prevMemberIndexPair = memberIndexPair;
       // This is a duplicate of ArrayAccessExpression, idially we want to reuse that.
       } else if (auto arrayAccess = dynamic_cast<ArrayAccessExpression*>(member.get())) {
         auto varName = dynamic_cast<VariableExpression*>(arrayAccess->getArray())->getName();
@@ -846,6 +859,9 @@ void MLIRCodeGen::visit(MemberAccessExpression *memberAccess) {
 
     mlir::Value accessChain = builder.create<spirv::AccessChainOp>(builder.getUnknownLoc(), baseCompositeValue, memberIndicesAcc);
     expressionStack.push_back(accessChain);
+  } else {
+    mlir::Value swizzled = swizzle(builder, load(baseCompositeValue), memberAccess);
+    expressionStack.push_back(swizzled);
   }
 }
 
