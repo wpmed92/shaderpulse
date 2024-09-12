@@ -1,6 +1,5 @@
 #include "CodeGen/Swizzle.h"
 #include <vector>
-#include <iostream>
 
 namespace shaderpulse {
 
@@ -25,7 +24,6 @@ mlir::Value swizzle(mlir::OpBuilder &builder, mlir::Value composite, ast::Member
         if (auto var = dynamic_cast<ast::VariableExpression*>(member.get())) {
             std::vector<int> indices;
             auto swizzle = var->getName();
-            std::cerr << "Swizzle: " << swizzle << std::endl;
 
             if (swizzle.length() == 1) {
                 indices.push_back(swizzleMap.find(swizzle[0])->second);
@@ -36,7 +34,6 @@ mlir::Value swizzle(mlir::OpBuilder &builder, mlir::Value composite, ast::Member
                 }
 
                 int64_t len = static_cast<int64_t>(swizzle.length());
-                std::cerr << "Swizz length " << len << std::endl;
                 llvm::ArrayRef<int64_t> shape(&len, 1);
                 mlir::Type elementType = currentComposite.getType().dyn_cast<mlir::VectorType>().getElementType();
                 mlir::VectorType shuffleType = mlir::VectorType::get(shape, elementType);
