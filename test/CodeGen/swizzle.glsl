@@ -1,3 +1,8 @@
+struct StructSwizzle {
+    vec3 color;
+    vec3 pos;
+};
+
 void main() {
     vec2 _vec2 = vec2(0.1, 0.2);
 
@@ -33,4 +38,12 @@ void main() {
 
     // CHECK: %30 = spirv.VectorShuffle [2 : i32, 1 : i32, 0 : i32] %29 : vector<4xf32>, %29 : vector<4xf32> -> vector<3xf32>
     _swizz_vec3 = _vec4.bgr;
+
+    StructSwizzle structSwizz = StructSwizzle(vec3(1.0, 0.0, 0.0), vec3(0.5, 0.0, 1.0));
+
+    // CHECK: %cst0_i32 = spirv.Constant 0 : i32
+    // CHECK-NEXT: %35 = spirv.AccessChain %34[%cst0_i32] : !spirv.ptr<!spirv.struct<(vector<3xf32>, vector<3xf32>)>, Function>, i32
+    // CHECK-NEXT: %36 = spirv.Load "Function" %35 : vector<3xf32>
+    // CHECK-NEXT: %37 = spirv.VectorShuffle [1 : i32, 0 : i32] %36 : vector<3xf32>, %36 : vector<3xf32> -> vector<2xf32>
+    _swizz_chain = structSwizz.color.yx;
 }

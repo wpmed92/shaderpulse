@@ -14,7 +14,7 @@ namespace shaderpulse {
 namespace codegen {
 
 extern std::unordered_map<char, int> swizzleMap;
-mlir::Value swizzle(mlir::OpBuilder &builder, mlir::Value composite, ast::MemberAccessExpression* memberAccess);
+mlir::Value swizzle(mlir::OpBuilder &builder, mlir::Value composite, ast::MemberAccessExpression* memberAccess, int startIndex = 0);
 
 };
 
