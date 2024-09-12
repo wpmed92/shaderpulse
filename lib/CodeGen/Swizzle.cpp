@@ -35,7 +35,8 @@ mlir::Value swizzle(mlir::OpBuilder &builder, mlir::Value composite, ast::Member
                     indices.push_back(swizzleMap.find(c)->second);
                 }
 
-                llvm::ArrayRef<int64_t> shape(static_cast<int64_t>(swizzle.length()));
+                int64_t len = static_cast<int64_t>(swizzle.length());
+                llvm::ArrayRef<int64_t> shape(&len, 1);
                 mlir::Type elementType = currentComposite.getType().dyn_cast<mlir::VectorType>().getElementType();
                 mlir::VectorType shuffleType = mlir::VectorType::get(shape, elementType);
                 currentComposite = builder.create<mlir::spirv::VectorShuffleOp>(builder.getUnknownLoc(), shuffleType, currentComposite, currentComposite, builder.getI32ArrayAttr(indices));
