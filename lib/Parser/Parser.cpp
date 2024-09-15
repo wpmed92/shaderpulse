@@ -55,10 +55,12 @@ std::unique_ptr<TranslationUnit> Parser::parseTranslationUnit() {
 std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
   if (auto funcDecl = parseFunctionDeclaration()) {
     return funcDecl;
-  } else if (auto decl = parseDeclaration()) {
-    return decl;
   } else if (auto structDecl = parseStructDeclaration()) {
     return structDecl;
+  } else if (auto interfaceBlock = parseInterfaceBlock()) {
+    return interfaceBlock;
+  } else if (auto decl = parseDeclaration()) {
+    return decl;
   } else {
     return nullptr;
   }
@@ -1441,6 +1443,54 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
   }
 
   return std::make_unique<StructDeclaration>(nullptr, structName, std::move(memberDeclarations));
+}
+
+std::unique_ptr<InterfaceBlock> Parser::parseInterfaceBlock() {
+  savePosition();
+  auto typeQualifiers = parseQualifiers();
+
+  if (typeQualifiers.size() == 0) {
+    rollbackPosition();
+    return nullptr;
+  }
+
+  std::string interfaceName;
+
+  if (!curToken->is(TokenKind::Identifier)) {
+    return nullptr;
+  }
+
+  interfaceName = curToken->getIdentifierName();
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::lCurly)) {
+    return nullptr;
+  }
+
+  advanceToken();
+
+  std::vector<std::unique_ptr<Declaration>> memberDeclarations;
+
+  while (auto memberDecl = parseDeclaration()) {
+    memberDeclarations.push_back(std::move(memberDecl));
+  }
+
+  if (!curToken->is(TokenKind::rCurly)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '}' after interface block declaration.");
+    return nullptr;
+  }
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::semiColon)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ';' after interface block declaration.");
+    return nullptr;
+  }
+
+  advanceToken();
+
+  return std::make_unique<InterfaceBlock>(std::move(typeQualifiers), interfaceName, std::move(memberDeclarations));
 }
 
 std::unique_ptr<CallExpression> Parser::parseCallExpression() {

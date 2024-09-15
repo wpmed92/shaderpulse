@@ -36,6 +36,7 @@ class CaseLabel;
 class MemberAccessExpression;
 class ArrayAccessExpression;
 class InitializerExpression;
+class InterfaceBlock;
 
 class ASTVisitor {
 
@@ -46,6 +47,7 @@ public:
   virtual void visit(UnaryExpression *) { };
   virtual void visit(ConditionalExpression *) { };
   virtual void visit(StructDeclaration *) { };
+  virtual void visit(InterfaceBlock *) { };
   virtual void visit(VariableDeclaration *) { };
   virtual void visit(VariableDeclarationList *) { };
   virtual void visit(SwitchStatement *) { };

@@ -204,6 +204,18 @@ void PrinterASTVisitor::visit(StructDeclaration *structDecl) {
   resetIndent();
 }
 
+void PrinterASTVisitor::visit(InterfaceBlock *interfaceBlock) {
+  print("|-InterfaceBlock: name=" + interfaceBlock->getName());
+
+  indent();
+
+  for (auto &typeQualifier : interfaceBlock->getQualifiers()) {
+    print("|-" + typeQualifier->toString());
+  }
+
+  resetIndent();
+}
+
 void PrinterASTVisitor::visit(UnsignedIntegerConstantExpression *uintExp) {
   print("|-UnsignedIntegerConstantExpression: value=" + std::to_string(uintExp->getVal()) + " " + loc(uintExp->getSourceLocation()));
 }

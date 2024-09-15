@@ -72,6 +72,7 @@ public:
   std::unique_ptr<Type> parseType();
   std::unique_ptr<LayoutQualifier> parseLayoutQualifier();
   std::unique_ptr<StructDeclaration> parseStructDeclaration();
+  std::unique_ptr<InterfaceBlock> parseInterfaceBlock();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseMemberAccessChain();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseArrayAccess();
 

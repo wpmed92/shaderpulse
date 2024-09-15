@@ -871,8 +871,12 @@ void MLIRCodeGen::visit(StructDeclaration *structDecl) {
   }
 }
 
+void MLIRCodeGen::visit(InterfaceBlock *interfaceBlcok) {
+  //TODO: implement me
+}
+
 void MLIRCodeGen::visit(DoStatement *doStmt) {
-  // TODO
+  // TODO: implement me
 }
 
 void MLIRCodeGen::visit(IfStatement *ifStmt) {

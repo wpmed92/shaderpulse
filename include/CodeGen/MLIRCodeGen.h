@@ -60,6 +60,7 @@ public:
   void visit(MemberAccessExpression *) override;
   void visit(ArrayAccessExpression *) override;
   void visit(StructDeclaration *) override;
+  void visit(InterfaceBlock *) override;
   void visit(VariableExpression *) override;
   void visit(IntegerConstantExpression *) override;
   void visit(UnsignedIntegerConstantExpression *) override;

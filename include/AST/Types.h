@@ -61,6 +61,25 @@ public:
 
   TypeQualifierKind getKind() const { return kind; }
 
+  virtual std::string toString() {
+    switch (kind) {
+      case TypeQualifierKind::Storage:
+        return "storage";
+      case TypeQualifierKind::Interpolation:
+        return "interpolation";
+      case TypeQualifierKind::Precision:
+        return "precision";
+      case TypeQualifierKind::Invariant:
+        return "invariant";
+      case TypeQualifierKind::Precise:
+        return "precise";
+      case TypeQualifierKind::Layout:
+        return "layout";
+      default:
+        return "";
+    }
+  }
+
 private:
   TypeQualifierKind kind;
 };
@@ -72,6 +91,53 @@ public:
       : TypeQualifier(TypeQualifierKind::Storage), kind(kind) {}
 
   StorageQualifierKind getKind() const { return kind; }
+
+  std::string toString() override {
+    std::string str = "storage";
+
+    switch (kind) {
+      case StorageQualifierKind::Buffer:
+        str = "buffer";
+        break;
+      case StorageQualifierKind::Centroid:
+        str = "centroid";
+        break;
+      case StorageQualifierKind::Coherent:
+        str = "coherent";
+        break;
+      case StorageQualifierKind::Const:
+        str = "const";
+        break;
+      case StorageQualifierKind::In:
+        str = "in";
+        break;
+      case StorageQualifierKind::Inout:
+        str = "inout";
+        break;
+      case StorageQualifierKind::Out:
+        str = "out";
+        break;
+      case StorageQualifierKind::Patch:
+        str = "patch";
+        break;
+      case StorageQualifierKind::Readonly:
+        str = "readonly";
+        break;
+      case StorageQualifierKind::Restrict:
+        str = "restrict";
+        break;
+      case StorageQualifierKind::Sample:
+        str = "sample";
+        break;
+      case StorageQualifierKind::Shared:
+        str = "shared";
+        break;
+      default:
+        return "storage";
+    }
+
+    return "storage: " + str;
+  } 
 
 private:
   StorageQualifierKind kind;
