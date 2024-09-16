@@ -99,7 +99,7 @@ private:
   SmallVector<Attribute, 4> interface;
 
   void declare(StringRef name, SymbolTableEntry entry);
-  void createVariable(shaderpulse::Type *, VariableDeclaration *);
+  void createVariable(const std::vector<std::unique_ptr<TypeQualifier>>& ,shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
   void initBuiltinFuncMap();
   bool callBuiltIn(CallExpression* exp);

@@ -10,7 +10,7 @@ namespace codegen {
 
 mlir::Type convertShaderPulseType(mlir::MLIRContext *, shaderpulse::Type *, llvm::StringMap<ast::StructDeclaration*> &);
 std::optional<mlir::spirv::StorageClass> getSpirvStorageClass(shaderpulse::TypeQualifier *);
-std::optional<mlir::IntegerAttr> getLocationFromTypeQualifier(mlir::MLIRContext *ctx, shaderpulse::TypeQualifier *);
+std::optional<mlir::IntegerAttr> getIntegerAttrFromLayoutQualifier(mlir::MLIRContext *ctx, const std::string& id, TypeQualifier *typeQualifier);
 mlir::Type getElementType(mlir::Type type);
 bool isBoolLike(mlir::Type type);
 bool isIntLike(mlir::Type type);

@@ -23,7 +23,14 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, shaderpulse::Type *sha
     auto arrType = dynamic_cast<shaderpulse::ArrayType *>(shaderPulseType);
     auto elementType = convertShaderPulseType(ctx, arrType->getElementType(), structDeclarations);
     auto shape = arrType->getShape();
-    mlir::spirv::ArrayType spirvArrType = mlir::spirv::ArrayType::get(elementType, shape[shape.size()-1]);
+    mlir::Type spirvArrType;
+    
+    // Dim of -1 means unsized, i.e. spirv.rtarray
+    if (shape[shape.size()-1] == -1) {
+      spirvArrType = mlir::spirv::RuntimeArrayType::get(elementType);
+    } else {
+      spirvArrType = mlir::spirv::ArrayType::get(elementType, shape[shape.size()-1]);
+    }
 
     for (int i = shape.size()-2; i >= 0; i--) {
       spirvArrType = mlir::spirv::ArrayType::get(spirvArrType, shape[i]);
@@ -79,6 +86,8 @@ getSpirvStorageClass(shaderpulse::TypeQualifier *typeQualifier) {
       return mlir::spirv::StorageClass::Input;
     case StorageQualifierKind::Out:
       return mlir::spirv::StorageClass::Output;
+    case StorageQualifierKind::Buffer:
+      return mlir::spirv::StorageClass::StorageBuffer;
     default:
       std::nullopt;
     }
@@ -89,19 +98,19 @@ getSpirvStorageClass(shaderpulse::TypeQualifier *typeQualifier) {
 
 
 std::optional<mlir::IntegerAttr>
-getLocationFromTypeQualifier(mlir::MLIRContext *ctx, TypeQualifier *typeQualifier) {
+getIntegerAttrFromLayoutQualifier(mlir::MLIRContext *ctx, const std::string& id, TypeQualifier *typeQualifier) {
   if (!typeQualifier) {
     std::cout << "Null typequalifier" << std::endl;
     return std::nullopt;
   }
 
   if (auto layoutQualifier = dynamic_cast<LayoutQualifier *>(typeQualifier)) {
-    if (auto location = layoutQualifier->getQualifierId("location")) {
-      if (!location->getExpression()) {
+    if (auto qualifierId = layoutQualifier->getQualifierId(id)) {
+      if (!qualifierId->getExpression()) {
         return std::nullopt;
       } 
       
-      if (auto integerConstant = dynamic_cast<ast::IntegerConstantExpression *>(location->getExpression())) {
+      if (auto integerConstant = dynamic_cast<ast::IntegerConstantExpression *>(qualifierId->getExpression())) {
         return mlir::IntegerAttr::get(mlir::IntegerType::get(ctx, 32, mlir::IntegerType::Signless), integerConstant->getVal());
       }
     }

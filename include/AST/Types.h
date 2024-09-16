@@ -384,6 +384,9 @@ public:
 
   Type *getElementType() const { return elementType.get(); };
   const std::vector<int> &getShape() { return shape; };
+  void setShape(const std::vector<int>& shape) {
+    this->shape = shape;
+  }
 
   bool isEqual(const Type& other) override {
     if (auto arrType = dynamic_cast<const ArrayType*>(&other)) {

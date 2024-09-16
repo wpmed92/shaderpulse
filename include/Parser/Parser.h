@@ -75,6 +75,7 @@ public:
   std::unique_ptr<InterfaceBlock> parseInterfaceBlock();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseMemberAccessChain();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseArrayAccess();
+  std::vector<int> parseArrayDimensions();
 
 private:
   std::vector<std::unique_ptr<Token>> &tokenStream;

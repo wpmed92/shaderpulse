@@ -113,6 +113,7 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
   if (auto type = parseType()) {
     SourceLocation startLoc = curToken->getSourceLocation();
     advanceToken();
+    std::cout << "Qualifier size in parser" << type->getQualifiers().size() << std::endl;
 
     // Only type, no variable name
     if (curToken->is(TokenKind::semiColon)) {
@@ -122,6 +123,19 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
     }
 
     const std::string &name = curToken->getIdentifierName();
+    std::vector<int> maybeDims = parseArrayDimensions();
+    
+    if (maybeDims.size() > 0) {
+      if (auto arrType = dynamic_cast<ArrayType*>(type.get())) {
+        for (auto dim : arrType->getShape()) {
+          maybeDims.push_back(dim);
+        }
+        arrType->setShape(maybeDims);
+      } else {
+        type = std::make_unique<ArrayType>(std::move(type), maybeDims);
+      }
+    }
+
     SourceLocation endLoc = curToken->getSourceLocation();
     advanceToken();
 
@@ -422,6 +436,7 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
     if (curToken->is(TokenKind::Identifier)) {
       auto id = curToken->getIdentifierName();
       
+      std::cout << id << std::endl;
 
       advanceToken();
 
@@ -448,6 +463,7 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
     return nullptr;
   }
 
+  std::cout << "Returned layout qualifiers: " << layoutQualifierIds.size() << std::endl;
   return std::make_unique<LayoutQualifier>(std::move(layoutQualifierIds));
 }
 
@@ -465,7 +481,35 @@ std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
     advanceToken();
   }
 
+  std::cout << "Found qualifiers " << qualifiers.size() << std::endl;
+
   return qualifiers;
+}
+
+std::vector<int> Parser::parseArrayDimensions() {
+  std::vector<int> dimensions;
+
+  while (peek(1)->is(TokenKind::lBracket)) {
+    advanceToken();
+    advanceToken();
+
+    int dim = -1;
+
+    if (curToken->is(TokenKind::IntegerConstant)) {
+      auto intConst = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
+      dim = intConst->getVal();
+      advanceToken();
+    }
+
+    if (!curToken->is(TokenKind::rBracket)) {
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ']' after array dimension specifier");
+      return {};
+    } else {
+      dimensions.push_back(dim);
+    }
+  }
+
+  return dimensions;
 }
 
 std::unique_ptr<Type> Parser::parseType() {
@@ -476,29 +520,7 @@ std::unique_ptr<Type> Parser::parseType() {
     return nullptr;
   }
 
-  std::vector<int> dimensions;
-
-  // Parse array type
-  while (peek(1)->is(TokenKind::lBracket)) {
-    advanceToken();
-    advanceToken();
-
-    int dim = 0;
-
-    if (curToken->is(TokenKind::IntegerConstant)) {
-      auto intConst = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
-      dim = intConst->getVal();
-    }
-
-    advanceToken();
-
-    if (!curToken->is(TokenKind::rBracket)) {
-      reportError(ParserErrorKind::ExpectedToken, "Expected a ']' after array dimension specifier");
-      return nullptr;
-    } else {
-      dimensions.push_back(dim);
-    }
-  }
+  std::vector<int> dimensions = parseArrayDimensions();
 
   if (dimensions.size() > 0) {
     return std::make_unique<ArrayType>(std::move(qualifiers), std::move(type), dimensions);
@@ -1457,6 +1479,7 @@ std::unique_ptr<InterfaceBlock> Parser::parseInterfaceBlock() {
   std::string interfaceName;
 
   if (!curToken->is(TokenKind::Identifier)) {
+    rollbackPosition();
     return nullptr;
   }
 

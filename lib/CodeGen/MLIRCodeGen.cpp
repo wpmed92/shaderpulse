@@ -185,9 +185,15 @@ bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
 
 void MLIRCodeGen::insertEntryPoint() {
   builder.setInsertionPointToEnd(spirvModule.getBody());
-  builder.create<spirv::EntryPointOp>(builder.getUnknownLoc(), spirv::ExecutionModelAttr::get(&context, spirv::ExecutionModel::Fragment),
-                                        SymbolRefAttr::get(&context, "main"),
-                                        ArrayAttr::get(&context, interface));
+  builder.create<spirv::EntryPointOp>(builder.getUnknownLoc(), spirv::ExecutionModelAttr::get(&context, spirv::ExecutionModel::GLCompute),
+                                        SymbolRefAttr::get(&context, "main"), ArrayAttr::get(&context, interface));
+  /*
+   * builder.create<spirv::ExecutionModeOp>(
+   * builder.getUnknownLoc(), 
+   * SymbolRefAttr::get(&context, "main"), 
+   * spirv::ExecutionMode::LocalSize, 
+   * builder.getI32ArrayAttr({localSizeX, localSizeY, localSizeZ}));
+   */
 }
 
 void MLIRCodeGen::visit(TranslationUnit *unit) {
@@ -460,14 +466,12 @@ void MLIRCodeGen::declare(llvm::StringRef name, SymbolTableEntry entry) {
 
 void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
   for (auto &var : varDeclList->getDeclarations()) {
-    createVariable(varDeclList->getType(), var.get());
+    createVariable(varDeclList->getType()->getQualifiers(), varDeclList->getType(), var.get());
   }
 }
 
-void MLIRCodeGen::createVariable(shaderpulse::Type *type,
+void MLIRCodeGen::createVariable(const std::vector<std::unique_ptr<TypeQualifier>>& qualifiers, shaderpulse::Type *varType,
                                  VariableDeclaration *varDecl) {
-  shaderpulse::Type *varType = (type) ? type : varDecl->getType();
-
   if (inGlobalScope) {
     spirv::StorageClass storageClass;
 
@@ -477,6 +481,7 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
       storageClass = spirv::StorageClass::Private;
     }
 
+    std::cout << "Storage after " << std::endl;
     builder.setInsertionPointToEnd(spirvModule.getBody());
   
     spirv::PointerType ptrType = spirv::PointerType::get(
@@ -495,11 +500,13 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
         builder.getStringAttr(varDecl->getIdentifierName()),
         (initializerOp) ? FlatSymbolRefAttr::get(initializerOp) : nullptr);
 
-
-    auto locationOpt = getLocationFromTypeQualifier(&context, varType->getQualifier(shaderpulse::TypeQualifierKind::Layout));
+    auto locationOpt = getIntegerAttrFromLayoutQualifier(&context, "location", varType->getQualifier(shaderpulse::TypeQualifierKind::Layout));
+    auto bindingOpt = getIntegerAttrFromLayoutQualifier(&context, "binding", varType->getQualifier(shaderpulse::TypeQualifierKind::Layout));
 
     if (locationOpt) {
       varOp->setAttr("location", *locationOpt);
+    } else if (bindingOpt) {
+      varOp->setAttr("binding", *locationOpt);
     }
 
     declare(varDecl->getIdentifierName(), { mlir::Value(), varDecl, ptrType, /*isGlobal*/ true});
@@ -530,7 +537,27 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
 }
 
 void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
-  createVariable(nullptr, varDecl);
+  if (varDecl->getIdentifierName().empty()) {
+    std::cout << "Found stuff: " <<varDecl->getType()->getQualifiers().size() << std::endl;
+    if (auto layout = dynamic_cast<LayoutQualifier *>(varDecl->getType()->getQualifier(shaderpulse::TypeQualifierKind::Layout))) {
+      std::cout << "Found layout" << std::endl;
+      auto localSizeX = dynamic_cast<IntegerConstantExpression*>(layout->getQualifierId("local_size_x")->getExpression())->getVal();
+      auto localSizeY = dynamic_cast<IntegerConstantExpression*>(layout->getQualifierId("local_size_y")->getExpression())->getVal();;
+      auto localSizeZ = dynamic_cast<IntegerConstantExpression*>(layout->getQualifierId("local_size_z")->getExpression())->getVal();;
+      std::cout << localSizeZ << std::endl;
+      auto execModeAttr = spirv::ExecutionModeAttr::get(&context, spirv::ExecutionMode::LocalSize);
+      builder.create<spirv::ExecutionModeOp>(
+        builder.getUnknownLoc(), 
+        SymbolRefAttr::get(&context, "main"), 
+        execModeAttr,
+        builder.getI32ArrayAttr({localSizeX, localSizeY, localSizeZ})
+      );
+
+      std::cout << "Built exectuionmodeop" << std::endl;
+    }
+  } else {
+    createVariable(varDecl->getType()->getQualifiers(), varDecl->getType(), varDecl);
+  }
 }
 
 void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
@@ -871,8 +898,17 @@ void MLIRCodeGen::visit(StructDeclaration *structDecl) {
   }
 }
 
-void MLIRCodeGen::visit(InterfaceBlock *interfaceBlcok) {
-  //TODO: implement me
+void MLIRCodeGen::visit(InterfaceBlock *interfaceBlock) {
+  auto &qualifiers = interfaceBlock->getQualifiers();
+  auto &members = interfaceBlock->getMembers();
+
+  std::cout << "Interface block " << std::endl;
+
+  for (auto &member : members) {
+    if (auto memberVar = dynamic_cast<VariableDeclaration*>(member.get())) {
+      createVariable(qualifiers, memberVar->getType(), memberVar);
+    }
+  }
 }
 
 void MLIRCodeGen::visit(DoStatement *doStmt) {
@@ -1083,6 +1119,7 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   SymbolTableScopeT varScope(symbolTable);
   std::vector<mlir::Type> paramTypes;
 
+  std::cout << "Func decl" << std::endl;
   for (auto &param : funcDecl->getParams()) {
     paramTypes.push_back(convertShaderPulseType(&context, param->getType(), structDeclarations));
   }
@@ -1119,10 +1156,14 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   // Return insertion for void functions
   if (funcDecl->getReturnType()->getKind() == shaderpulse::TypeKind::Void) {
     if (auto stmts = dynamic_cast<StatementList*>(funcDecl->getBody())) {
-      auto &lastStmt = stmts->getStatements().back();
-
-      if (!dynamic_cast<ReturnStatement*>(lastStmt.get())) {
+      if (stmts->getStatements().size() == 0) {
         builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+      } else {
+        auto &lastStmt = stmts->getStatements().back();
+
+        if (!dynamic_cast<ReturnStatement*>(lastStmt.get())) {
+          builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+        }
       }
     } else if (dynamic_cast<Statement*>(funcDecl->getBody()) && !dynamic_cast<ReturnStatement*>(funcDecl->getBody())) {
         builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
