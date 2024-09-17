@@ -15,6 +15,7 @@ public:
   void visit(UnaryExpression *) override;
   void visit(ConditionalExpression *) override;
   void visit(StructDeclaration *) override;
+  void visit(InterfaceBlock *) override;
   void visit(VariableDeclaration *) override;
   void visit(VariableDeclarationList *) override;
   void visit(SwitchStatement *) override;

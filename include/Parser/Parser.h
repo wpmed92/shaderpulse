@@ -67,13 +67,15 @@ public:
   std::unique_ptr<InitializerExpression> parseInitializerExpression();
   std::unique_ptr<Expression> parseUnaryExpression();
   std::unique_ptr<Expression> parsePostfixExpression(bool parsingSubExpression = false);
-  std::vector<std::unique_ptr<TypeQualifier>> parseQualifiers();
+  std::unique_ptr<TypeQualifierList> parseQualifiers();
   std::unique_ptr<TypeQualifier> parseQualifier();
   std::unique_ptr<Type> parseType();
   std::unique_ptr<LayoutQualifier> parseLayoutQualifier();
   std::unique_ptr<StructDeclaration> parseStructDeclaration();
+  std::unique_ptr<InterfaceBlock> parseInterfaceBlock();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseMemberAccessChain();
   std::optional<std::vector<std::unique_ptr<Expression>>> parseArrayAccess();
+  std::vector<int> parseArrayDimensions();
 
 private:
   std::vector<std::unique_ptr<Token>> &tokenStream;
@@ -90,19 +92,14 @@ private:
 
   // TODO: move these to ast helpers
   static std::map<BinaryOperator, int> binopPrecedence;
-  static std::optional<BinaryOperator>
-      getBinaryOperatorFromTokenKind(TokenKind);
+  static std::optional<BinaryOperator> getBinaryOperatorFromTokenKind(TokenKind);
   static std::optional<UnaryOperator> getUnaryOperatorFromTokenKind(TokenKind);
-  static std::optional<AssignmentOperator>
-      getAssignmentOperatorFromTokenKind(TokenKind);
-  std::unique_ptr<shaderpulse::Type>
-      getTypeFromTokenKind(std::vector<std::unique_ptr<TypeQualifier>>,
-                           TokenKind);
+  static std::optional<AssignmentOperator> getAssignmentOperatorFromTokenKind(TokenKind);
+  std::unique_ptr<shaderpulse::Type> getTypeFromTokenKind(std::unique_ptr<TypeQualifierList> qualifiers, TokenKind);
   static std::unique_ptr<shaderpulse::VectorType>
-  makeVectorType(std::vector<std::unique_ptr<TypeQualifier>>, TypeKind, int);
+  makeVectorType(std::unique_ptr<TypeQualifierList>, TypeKind, int);
   static std::unique_ptr<shaderpulse::MatrixType>
-  makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>>, TypeKind, int,
-                 int);
+  makeMatrixType(std::unique_ptr<TypeQualifierList>, TypeKind, int, int);
 
   void savePosition();
   void rollbackPosition();

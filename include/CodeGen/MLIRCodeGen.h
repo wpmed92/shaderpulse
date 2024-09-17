@@ -16,6 +16,7 @@
 #include <map>
 #include <functional>
 #include <unordered_map>
+#include <filesystem>
 
 using namespace mlir;
 
@@ -40,6 +41,7 @@ public:
   MLIRCodeGen();
   void initModuleOp();
   void print();
+  bool saveToFile(const std::filesystem::path& outputPath);
   bool verify();
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
@@ -60,6 +62,7 @@ public:
   void visit(MemberAccessExpression *) override;
   void visit(ArrayAccessExpression *) override;
   void visit(StructDeclaration *) override;
+  void visit(InterfaceBlock *) override;
   void visit(VariableExpression *) override;
   void visit(IntegerConstantExpression *) override;
   void visit(UnsignedIntegerConstantExpression *) override;
@@ -86,6 +89,7 @@ private:
   llvm::StringMap<StructDeclaration*> structDeclarations;
   std::vector<mlir::Value> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
+  mlir::Operation *execModeOp = nullptr;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
@@ -94,14 +98,14 @@ private:
   using BuiltInFunc = std::function<mlir::Value(mlir::MLIRContext &, mlir::OpBuilder &, mlir::ValueRange)>;
 
   std::unordered_map<std::string, BuiltInFunc> builtInFuncMap;
-  SymbolTableScopeT globalScope;
   SmallVector<Attribute, 4> interface;
 
   void declare(StringRef name, SymbolTableEntry entry);
-  void createVariable(shaderpulse::Type *, VariableDeclaration *);
+  void createVariable(shaderpulse::TypeQualifierList *,shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
   void initBuiltinFuncMap();
   bool callBuiltIn(CallExpression* exp);
+  void createBuiltinComputeVar(const std::string &varName, const std::string &mlirName);
   mlir::Value load(mlir::Value);
   mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;

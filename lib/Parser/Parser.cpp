@@ -55,10 +55,12 @@ std::unique_ptr<TranslationUnit> Parser::parseTranslationUnit() {
 std::unique_ptr<ExternalDeclaration> Parser::parseExternalDeclaration() {
   if (auto funcDecl = parseFunctionDeclaration()) {
     return funcDecl;
-  } else if (auto decl = parseDeclaration()) {
-    return decl;
   } else if (auto structDecl = parseStructDeclaration()) {
     return structDecl;
+  } else if (auto interfaceBlock = parseInterfaceBlock()) {
+    return interfaceBlock;
+  } else if (auto decl = parseDeclaration()) {
+    return decl;
   } else {
     return nullptr;
   }
@@ -120,6 +122,19 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
     }
 
     const std::string &name = curToken->getIdentifierName();
+    std::vector<int> maybeDims = parseArrayDimensions();
+    
+    if (maybeDims.size() > 0) {
+      if (auto arrType = dynamic_cast<ArrayType*>(type.get())) {
+        for (auto dim : arrType->getShape()) {
+          maybeDims.push_back(dim);
+        }
+        arrType->setShape(maybeDims);
+      } else {
+        type = std::make_unique<ArrayType>(std::move(type), maybeDims);
+      }
+    }
+
     SourceLocation endLoc = curToken->getSourceLocation();
     advanceToken();
 
@@ -419,16 +434,11 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
 
     if (curToken->is(TokenKind::Identifier)) {
       auto id = curToken->getIdentifierName();
-      
-
       advanceToken();
 
       if (curToken->is(TokenKind::assign)) {
-        
         advanceToken();
-
         auto exp = parseExpression();
-
         layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id, std::move(exp)));
       } else {
         layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id));
@@ -449,7 +459,7 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
   return std::make_unique<LayoutQualifier>(std::move(layoutQualifierIds));
 }
 
-std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
+std::unique_ptr<TypeQualifierList> Parser::parseQualifiers() {
   std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
  
   while (true) {
@@ -463,7 +473,33 @@ std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
     advanceToken();
   }
 
-  return qualifiers;
+  return std::make_unique<TypeQualifierList>(std::move(qualifiers));
+}
+
+std::vector<int> Parser::parseArrayDimensions() {
+  std::vector<int> dimensions;
+
+  while (peek(1)->is(TokenKind::lBracket)) {
+    advanceToken();
+    advanceToken();
+
+    int dim = -1;
+
+    if (curToken->is(TokenKind::IntegerConstant)) {
+      auto intConst = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
+      dim = intConst->getVal();
+      advanceToken();
+    }
+
+    if (!curToken->is(TokenKind::rBracket)) {
+      reportError(ParserErrorKind::ExpectedToken, "Expected a ']' after array dimension specifier");
+      return {};
+    } else {
+      dimensions.push_back(dim);
+    }
+  }
+
+  return dimensions;
 }
 
 std::unique_ptr<Type> Parser::parseType() {
@@ -474,29 +510,7 @@ std::unique_ptr<Type> Parser::parseType() {
     return nullptr;
   }
 
-  std::vector<int> dimensions;
-
-  // Parse array type
-  while (peek(1)->is(TokenKind::lBracket)) {
-    advanceToken();
-    advanceToken();
-
-    int dim = 0;
-
-    if (curToken->is(TokenKind::IntegerConstant)) {
-      auto intConst = dynamic_cast<IntegerLiteral *>(curToken->getLiteralData());
-      dim = intConst->getVal();
-    }
-
-    advanceToken();
-
-    if (!curToken->is(TokenKind::rBracket)) {
-      reportError(ParserErrorKind::ExpectedToken, "Expected a ']' after array dimension specifier");
-      return nullptr;
-    } else {
-      dimensions.push_back(dim);
-    }
-  }
+  std::vector<int> dimensions = parseArrayDimensions();
 
   if (dimensions.size() > 0) {
     return std::make_unique<ArrayType>(std::move(qualifiers), std::move(type), dimensions);
@@ -535,8 +549,7 @@ Parser::getAssignmentOperatorFromTokenKind(TokenKind kind) {
   }
 }
 
-std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(
-    std::vector<std::unique_ptr<TypeQualifier>> qualifiers, TokenKind kind) {
+std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(std::unique_ptr<TypeQualifierList> qualifiers, TokenKind kind) {
   switch (kind) {
   case TokenKind::Identifier: {
     if (structDeclarations.find(curToken->getIdentifierName()) != structDeclarations.end()) {
@@ -676,22 +689,18 @@ std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(
 };
 
 std::unique_ptr<shaderpulse::VectorType>
-Parser::makeVectorType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+Parser::makeVectorType(std::unique_ptr<TypeQualifierList> qualifiers,
                        TypeKind kind, int length) {
-  return std::make_unique<shaderpulse::VectorType>(
-      std::move(qualifiers),
-      std::make_unique<shaderpulse::Type>(
-          kind, std::vector<std::unique_ptr<TypeQualifier>>()),
-      length);
+  return std::make_unique<shaderpulse::VectorType>(std::move(qualifiers), std::make_unique<shaderpulse::Type>(kind, nullptr), length);
 }
 
 std::unique_ptr<shaderpulse::MatrixType>
-Parser::makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+Parser::makeMatrixType(std::unique_ptr<TypeQualifierList> qualifiers,
                        TypeKind kind, int rows, int cols) {
   return std::make_unique<shaderpulse::MatrixType>(
       std::move(qualifiers),
       std::make_unique<shaderpulse::Type>(
-          kind, std::vector<std::unique_ptr<TypeQualifier>>()),
+          kind, nullptr),
       rows, cols);
 }
 
@@ -1441,6 +1450,55 @@ std::unique_ptr<StructDeclaration> Parser::parseStructDeclaration() {
   }
 
   return std::make_unique<StructDeclaration>(nullptr, structName, std::move(memberDeclarations));
+}
+
+std::unique_ptr<InterfaceBlock> Parser::parseInterfaceBlock() {
+  savePosition();
+  auto typeQualifiers = parseQualifiers();
+
+  if (typeQualifiers->list().size() == 0) {
+    rollbackPosition();
+    return nullptr;
+  }
+
+  std::string interfaceName;
+
+  if (!curToken->is(TokenKind::Identifier)) {
+    rollbackPosition();
+    return nullptr;
+  }
+
+  interfaceName = curToken->getIdentifierName();
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::lCurly)) {
+    return nullptr;
+  }
+
+  advanceToken();
+
+  std::vector<std::unique_ptr<Declaration>> memberDeclarations;
+
+  while (auto memberDecl = parseDeclaration()) {
+    memberDeclarations.push_back(std::move(memberDecl));
+  }
+
+  if (!curToken->is(TokenKind::rCurly)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a '}' after interface block declaration.");
+    return nullptr;
+  }
+
+  advanceToken();
+
+  if (!curToken->is(TokenKind::semiColon)) {
+    reportError(ParserErrorKind::ExpectedToken, "Expected a ';' after interface block declaration.");
+    return nullptr;
+  }
+
+  advanceToken();
+
+  return std::make_unique<InterfaceBlock>(std::move(typeQualifiers), interfaceName, std::move(memberDeclarations));
 }
 
 std::unique_ptr<CallExpression> Parser::parseCallExpression() {

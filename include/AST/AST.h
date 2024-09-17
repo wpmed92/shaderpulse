@@ -602,6 +602,38 @@ private:
   std::vector<std::unique_ptr<Declaration>> members;
 };
 
+
+// This is almost the same as a StructDeclaration. Can we merge them?
+class InterfaceBlock : public Declaration {
+
+public:
+  InterfaceBlock(std::unique_ptr<TypeQualifierList> qualifiers, const std::string &name, std::vector<std::unique_ptr<Declaration>> members) 
+      : qualifiers(std::move(qualifiers)), name(name),
+        members(std::move(members)) {}
+
+  const std::string &getName() const { return name; }
+  const std::vector<std::unique_ptr<Declaration>> &getMembers() const { return members; }
+  TypeQualifierList *getQualifiers() const { return qualifiers.get(); }
+  std::pair<int, VariableDeclaration*> getMemberWithIndex(const std::string &memberName) {
+    auto it = std::find_if(members.begin(), members.end(), 
+      [&memberName](const std::unique_ptr<Declaration> &decl) { 
+        return dynamic_cast<VariableDeclaration*>(decl.get())->getIdentifierName() == memberName;
+      });
+
+    if (it != members.end()) {
+      return { std::distance(members.begin(), it), dynamic_cast<VariableDeclaration*>(it->get()) };
+    } else {
+      return { -1, nullptr };;
+    }
+  }
+  void accept(ASTVisitor *visitor) override { visitor->visit(this); }
+
+private:
+  std::unique_ptr<TypeQualifierList> qualifiers;
+  std::string name;
+  std::vector<std::unique_ptr<Declaration>> members;
+};
+
 class AssignmentExpression : public Statement {
 
 public:
@@ -668,7 +700,7 @@ private:
 class LayoutQualifierId {
 
 public:
-LayoutQualifierId(bool isShared) : 
+  LayoutQualifierId(bool isShared) : 
     isShared(isShared) {
 
   }
@@ -685,7 +717,7 @@ LayoutQualifierId(bool isShared) :
 
   const std::string &getIdentifier() { return identifier; }
   ast::Expression *getExpression() { return exp.get(); }
-  bool getIsShader() const { return isShared; }
+  bool getIsShared() const { return isShared; }
 
 private:
   bool isShared;
@@ -700,6 +732,17 @@ public:
      TypeQualifier(TypeQualifierKind::Layout),
      layoutQualifierIds(std::move(layoutQualifierIds)) {
 
+  }
+
+
+  std::string toString() override {
+    std::string out = "";
+
+    for (auto &id : layoutQualifierIds) {
+      out += (id->getIsShared() ? "shared" : id->getIdentifier()) + ", ";
+    }
+
+    return "layout: " + out;
   }
 
   const std::vector<std::unique_ptr<LayoutQualifierId>> &getLayoutQualifierIds() { return layoutQualifierIds; }

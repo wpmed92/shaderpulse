@@ -4,6 +4,10 @@
 #include "CodeGen/TypeConversion.h"
 #include <iostream>
 #include <cassert>
+#include <fstream>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <utility>
 
 namespace shaderpulse {
 
@@ -11,7 +15,14 @@ using namespace ast;
 
 namespace codegen {
 
-MLIRCodeGen::MLIRCodeGen() : builder(&context), globalScope(symbolTable) {
+std::vector<std::pair<std::string, std::string>> builtinComputeVars = {
+    {"gl_GlobalInvocationID", "GlobalInvocationId"},
+    {"gl_WorkGroupID", "WorkgroupId"},
+    {"gl_WorkGroupSize", "WorkgroupSize"},
+    {"gl_LocalInvocationID", "LocalInvocationId"}
+};
+
+MLIRCodeGen::MLIRCodeGen() : builder(&context) {
   context.getOrLoadDialect<spirv::SPIRVDialect>();
   initModuleOp();
   initBuiltinFuncMap();
@@ -181,18 +192,39 @@ void MLIRCodeGen::print() {
   spirvModule.print(llvm::outs());
 }
 
+bool MLIRCodeGen::saveToFile(const std::filesystem::path& outputPath) {
+  std::string buffer;
+  llvm::raw_string_ostream outputStream(buffer);
+  spirvModule.print(outputStream);
+  outputStream.flush();
+
+  std::ofstream outputFile(outputPath);
+  if (!outputFile) {
+      llvm::errs() << "Failed to open output file: " << outputPath << "\n";
+      return false;
+  }
+
+  outputFile << buffer;
+
+  return true;
+}
+
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
 
 void MLIRCodeGen::insertEntryPoint() {
   builder.setInsertionPointToEnd(spirvModule.getBody());
-  builder.create<spirv::EntryPointOp>(builder.getUnknownLoc(), spirv::ExecutionModelAttr::get(&context, spirv::ExecutionModel::Fragment),
-                                        SymbolRefAttr::get(&context, "main"),
-                                        ArrayAttr::get(&context, interface));
+  builder.create<spirv::EntryPointOp>(builder.getUnknownLoc(), spirv::ExecutionModelAttr::get(&context, spirv::ExecutionModel::GLCompute),
+                                        SymbolRefAttr::get(&context, "main"), ArrayAttr::get(&context, interface));
 }
 
 void MLIRCodeGen::visit(TranslationUnit *unit) {
+  SymbolTableScopeT globalScope(symbolTable);
   builder.setInsertionPointToEnd(spirvModule.getBody());
   
+  for (auto &glslIdSPIRVIdPair : builtinComputeVars) {
+    createBuiltinComputeVar(glslIdSPIRVIdPair.first, glslIdSPIRVIdPair.second);
+  }
+
   for (auto &extDecl : unit->getExternalDeclarations()) {
     extDecl->accept(this);
   }
@@ -460,18 +492,32 @@ void MLIRCodeGen::declare(llvm::StringRef name, SymbolTableEntry entry) {
 
 void MLIRCodeGen::visit(VariableDeclarationList *varDeclList) {
   for (auto &var : varDeclList->getDeclarations()) {
-    createVariable(varDeclList->getType(), var.get());
+    createVariable(varDeclList->getType()->getQualifiers(), varDeclList->getType(), var.get());
   }
 }
 
-void MLIRCodeGen::createVariable(shaderpulse::Type *type,
-                                 VariableDeclaration *varDecl) {
-  shaderpulse::Type *varType = (type) ? type : varDecl->getType();
+void MLIRCodeGen::createBuiltinComputeVar(const std::string& varName, const std::string& mlirName) {
+  mlir::Type vec3I32Type = mlir::VectorType::get({3}, mlir::IntegerType::get(&context, 32, mlir::IntegerType::Unsigned));
+  spirv::PointerType ptrType = spirv::PointerType::get(vec3I32Type, mlir::spirv::StorageClass::Input);
+  auto globalInvocationId = builder.create<spirv::GlobalVariableOp>(
+        UnknownLoc::get(&context), TypeAttr::get(ptrType),
+        builder.getStringAttr(varName),
+        nullptr);
 
+  globalInvocationId->setAttr(
+    StringAttr::get(&context, "built_in"),
+    StringAttr::get(&context, mlirName)
+  );
+
+  declare(varName, { mlir::Value(), nullptr, ptrType, /*isGlobal*/ true});
+}
+
+void MLIRCodeGen::createVariable(shaderpulse::TypeQualifierList* qualifiers, shaderpulse::Type *varType,
+                                 VariableDeclaration *varDecl) {
   if (inGlobalScope) {
     spirv::StorageClass storageClass;
 
-    if (auto st = getSpirvStorageClass(varType->getQualifier(shaderpulse::TypeQualifierKind::Storage))) {
+    if (auto st = getSpirvStorageClass(qualifiers->find(shaderpulse::TypeQualifierKind::Storage))) {
       storageClass = *st;
     } else {
       storageClass = spirv::StorageClass::Private;
@@ -495,11 +541,12 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
         builder.getStringAttr(varDecl->getIdentifierName()),
         (initializerOp) ? FlatSymbolRefAttr::get(initializerOp) : nullptr);
 
+    auto layoutQualifier = qualifiers->find(shaderpulse::TypeQualifierKind::Layout);
 
-    auto locationOpt = getLocationFromTypeQualifier(&context, varType->getQualifier(shaderpulse::TypeQualifierKind::Layout));
-
-    if (locationOpt) {
+    if (auto locationOpt = getIntegerAttrFromLayoutQualifier(&context, "location", layoutQualifier)) {
       varOp->setAttr("location", *locationOpt);
+    } else if (auto bindingOpt = getIntegerAttrFromLayoutQualifier(&context, "binding", layoutQualifier)) {
+      varOp->setAttr("binding", *bindingOpt);
     }
 
     declare(varDecl->getIdentifierName(), { mlir::Value(), varDecl, ptrType, /*isGlobal*/ true});
@@ -530,7 +577,32 @@ void MLIRCodeGen::createVariable(shaderpulse::Type *type,
 }
 
 void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
-  createVariable(nullptr, varDecl);
+  if (varDecl->getIdentifierName().empty()) {
+    if (auto layout = dynamic_cast<LayoutQualifier *>(varDecl->getType()->getQualifiers()->find(shaderpulse::TypeQualifierKind::Layout))) {
+      int localSizeX = 1, localSizeY = 1, localSizeZ = 1;
+
+      if (auto layoutLocalX = layout->getQualifierId("local_size_x")) {
+        localSizeX = dynamic_cast<IntegerConstantExpression*>(layoutLocalX->getExpression())->getVal();
+      }
+
+      if (auto layoutLocalY = layout->getQualifierId("local_size_y")) {
+        localSizeY = dynamic_cast<IntegerConstantExpression*>(layoutLocalY->getExpression())->getVal();
+      }
+
+      if (auto layoutLocalZ = layout->getQualifierId("local_size_z")) {
+        localSizeZ = dynamic_cast<IntegerConstantExpression*>(layoutLocalZ->getExpression())->getVal();
+      }
+
+      mlir::OperationState state(builder.getUnknownLoc(), spirv::ExecutionModeOp::getOperationName());
+      state.addAttribute("fn", SymbolRefAttr::get(&context, "main"));
+      auto execModeAttr = spirv::ExecutionModeAttr::get(&context, spirv::ExecutionMode::LocalSize);
+      state.addAttribute("execution_mode", execModeAttr);
+      state.addAttribute("values", builder.getI32ArrayAttr({localSizeX, localSizeY, localSizeZ}));
+      execModeOp = mlir::Operation::create(state);
+    }
+  } else {
+    createVariable(varDecl->getType()->getQualifiers(), varDecl->getType(), varDecl);
+  }
 }
 
 void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
@@ -871,8 +943,19 @@ void MLIRCodeGen::visit(StructDeclaration *structDecl) {
   }
 }
 
+void MLIRCodeGen::visit(InterfaceBlock *interfaceBlock) {
+  auto qualifiers = interfaceBlock->getQualifiers();
+  auto &members = interfaceBlock->getMembers();
+
+  for (auto &member : members) {
+    if (auto memberVar = dynamic_cast<VariableDeclaration*>(member.get())) {
+      createVariable(qualifiers, memberVar->getType(), memberVar);
+    }
+  }
+}
+
 void MLIRCodeGen::visit(DoStatement *doStmt) {
-  // TODO
+  // TODO: implement me
 }
 
 void MLIRCodeGen::visit(IfStatement *ifStmt) {
@@ -982,7 +1065,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
 
   if (entry.isFunctionParam) {
     expressionStack.push_back(entry.value);
-  } else if (entry.variable) {
+  } else if (entry.ptrType || entry.variable) {
     mlir::Value val;
 
     if (entry.isGlobal) {
@@ -997,7 +1080,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
       val = entry.value;
     }
 
-    if (entry.variable->getType()->getKind() == shaderpulse::TypeKind::Struct) {
+    if (entry.variable && (entry.variable->getType()->getKind() == shaderpulse::TypeKind::Struct)) {
       auto structName = dynamic_cast<shaderpulse::StructType*>(entry.variable->getType())->getName();
 
       if (structDeclarations.find(structName) != structDeclarations.end()) {
@@ -1076,6 +1159,7 @@ void MLIRCodeGen::visit(DiscardStatement *discardStmt) {}
 
 void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   insideEntryPoint = funcDecl->getName() == "main";
+
   SymbolTableScopeT varScope(symbolTable);
   std::vector<mlir::Type> paramTypes;
 
@@ -1115,10 +1199,14 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   // Return insertion for void functions
   if (funcDecl->getReturnType()->getKind() == shaderpulse::TypeKind::Void) {
     if (auto stmts = dynamic_cast<StatementList*>(funcDecl->getBody())) {
-      auto &lastStmt = stmts->getStatements().back();
-
-      if (!dynamic_cast<ReturnStatement*>(lastStmt.get())) {
+      if (stmts->getStatements().size() == 0) {
         builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+      } else {
+        auto &lastStmt = stmts->getStatements().back();
+
+        if (!dynamic_cast<ReturnStatement*>(lastStmt.get())) {
+          builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
+        }
       }
     } else if (dynamic_cast<Statement*>(funcDecl->getBody()) && !dynamic_cast<ReturnStatement*>(funcDecl->getBody())) {
         builder.create<spirv::ReturnOp>(builder.getUnknownLoc());
@@ -1130,6 +1218,10 @@ void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   functionMap.insert({funcDecl->getName(), funcOp});
 
   builder.setInsertionPointToEnd(spirvModule.getBody());
+
+  if (execModeOp) {
+    builder.insert(execModeOp);
+  }
 }
 
 void MLIRCodeGen::visit(DefaultLabel *defaultLabel) {}
