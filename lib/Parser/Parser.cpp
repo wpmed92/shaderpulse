@@ -1463,6 +1463,15 @@ std::unique_ptr<InterfaceBlock> Parser::parseInterfaceBlock() {
 
   std::string interfaceName;
 
+  if (curToken->is(TokenKind::semiColon)) {
+    advanceToken();
+    return std::make_unique<InterfaceBlock>(
+      std::move(typeQualifiers),
+      interfaceName,
+      std::move(std::vector<std::unique_ptr<Declaration>>())
+    );
+  }
+
   if (!curToken->is(TokenKind::Identifier)) {
     rollbackPosition();
     return nullptr;

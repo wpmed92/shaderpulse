@@ -577,36 +577,13 @@ void MLIRCodeGen::createVariable(shaderpulse::TypeQualifierList* qualifiers, sha
 }
 
 void MLIRCodeGen::visit(VariableDeclaration *varDecl) {
-  if (varDecl->getIdentifierName().empty()) {
-    if (auto layout = dynamic_cast<LayoutQualifier *>(varDecl->getType()->getQualifiers()->find(shaderpulse::TypeQualifierKind::Layout))) {
-      int localSizeX = 1, localSizeY = 1, localSizeZ = 1;
-
-      if (auto layoutLocalX = layout->getQualifierId("local_size_x")) {
-        localSizeX = dynamic_cast<IntegerConstantExpression*>(layoutLocalX->getExpression())->getVal();
-      }
-
-      if (auto layoutLocalY = layout->getQualifierId("local_size_y")) {
-        localSizeY = dynamic_cast<IntegerConstantExpression*>(layoutLocalY->getExpression())->getVal();
-      }
-
-      if (auto layoutLocalZ = layout->getQualifierId("local_size_z")) {
-        localSizeZ = dynamic_cast<IntegerConstantExpression*>(layoutLocalZ->getExpression())->getVal();
-      }
-
-      mlir::OperationState state(builder.getUnknownLoc(), spirv::ExecutionModeOp::getOperationName());
-      state.addAttribute("fn", SymbolRefAttr::get(&context, "main"));
-      auto execModeAttr = spirv::ExecutionModeAttr::get(&context, spirv::ExecutionMode::LocalSize);
-      state.addAttribute("execution_mode", execModeAttr);
-      state.addAttribute("values", builder.getI32ArrayAttr({localSizeX, localSizeY, localSizeZ}));
-      execModeOp = mlir::Operation::create(state);
-    }
-  } else {
+  if (!varDecl->getIdentifierName().empty()) {
     createVariable(varDecl->getType()->getQualifiers(), varDecl->getType(), varDecl);
   }
 }
 
 void MLIRCodeGen::visit(SwitchStatement *switchStmt) {
-
+  // TODO: implement me
 }
 
 void MLIRCodeGen::visit(WhileStatement *whileStmt) {
@@ -946,6 +923,33 @@ void MLIRCodeGen::visit(StructDeclaration *structDecl) {
 void MLIRCodeGen::visit(InterfaceBlock *interfaceBlock) {
   auto qualifiers = interfaceBlock->getQualifiers();
   auto &members = interfaceBlock->getMembers();
+
+  if (members.empty()) {
+    if (auto layout = dynamic_cast<LayoutQualifier *>(qualifiers->find(shaderpulse::TypeQualifierKind::Layout))) {
+      int localSizeX = 1, localSizeY = 1, localSizeZ = 1;
+
+      if (auto layoutLocalX = layout->getQualifierId("local_size_x")) {
+        localSizeX = dynamic_cast<IntegerConstantExpression*>(layoutLocalX->getExpression())->getVal();
+      }
+
+      if (auto layoutLocalY = layout->getQualifierId("local_size_y")) {
+        localSizeY = dynamic_cast<IntegerConstantExpression*>(layoutLocalY->getExpression())->getVal();
+      }
+
+      if (auto layoutLocalZ = layout->getQualifierId("local_size_z")) {
+        localSizeZ = dynamic_cast<IntegerConstantExpression*>(layoutLocalZ->getExpression())->getVal();
+      }
+
+      mlir::OperationState state(builder.getUnknownLoc(), spirv::ExecutionModeOp::getOperationName());
+      state.addAttribute("fn", SymbolRefAttr::get(&context, "main"));
+      auto execModeAttr = spirv::ExecutionModeAttr::get(&context, spirv::ExecutionMode::LocalSize);
+      state.addAttribute("execution_mode", execModeAttr);
+      state.addAttribute("values", builder.getI32ArrayAttr({localSizeX, localSizeY, localSizeZ}));
+      execModeOp = mlir::Operation::create(state);
+    }
+
+    return;
+  }
 
   for (auto &member : members) {
     if (auto memberVar = dynamic_cast<VariableDeclaration*>(member.get())) {
