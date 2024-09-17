@@ -26,7 +26,8 @@ mlir::Type convertShaderPulseType(mlir::MLIRContext *ctx, shaderpulse::Type *sha
     mlir::Type spirvArrType;
     
     // Dim of -1 means unsized, i.e. spirv.rtarray
-    if (shape[shape.size()-1] == -1) {
+    // Only someType[] is supported for now, someType[2][3][], etc. is not
+    if ((shape.size() == 1) && (shape[0] == -1)) {
       spirvArrType = mlir::spirv::RuntimeArrayType::get(elementType);
     } else {
       spirvArrType = mlir::spirv::ArrayType::get(elementType, shape[shape.size()-1]);

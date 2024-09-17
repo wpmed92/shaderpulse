@@ -7,12 +7,20 @@
 #include <fstream>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/MemoryBuffer.h>
+#include <utility>
 
 namespace shaderpulse {
 
 using namespace ast;
 
 namespace codegen {
+
+std::vector<std::pair<std::string, std::string>> builtinComputeVars = {
+    {"gl_GlobalInvocationID", "GlobalInvocationId"},
+    {"gl_WorkGroupID", "WorkgroupId"},
+    {"gl_WorkGroupSize", "WorkgroupSize"},
+    {"gl_LocalInvocationID", "LocalInvocationId"}
+};
 
 MLIRCodeGen::MLIRCodeGen() : builder(&context) {
   context.getOrLoadDialect<spirv::SPIRVDialect>();
@@ -213,10 +221,9 @@ void MLIRCodeGen::visit(TranslationUnit *unit) {
   SymbolTableScopeT globalScope(symbolTable);
   builder.setInsertionPointToEnd(spirvModule.getBody());
   
-  createBuiltinComputeVar("gl_GlobalInvocationID", "GlobalInvocationId");
-  createBuiltinComputeVar("gl_WorkGroupID", "WorkgroupId");
-  createBuiltinComputeVar("gl_WorkGroupSize", "WorkgroupSize");
-  createBuiltinComputeVar("gl_LocalInvocationID", "LocalInvocationId");
+  for (auto &glslIdSPIRVIdPair : builtinComputeVars) {
+    createBuiltinComputeVar(glslIdSPIRVIdPair.first, glslIdSPIRVIdPair.second);
+  }
 
   for (auto &extDecl : unit->getExternalDeclarations()) {
     extDecl->accept(this);
