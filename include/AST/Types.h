@@ -84,6 +84,38 @@ private:
   TypeQualifierKind kind;
 };
 
+class TypeQualifierList {
+
+public:
+  TypeQualifierList(std::vector<std::unique_ptr<TypeQualifier>> qualifiers) : qualifiers(std::move(qualifiers)) {
+
+  }
+
+  TypeQualifier *find(TypeQualifierKind kind) {
+    if (qualifiers.size() == 0) {
+      return nullptr;
+    }
+
+    auto it = std::find_if(qualifiers.begin(), qualifiers.end(),
+              [&kind](const std::unique_ptr<TypeQualifier> &qualifier) {
+                return qualifier->getKind() == kind;
+              });
+
+    if (it != qualifiers.end()) {
+      return it->get();
+    } else {
+      return nullptr;
+    }
+  }
+
+  const std::vector<std::unique_ptr<TypeQualifier>>& list() {
+    return qualifiers;
+  }
+private:
+  std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
+};
+
+
 class StorageQualifier : public TypeQualifier {
 
 public:
@@ -184,8 +216,8 @@ class Type {
 public:
 
   Type(TypeKind kind)
-      : kind(kind), qualifiers(std::vector<std::unique_ptr<TypeQualifier>>()) {}
-  Type(TypeKind kind, std::vector<std::unique_ptr<TypeQualifier>> qualifiers)
+      : kind(kind), qualifiers(nullptr) {}
+  Type(TypeKind kind, std::unique_ptr<TypeQualifierList> qualifiers)
       : kind(kind), qualifiers(std::move(qualifiers)) {}
 
   virtual ~Type() = default;
@@ -250,23 +282,6 @@ public:
   }
 
   TypeKind getKind() const { return kind; }
-  TypeQualifier *getQualifier(TypeQualifierKind kind) {
-    if (qualifiers.size() == 0) {
-      return nullptr;
-    }
-
-    auto it =
-        std::find_if(qualifiers.begin(), qualifiers.end(),
-                     [&kind](const std::unique_ptr<TypeQualifier> &qualifier) {
-                       return qualifier->getKind() == kind;
-                     });
-
-    if (it != qualifiers.end()) {
-      return it->get();
-    } else {
-      return nullptr;
-    }
-  }
 
   inline bool isScalar() const {
     return kind >= TypeKind::Void && kind <= TypeKind::Double;
@@ -276,24 +291,24 @@ public:
   inline bool isStruct() const { return kind == TypeKind::Struct; }
   inline bool isOpaque() const { return kind == TypeKind::Opaque; }
 
-  const std::vector<std::unique_ptr<TypeQualifier>> &getQualifiers() {
-    return qualifiers;
+  TypeQualifierList* getQualifiers() {
+    return qualifiers.get();
   };
 
 private:
   TypeKind kind;
-  std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
+  std::unique_ptr<TypeQualifierList> qualifiers;
 };
 
 class VectorType : public Type {
 
 public:
   VectorType(std::unique_ptr<Type> elementType, int length)
-      : Type(TypeKind::Vector, std::vector<std::unique_ptr<TypeQualifier>>()),
+      : Type(TypeKind::Vector, nullptr),
         elementType(std::move(elementType)), length(length) {
     assert(this->elementType->isScalar());
   }
-  VectorType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+  VectorType(std::unique_ptr<TypeQualifierList> qualifiers,
              std::unique_ptr<Type> elementType, int length)
       : Type(TypeKind::Vector, std::move(qualifiers)),
         elementType(std::move(elementType)), length(length) {
@@ -372,11 +387,11 @@ class ArrayType : public Type {
 
 public:
   ArrayType(std::unique_ptr<Type> elementType, const std::vector<int>& shape)
-      : Type(TypeKind::Array, std::vector<std::unique_ptr<TypeQualifier>>()),
+      : Type(TypeKind::Array, nullptr),
         elementType(std::move(elementType)), shape(shape) {
   }
   
-  ArrayType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+  ArrayType(std::unique_ptr<TypeQualifierList> qualifiers,
              std::unique_ptr<Type> elementType, const std::vector<int>& shape)
       : Type(TypeKind::Array, std::move(qualifiers)),
         elementType(std::move(elementType)), shape(shape) {
@@ -443,11 +458,11 @@ class MatrixType : public Type {
 
 public:
   MatrixType(std::unique_ptr<Type> elementType, int rows, int cols)
-      : Type(TypeKind::Matrix, std::vector<std::unique_ptr<TypeQualifier>>()),
+      : Type(TypeKind::Matrix, nullptr),
         elementType(std::move(elementType)), rows(rows), cols(cols) {
     assert(this->elementType->isScalar() && (this->elementType->getKind() == TypeKind::Float || this->elementType->getKind() == TypeKind::Double));
   }
-  MatrixType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+  MatrixType(std::unique_ptr<TypeQualifierList> qualifiers,
              std::unique_ptr<Type> elementType, int rows, int cols)
       : Type(TypeKind::Matrix, std::move(qualifiers)),
         elementType(std::move(elementType)), rows(rows), cols(cols) {
@@ -519,7 +534,7 @@ private:
 class StructType : public Type {
 
 public:
-  StructType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+  StructType(std::unique_ptr<TypeQualifierList> qualifiers,
              const std::string &structName)
       : Type(TypeKind::Struct, std::move(qualifiers)), structName(structName) {}
 

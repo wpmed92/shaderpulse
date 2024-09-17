@@ -209,7 +209,7 @@ void PrinterASTVisitor::visit(InterfaceBlock *interfaceBlock) {
 
   indent();
 
-  for (auto &typeQualifier : interfaceBlock->getQualifiers()) {
+  for (auto &typeQualifier : interfaceBlock->getQualifiers()->list()) {
     print("|-" + typeQualifier->toString());
   }
 

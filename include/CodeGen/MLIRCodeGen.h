@@ -87,6 +87,7 @@ private:
   llvm::StringMap<StructDeclaration*> structDeclarations;
   std::vector<mlir::Value> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
+  mlir::Operation *execModeOp = nullptr;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
@@ -95,14 +96,14 @@ private:
   using BuiltInFunc = std::function<mlir::Value(mlir::MLIRContext &, mlir::OpBuilder &, mlir::ValueRange)>;
 
   std::unordered_map<std::string, BuiltInFunc> builtInFuncMap;
-  SymbolTableScopeT globalScope;
   SmallVector<Attribute, 4> interface;
 
   void declare(StringRef name, SymbolTableEntry entry);
-  void createVariable(const std::vector<std::unique_ptr<TypeQualifier>>& ,shaderpulse::Type *, VariableDeclaration *);
+  void createVariable(shaderpulse::TypeQualifierList *,shaderpulse::Type *, VariableDeclaration *);
   void insertEntryPoint();
   void initBuiltinFuncMap();
   bool callBuiltIn(CallExpression* exp);
+  void createBuiltinComputeVar(const std::string &varName, const std::string &mlirName);
   mlir::Value load(mlir::Value);
   mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;

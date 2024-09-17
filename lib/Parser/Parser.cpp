@@ -113,7 +113,6 @@ std::unique_ptr<Declaration> Parser::parseDeclaration() {
   if (auto type = parseType()) {
     SourceLocation startLoc = curToken->getSourceLocation();
     advanceToken();
-    std::cout << "Qualifier size in parser" << type->getQualifiers().size() << std::endl;
 
     // Only type, no variable name
     if (curToken->is(TokenKind::semiColon)) {
@@ -435,17 +434,11 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
 
     if (curToken->is(TokenKind::Identifier)) {
       auto id = curToken->getIdentifierName();
-      
-      std::cout << id << std::endl;
-
       advanceToken();
 
       if (curToken->is(TokenKind::assign)) {
-        
         advanceToken();
-
         auto exp = parseExpression();
-
         layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id, std::move(exp)));
       } else {
         layoutQualifierIds.push_back(std::make_unique<LayoutQualifierId>(id));
@@ -463,11 +456,10 @@ std::unique_ptr<LayoutQualifier> Parser::parseLayoutQualifier() {
     return nullptr;
   }
 
-  std::cout << "Returned layout qualifiers: " << layoutQualifierIds.size() << std::endl;
   return std::make_unique<LayoutQualifier>(std::move(layoutQualifierIds));
 }
 
-std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
+std::unique_ptr<TypeQualifierList> Parser::parseQualifiers() {
   std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
  
   while (true) {
@@ -481,9 +473,7 @@ std::vector<std::unique_ptr<TypeQualifier>> Parser::parseQualifiers() {
     advanceToken();
   }
 
-  std::cout << "Found qualifiers " << qualifiers.size() << std::endl;
-
-  return qualifiers;
+  return std::make_unique<TypeQualifierList>(std::move(qualifiers));
 }
 
 std::vector<int> Parser::parseArrayDimensions() {
@@ -559,8 +549,7 @@ Parser::getAssignmentOperatorFromTokenKind(TokenKind kind) {
   }
 }
 
-std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(
-    std::vector<std::unique_ptr<TypeQualifier>> qualifiers, TokenKind kind) {
+std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(std::unique_ptr<TypeQualifierList> qualifiers, TokenKind kind) {
   switch (kind) {
   case TokenKind::Identifier: {
     if (structDeclarations.find(curToken->getIdentifierName()) != structDeclarations.end()) {
@@ -700,22 +689,18 @@ std::unique_ptr<shaderpulse::Type> Parser::getTypeFromTokenKind(
 };
 
 std::unique_ptr<shaderpulse::VectorType>
-Parser::makeVectorType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+Parser::makeVectorType(std::unique_ptr<TypeQualifierList> qualifiers,
                        TypeKind kind, int length) {
-  return std::make_unique<shaderpulse::VectorType>(
-      std::move(qualifiers),
-      std::make_unique<shaderpulse::Type>(
-          kind, std::vector<std::unique_ptr<TypeQualifier>>()),
-      length);
+  return std::make_unique<shaderpulse::VectorType>(std::move(qualifiers), std::make_unique<shaderpulse::Type>(kind, nullptr), length);
 }
 
 std::unique_ptr<shaderpulse::MatrixType>
-Parser::makeMatrixType(std::vector<std::unique_ptr<TypeQualifier>> qualifiers,
+Parser::makeMatrixType(std::unique_ptr<TypeQualifierList> qualifiers,
                        TypeKind kind, int rows, int cols) {
   return std::make_unique<shaderpulse::MatrixType>(
       std::move(qualifiers),
       std::make_unique<shaderpulse::Type>(
-          kind, std::vector<std::unique_ptr<TypeQualifier>>()),
+          kind, nullptr),
       rows, cols);
 }
 
@@ -1471,7 +1456,7 @@ std::unique_ptr<InterfaceBlock> Parser::parseInterfaceBlock() {
   savePosition();
   auto typeQualifiers = parseQualifiers();
 
-  if (typeQualifiers.size() == 0) {
+  if (typeQualifiers->list().size() == 0) {
     rollbackPosition();
     return nullptr;
   }

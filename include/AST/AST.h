@@ -607,13 +607,13 @@ private:
 class InterfaceBlock : public Declaration {
 
 public:
-  InterfaceBlock(std::vector<std::unique_ptr<TypeQualifier>> qualifiers, const std::string &name, std::vector<std::unique_ptr<Declaration>> members) 
+  InterfaceBlock(std::unique_ptr<TypeQualifierList> qualifiers, const std::string &name, std::vector<std::unique_ptr<Declaration>> members) 
       : qualifiers(std::move(qualifiers)), name(name),
         members(std::move(members)) {}
 
   const std::string &getName() const { return name; }
   const std::vector<std::unique_ptr<Declaration>> &getMembers() const { return members; }
-  const std::vector<std::unique_ptr<TypeQualifier>> &getQualifiers() const { return qualifiers; }
+  TypeQualifierList *getQualifiers() const { return qualifiers.get(); }
   std::pair<int, VariableDeclaration*> getMemberWithIndex(const std::string &memberName) {
     auto it = std::find_if(members.begin(), members.end(), 
       [&memberName](const std::unique_ptr<Declaration> &decl) { 
@@ -629,7 +629,7 @@ public:
   void accept(ASTVisitor *visitor) override { visitor->visit(this); }
 
 private:
-  std::vector<std::unique_ptr<TypeQualifier>> qualifiers;
+  std::unique_ptr<TypeQualifierList> qualifiers;
   std::string name;
   std::vector<std::unique_ptr<Declaration>> members;
 };
