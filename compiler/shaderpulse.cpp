@@ -6,7 +6,6 @@
 #include "Preprocessor/Preprocessor.h"
 #include <iostream>
 #include <fstream>
-#include <filesystem>
 
 using namespace shaderpulse;
 using namespace shaderpulse::ast;
@@ -19,16 +18,6 @@ int main(int argc, char** argv) {
         std::cout << "Missing input file." << std::endl;
         return -1;
     }
-
-    std::filesystem::path inputPath = argv[1];
-
-    if (!std::filesystem::exists(inputPath)) {
-        std::cout << "File " << inputPath << " does not exist." << std::endl;
-        return -1;
-    }
-
-    std::filesystem::path outputPath = inputPath;
-    outputPath.replace_extension(".mlir");
 
     bool printAST = false;
     bool codeGen = true;
@@ -85,13 +74,6 @@ int main(int argc, char** argv) {
 
         if (!mlirCodeGen.verify()) {
             std::cout << "Error verifying the SPIR-V module" << std::endl;
-            return -1;
-        }
-
-        bool succes = mlirCodeGen.saveToFile(outputPath);
-
-        if (!succes) {
-            return -1;
         }
     }
 
