@@ -16,6 +16,7 @@
 #include <map>
 #include <functional>
 #include <unordered_map>
+#include <filesystem>
 
 using namespace mlir;
 
@@ -40,6 +41,7 @@ public:
   MLIRCodeGen();
   void initModuleOp();
   void print();
+  bool saveToFile(const std::filesystem::path& outputPath);
   bool verify();
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
