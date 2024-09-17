@@ -4,6 +4,9 @@
 #include "CodeGen/TypeConversion.h"
 #include <iostream>
 #include <cassert>
+#include <fstream>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/MemoryBuffer.h>
 
 namespace shaderpulse {
 
@@ -179,6 +182,23 @@ void MLIRCodeGen::initModuleOp() {
 
 void MLIRCodeGen::print() {
   spirvModule.print(llvm::outs());
+}
+
+bool MLIRCodeGen::saveToFile(const std::filesystem::path& outputPath) {
+  std::string buffer;
+  llvm::raw_string_ostream outputStream(buffer);
+  spirvModule.print(outputStream);
+  outputStream.flush();
+
+  std::ofstream outputFile(outputPath);
+  if (!outputFile) {
+      llvm::errs() << "Failed to open output file: " << outputPath << "\n";
+      return false;
+  }
+
+  outputFile << buffer;
+
+  return true;
 }
 
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
