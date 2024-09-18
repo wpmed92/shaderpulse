@@ -594,7 +594,7 @@ void MLIRCodeGen::visit(WhileStatement *whileStmt) {
   auto loc = builder.getUnknownLoc();
 
   auto loopOp = builder.create<spirv::LoopOp>(loc, spirv::LoopControl::None);
-  loopOp.addEntryAndMergeBlock();
+  loopOp.addEntryAndMergeBlock(builder);
   auto header = new Block();
 
   // Insert the header.
@@ -977,7 +977,7 @@ void MLIRCodeGen::visit(IfStatement *ifStmt) {
     ifStmt->getCondition()->accept(this);
     condition = load(popExpressionStack());
     selectionOp = builder.create<spirv::SelectionOp>(loc, spirv::SelectionControl::None);
-    selectionOp.addMergeBlock();
+    selectionOp.addMergeBlock(builder);
 
     // Merge
     mergeBlock = selectionOp.getMergeBlock();
