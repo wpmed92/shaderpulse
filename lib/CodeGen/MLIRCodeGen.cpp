@@ -73,6 +73,10 @@ void MLIRCodeGen::initBuiltinFuncMap() {
     {"cosh", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLCoshOp>(builder.getUnknownLoc(), operands[0]);
     }},
+    {"dot", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
+      auto op0ElementType = operands[0].getType().dyn_cast<mlir::VectorType>().getElementType();
+      return builder.create<spirv::DotOp>(builder.getUnknownLoc(), op0ElementType, operands[0], operands[1]);
+    }},
     {"exp", [](mlir::MLIRContext &context, mlir::OpBuilder &builder, mlir::ValueRange operands) {
       return builder.create<spirv::GLExpOp>(builder.getUnknownLoc(), operands[0]);
     }},

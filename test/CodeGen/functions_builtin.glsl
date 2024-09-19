@@ -100,4 +100,13 @@ void main() {
 
     // CHECK: %34 = spirv.GL.SSign %33 : si32
     b = sign(-1);
+
+    vec3 dotTestA = vec3(1.0, 0.0, 1.2);
+    dvec3 dotTestB = dvec3(0.1lf, 0.2lf, 0.3lf);
+
+    // CHECK: %41 = spirv.Dot %39, %40 : vector<3xf32> -> f32
+    float floatDotRes = dot(dotTestA, dotTestA);
+
+    // CHECK: %45 = spirv.Dot %43, %44 : vector<3xf64> -> f64
+    double doubleDotRes = dot(dotTestB, dotTestB);
 }
