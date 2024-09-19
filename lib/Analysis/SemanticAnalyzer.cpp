@@ -1,6 +1,5 @@
 #include "Analysis/SemanticAnalyzer.h"
 #include <iostream>
-#include "../../utils/include/magic_enum.hpp"
 
 namespace shaderpulse {
 
