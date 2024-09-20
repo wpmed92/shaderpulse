@@ -253,7 +253,7 @@ Parser::parseRhs(int exprPrec, std::unique_ptr<ast::Expression> lhs) {
 
     advanceToken();
 
-    auto rhs = parsePrimaryExpression();
+    auto rhs = parseUnaryExpression();
 
     if (!rhs)
       return nullptr;
@@ -762,8 +762,6 @@ std::unique_ptr<ForStatement> Parser::parseForStatement() {
     reportError(ParserErrorKind::ExpectedToken, "Expected a ';' after conditional expression");
     return nullptr;
   }
-
-  advanceToken();
 
   auto inductionExp = parseConditionalExpression();
 
