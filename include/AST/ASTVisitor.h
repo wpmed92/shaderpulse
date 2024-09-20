@@ -37,6 +37,8 @@ class MemberAccessExpression;
 class ArrayAccessExpression;
 class InitializerExpression;
 class InterfaceBlock;
+class Statement;
+class Expression;
 
 class ASTVisitor {
 

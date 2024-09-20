@@ -106,6 +106,7 @@ private:
   void initBuiltinFuncMap();
   bool callBuiltIn(CallExpression* exp);
   void createBuiltinComputeVar(const std::string &varName, const std::string &mlirName);
+  void generateLoop(Statement* initStmt, Expression* conditionExpr, Expression* inductionExpr, Statement* bodyStmt);
   mlir::Value load(mlir::Value);
   mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;

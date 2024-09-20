@@ -763,13 +763,13 @@ std::unique_ptr<ForStatement> Parser::parseForStatement() {
     return nullptr;
   }
 
+  advanceToken();
+
   auto inductionExp = parseConditionalExpression();
 
   if (!inductionExp) {
     return nullptr;
   }
-
-  advanceToken();
 
   if (!curToken->is(TokenKind::rParen)) {
     reportError(ParserErrorKind::ExpectedToken, "Expected a ')' after for statement");
