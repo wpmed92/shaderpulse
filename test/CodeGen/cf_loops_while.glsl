@@ -12,6 +12,23 @@ void main() {
         int c = 2;
         int d = 3;
 
+        if (!a) {
+            return;
+        }
+
+        if (a) {
+            int test = 2;
+
+            if (!a) {
+                break;
+            }
+        }
+
+        int blabla = 4;
+
+        if (!a) {
+            break;
+        }
         // CHECK: spirv.Store "Function" %1, %7 : si32
         // CHECK-NEXT: spirv.Branch ^bb1
         b = c + d;

@@ -90,6 +90,8 @@ private:
   std::vector<mlir::Value> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
   mlir::Operation *execModeOp = nullptr;
+  mlir::spirv::VariableOp breakGate;
+  bool breakDetected = false;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
