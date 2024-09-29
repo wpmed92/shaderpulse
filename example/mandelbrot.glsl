@@ -3,16 +3,15 @@ layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 layout(binding = 0) buffer buf
 {
-   vec4 imageData[];
+  vec4 imageData[];
 };
 
 void main() {
-
   /*
   In order to fit the work into workgroups, some unnecessary threads are launched.
   We terminate those threads here. 
   */
-  //if(gl_GlobalInvocationID.x >= 3200 || gl_GlobalInvocationID.y >= 2400)
+  // if(gl_GlobalInvocationID.x >= 3200 || gl_GlobalInvocationID.y >= 2400)
   //  return;
 
   float x = float(gl_GlobalInvocationID.x) / float(3200);

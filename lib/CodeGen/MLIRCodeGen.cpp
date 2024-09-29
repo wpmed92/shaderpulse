@@ -216,9 +216,15 @@ bool MLIRCodeGen::saveToFile(const std::filesystem::path& outputPath) {
 bool MLIRCodeGen::verify() { return !failed(mlir::verify(spirvModule)); }
 
 void MLIRCodeGen::insertEntryPoint() {
+  std::vector<mlir::Attribute> interfaceArr;
+
+  for (const auto& pair : interface) {
+    interfaceArr.push_back(pair.second);
+  }
+
   builder.setInsertionPointToEnd(spirvModule.getBody());
   builder.create<spirv::EntryPointOp>(builder.getUnknownLoc(), spirv::ExecutionModelAttr::get(&context, spirv::ExecutionModel::GLCompute),
-                                        SymbolRefAttr::get(&context, "main"), ArrayAttr::get(&context, interface));
+                                        SymbolRefAttr::get(&context, "main"), ArrayAttr::get(&context, interfaceArr));
 }
 
 void MLIRCodeGen::visit(TranslationUnit *unit) {
@@ -1042,7 +1048,7 @@ void MLIRCodeGen::visit(VariableExpression *varExp) {
 
       // If we're inside the entry point function, collect the used global variables
       if (insideEntryPoint) {
-        interface.push_back(SymbolRefAttr::get(&context, varExp->getName()));
+        interface.insert({varExp->getName(), SymbolRefAttr::get(&context, varExp->getName())});
       }
     } else {
       val = entry.value;

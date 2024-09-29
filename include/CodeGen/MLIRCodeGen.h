@@ -102,7 +102,7 @@ private:
   using BuiltInFunc = std::function<mlir::Value(mlir::MLIRContext &, mlir::OpBuilder &, mlir::ValueRange)>;
 
   std::unordered_map<std::string, BuiltInFunc> builtInFuncMap;
-  SmallVector<Attribute, 4> interface;
+  std::map<std::string, mlir::Attribute> interface;
 
   void declare(StringRef name, SymbolTableEntry entry);
   void createVariable(shaderpulse::TypeQualifierList *,shaderpulse::Type *, VariableDeclaration *);
