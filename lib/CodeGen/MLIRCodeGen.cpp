@@ -1119,11 +1119,25 @@ void MLIRCodeGen::visit(ReturnStatement *returnStmt) {
   }
 }
 
-void MLIRCodeGen::visit(BreakStatement *breakStmt) {}
+void MLIRCodeGen::visit(BreakStatement *breakStmt) {
+  setBoolVar(breakStack.back(), true);
+  breakDetected = true;
+}
 
-void MLIRCodeGen::visit(ContinueStatement *continueStmt) {}
+void MLIRCodeGen::visit(ContinueStatement *continueStmt) {
+  setBoolVar(continueStack.back(), true);
+  continueDetected = true;
+}
 
-void MLIRCodeGen::visit(DiscardStatement *discardStmt) {}
+void MLIRCodeGen::setBoolVar(mlir::spirv::VariableOp var, bool val) {
+  auto type = builder.getIntegerType(1);
+  mlir::Value constTrue = builder.create<spirv::ConstantOp>(builder.getUnknownLoc(), type, IntegerAttr::get(type, APInt(1, val)));
+  builder.create<spirv::StoreOp>(builder.getUnknownLoc(), var, constTrue);
+}
+
+void MLIRCodeGen::visit(DiscardStatement *discardStmt) {
+
+}
 
 void MLIRCodeGen::visit(FunctionDeclaration *funcDecl) {
   insideEntryPoint = funcDecl->getName() == "main";
@@ -1200,6 +1214,17 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
   Block *restoreInsertionBlock = builder.getInsertionBlock();
   SymbolTableScopeT varScope(symbolTable);
 
+  mlir::Type boolType = mlir::IntegerType::get(&context, 1, mlir::IntegerType::Signless);
+  spirv::PointerType ptrType = spirv::PointerType::get(boolType, mlir::spirv::StorageClass::Function);
+  breakStack.push_back(
+    builder.create<spirv::VariableOp>(
+      builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, nullptr)
+  );
+  continueStack.push_back(
+    builder.create<spirv::VariableOp>(
+      builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, nullptr)
+  );
+
   if (initStmt) {
     initStmt->accept(this);
   }
@@ -1216,6 +1241,10 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
   Block *body = new Block();
   loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), 2), body);
 
+  // Insert the continue block.
+  Block *continueBlock = new Block();
+  loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), 3), continueBlock);
+
   // Emit the entry code.
   Block *entry = loopOp.getEntryBlock();
   builder.setInsertionPointToEnd(entry);
@@ -1229,18 +1258,67 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
   auto conditionOp = load(popExpressionStack());
   builder.create<spirv::BranchConditionalOp>(loc, conditionOp, body, ArrayRef<mlir::Value>(), merge, ArrayRef<mlir::Value>());
 
-  // Emit the continue/latch block.
   builder.setInsertionPointToStart(body);
-  bodyStmt->accept(this);
+
+  // Detect break/continue flag
+  int postGateBlockInsertionPoint = 2;
+
+  if (auto body = dynamic_cast<StatementList*>(bodyStmt)) {
+    for (auto &stmt : body->getStatements()) {
+      stmt->accept(this);
+
+      if (breakDetected || continueDetected) {
+        if (breakDetected && continueDetected) {
+          auto continueGate = continueStack.back();
+          auto breakGate = breakStack.back();
+          Block *breakCheckBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), breakCheckBlock);
+          builder.create<spirv::BranchConditionalOp>(loc, load(continueGate), loopOp.getContinueBlock(), ArrayRef<mlir::Value>(), breakCheckBlock, ArrayRef<mlir::Value>());
+          Block *postGateBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
+          builder.setInsertionPointToStart(breakCheckBlock);
+          builder.create<spirv::BranchConditionalOp>(loc, load(breakGate), merge, ArrayRef<mlir::Value>(), postGateBlock, ArrayRef<mlir::Value>());
+          builder.setInsertionPointToStart(postGateBlock);
+        } else if (continueDetected) {
+          auto continueGate = continueStack.back();
+          Block *postGateBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
+          builder.create<spirv::BranchConditionalOp>(loc, load(continueGate), loopOp.getContinueBlock(), ArrayRef<mlir::Value>(), postGateBlock, ArrayRef<mlir::Value>());
+          builder.setInsertionPointToStart(postGateBlock);
+        } else if (breakDetected) {
+          auto breakGate = breakStack.back();
+          Block *postGateBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
+          builder.create<spirv::BranchConditionalOp>(loc, load(breakGate), merge, ArrayRef<mlir::Value>(), postGateBlock, ArrayRef<mlir::Value>());
+          builder.setInsertionPointToStart(postGateBlock);
+        }
+
+        if (breakDetected) {
+          setBoolVar(breakStack.back(), false);
+        }
+
+        if (continueDetected) {
+          setBoolVar(continueStack.back(), false);
+        }
+        breakDetected = false;
+        continueDetected = false;
+      }
+    }
+  } else {
+    bodyStmt->accept(this);
+  }
+
+  builder.create<spirv::BranchOp>(loc, loopOp.getContinueBlock());
+  builder.setInsertionPointToEnd(loopOp.getContinueBlock());
 
   if (inductionExpr) {
     inductionExpr->accept(this);
   }
 
-  Block *continueBlock = loopOp.getContinueBlock();
-  builder.setInsertionPointToEnd(continueBlock);
   builder.create<spirv::BranchOp>(loc, header);
   builder.setInsertionPointToEnd(restoreInsertionBlock);
+  breakStack.pop_back();
+  continueStack.pop_back();
 }
 
 mlir::Value MLIRCodeGen::load(mlir::Value val) {

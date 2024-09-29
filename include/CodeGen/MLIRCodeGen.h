@@ -90,6 +90,10 @@ private:
   std::vector<mlir::Value> expressionStack;
   StructDeclaration* currentBaseComposite = nullptr;
   mlir::Operation *execModeOp = nullptr;
+  std::vector<mlir::spirv::VariableOp> breakStack;
+  std::vector<mlir::spirv::VariableOp> continueStack;
+  bool breakDetected = false;
+  bool continueDetected = false;
 
   llvm::ScopedHashTable<llvm::StringRef, SymbolTableEntry>
       symbolTable;
@@ -107,6 +111,7 @@ private:
   bool callBuiltIn(CallExpression* exp);
   void createBuiltinComputeVar(const std::string &varName, const std::string &mlirName);
   void generateLoop(Statement* initStmt, Expression* conditionExpr, Expression* inductionExpr, Statement* bodyStmt);
+  void setBoolVar(mlir::spirv::VariableOp var, bool val);
   mlir::Value load(mlir::Value);
   mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;
