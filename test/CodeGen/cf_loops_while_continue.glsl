@@ -24,22 +24,21 @@ void main() {
         // CHECK: spirv.mlir.merge
         // CHECK-NEXT: }
         // CHECK-NEXT: %3 = spirv.Load "Function" %1 : i1
-        // CHECK-NEXT: spirv.BranchConditional %3, ^bb5, ^bb4
+        // CHECK-NEXT: spirv.BranchConditional %3, ^bb5, ^bb3
+        // CHECK-NEXT: ^bb3:  // pred: ^bb2
+        // CHECK-NEXT: %4 = spirv.Load "Function" %0 : i1
+        // CHECK-NEXT: spirv.BranchConditional %4, ^bb6, ^bb4
 
         // Reset continue/break control vars
-        // CHECK: ^bb3:  // pred: ^bb4
+        // CHECK: ^bb4:  // pred: ^bb3
         // CHECK-NEXT: %false = spirv.Constant false
         // CHECK-NEXT: spirv.Store "Function" %0, %false : i1
         // CHECK-NEXT: %false_1 = spirv.Constant false
         // CHECK-NEXT: spirv.Store "Function" %1, %false_1 : i1
         int someVarAfter = 1;
-
-        // CHECK: ^bb4:  // pred: ^bb2
-        // CHECK-NEXT: %5 = spirv.Load "Function" %0 : i1
-        // CHECK-NEXT: spirv.BranchConditional %5, ^bb6, ^bb3
     }
 
-    // CHECK: ^bb6:  // 2 preds: ^bb1, ^bb4
-    // CHECK-NEXT:  spirv.mlir.merge
+    // CHECK: ^bb6:  // 2 preds: ^bb1, ^bb3
+    // CHECK-NEXT: spirv.mlir.merge
     // CHECK-NEXT: }
 }

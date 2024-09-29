@@ -1268,26 +1268,30 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
       stmt->accept(this);
 
       if (breakDetected || continueDetected) {
-        Block *postGateBlock = new Block();
-        loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
-
         if (breakDetected && continueDetected) {
-          Block *breakCheckBlock = new Block();
           auto continueGate = continueStack.back();
           auto breakGate = breakStack.back();
-          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), postGateBlockInsertionPoint), breakCheckBlock);
+          Block *breakCheckBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), breakCheckBlock);
           builder.create<spirv::BranchConditionalOp>(loc, load(continueGate), loopOp.getContinueBlock(), ArrayRef<mlir::Value>(), breakCheckBlock, ArrayRef<mlir::Value>());
+          Block *postGateBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
           builder.setInsertionPointToStart(breakCheckBlock);
           builder.create<spirv::BranchConditionalOp>(loc, load(breakGate), merge, ArrayRef<mlir::Value>(), postGateBlock, ArrayRef<mlir::Value>());
+          builder.setInsertionPointToStart(postGateBlock);
         } else if (continueDetected) {
           auto continueGate = continueStack.back();
+          Block *postGateBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
           builder.create<spirv::BranchConditionalOp>(loc, load(continueGate), loopOp.getContinueBlock(), ArrayRef<mlir::Value>(), postGateBlock, ArrayRef<mlir::Value>());
+          builder.setInsertionPointToStart(postGateBlock);
         } else if (breakDetected) {
           auto breakGate = breakStack.back();
+          Block *postGateBlock = new Block();
+          loopOp.getBody().getBlocks().insert(std::next(loopOp.getBody().begin(), ++postGateBlockInsertionPoint), postGateBlock);
           builder.create<spirv::BranchConditionalOp>(loc, load(breakGate), merge, ArrayRef<mlir::Value>(), postGateBlock, ArrayRef<mlir::Value>());
+          builder.setInsertionPointToStart(postGateBlock);
         }
-
-        builder.setInsertionPointToStart(postGateBlock);
 
         if (breakDetected) {
           setBoolVar(breakStack.back(), false);
