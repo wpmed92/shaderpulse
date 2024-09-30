@@ -32,4 +32,4 @@ void main() {
 }
 
 // CHECK: spirv.ExecutionMode @main "LocalSize", 16, 8, 4
-// CHECK: spirv.EntryPoint "GLCompute" @main, @gl_GlobalInvocationID, @result, @data
+// CHECK: spirv.EntryPoint "GLCompute" @main, @data, @gl_GlobalInvocationID, @result
