@@ -84,6 +84,7 @@ if(ENABLE_CODEGEN)
       MLIRLLVMToLLVMIRTranslation
       MLIRMemRefDialect
       MLIRSPIRVDialect
+      MLIRSPIRVSerialization
       MLIRParser
       MLIRPass
       MLIRSideEffectInterfaces

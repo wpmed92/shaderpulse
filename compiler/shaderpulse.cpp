@@ -84,13 +84,21 @@ int main(int argc, char** argv) {
         mlirCodeGen.print();
 
         if (!mlirCodeGen.verify()) {
-            std::cout << "Error verifying the SPIR-V module" << std::endl;
-         return -1;
+            std::cout << "Error verifying the SPIR-V module." << std::endl;
+            return -1;
         }
 
-        bool succes = mlirCodeGen.saveToFile(outputPath);
+        bool success = mlirCodeGen.saveToFile(outputPath);
 
-        if (!succes) {
+        if (!success) {
+            std::cout << "Failed to save spirv mlir to file.";
+            return -1;
+        }
+
+        success = mlirCodeGen.emitSpirv(outputPath.replace_extension(".spv"));
+
+        if (!success) {
+            std::cout << "Failed to emit spirv binary.";
             return -1;
         }
     }

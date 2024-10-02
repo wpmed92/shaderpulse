@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cassert>
 #include <fstream>
+#include "mlir/Target/SPIRV/Serialization.h"
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <utility>
@@ -210,6 +211,19 @@ bool MLIRCodeGen::saveToFile(const std::filesystem::path& outputPath) {
 
   outputFile << buffer;
 
+  return true;
+}
+
+bool MLIRCodeGen::emitSpirv(const std::filesystem::path& outputPath) {
+  llvm::SmallVector<uint32_t, 128> spirvBinary;
+  mlir::LogicalResult result = mlir::spirv::serialize(spirvModule, spirvBinary);
+  if (failed(result)) {
+      std::cerr << "Failed to serialize SPIR-V module." << std::endl;
+      return false;
+  }
+
+  std::ofstream outFile(outputPath, std::ios::binary);
+  outFile.write(reinterpret_cast<const char*>(spirvBinary.data()), spirvBinary.size() * sizeof(uint32_t));
   return true;
 }
 

@@ -3,3 +3,4 @@ build
 .vscode
 test/CodeGen/*.mlir
 example/*.mlir
+*.spv

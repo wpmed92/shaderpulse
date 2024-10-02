@@ -42,6 +42,7 @@ public:
   void initModuleOp();
   void print();
   bool saveToFile(const std::filesystem::path& outputPath);
+  bool emitSpirv(const std::filesystem::path& outputPath);
   bool verify();
   void visit(TranslationUnit *) override;
   void visit(BinaryExpression *) override;
