@@ -2,5 +2,5 @@
 build
 .vscode
 test/CodeGen/*.mlir
-example/*.mlir
+*.mlir
 *.spv
