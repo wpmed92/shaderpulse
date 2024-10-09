@@ -14,8 +14,8 @@ void main() {
         // CHECK: %7 = spirv.Variable : !spirv.ptr<si32, Function>
         int a;
 
-        // CHECK: %cst2_si32_1 = spirv.Constant 2 : si32
-        // CHECK-NEXT: spirv.Store "Function" %7, %cst2_si32_1 : si32
+        // CHECK: %cst2_si32_2 = spirv.Constant 2 : si32
+        // CHECK-NEXT: spirv.Store "Function" %7, %cst2_si32_2 : si32
         a = 2;
     } else {
         // CHECK: %8 = spirv.Variable : !spirv.ptr<si32, Function>
@@ -37,7 +37,7 @@ void main() {
      */
 
     // CHECK: %7 = spirv.Load "Function" %0 : si32
-    // CHECK-NEXT: %8 = spirv.IEqual %7, %cst1_si32_1 : si32
+    // CHECK-NEXT: %8 = spirv.IEqual %7, %cst1_si32_2 : si32
     while (a == 1) {
         // CHECK: %9 = spirv.Variable : !spirv.ptr<si32, Function>
         int a;
@@ -59,20 +59,20 @@ void main() {
      */
 
     // CHECK: %5 = spirv.Load "Function" %0 : si32
-    // CHECK-NEXT: %6 = spirv.IEqual %5, %cst1_si32_0 : si32
+    // CHECK-NEXT: %6 = spirv.IEqual %5, %cst1_si32_1 : si32
     if (a == 1) {
         // CHECK: %7 = spirv.Variable : !spirv.ptr<si32, Function>
-        // CHECK-NEXT: %cst1_si32_1 = spirv.Constant 1 : si32
-        // CHECK-NEXT: spirv.Store "Function" %7, %cst1_si32_1 : si32
+        // CHECK-NEXT: %cst1_si32_2 = spirv.Constant 1 : si32
+        // CHECK-NEXT: spirv.Store "Function" %7, %cst1_si32_2 : si32
         int a;
         a = 1;
 
         // CHECK: %8 = spirv.Load "Function" %7 : si32
-        // CHECK-NEXT: %9 = spirv.IEqual %8, %cst2_si32_2 : si32
+        // CHECK-NEXT: %9 = spirv.IEqual %8, %cst2_si32_3 : si32
         if (a == 2) {
             // CHECK: %10 = spirv.Variable : !spirv.ptr<si32, Function>
-            // CHECK-NEXT: %cst2_si32_3 = spirv.Constant 2 : si32
-            // CHECK-NEXT: spirv.Store "Function" %10, %cst2_si32_3 : si32
+            // CHECK-NEXT: %cst2_si32_4 = spirv.Constant 2 : si32
+            // CHECK-NEXT: spirv.Store "Function" %10, %cst2_si32_4 : si32
             int a;
             a = 2;
         }

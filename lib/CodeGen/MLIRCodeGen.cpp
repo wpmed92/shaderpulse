@@ -1245,6 +1245,9 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
       builder.getUnknownLoc(), ptrType, spirv::StorageClass::Function, nullptr)
   );
 
+  setBoolVar(continueStack.back(), false);
+  setBoolVar(breakStack.back(), false);
+
   if (initStmt) {
     initStmt->accept(this);
   }
@@ -1313,13 +1316,6 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
           builder.setInsertionPointToStart(postGateBlock);
         }
 
-        if (breakDetected) {
-          setBoolVar(breakStack.back(), false);
-        }
-
-        if (continueDetected) {
-          setBoolVar(continueStack.back(), false);
-        }
         breakDetected = false;
         continueDetected = false;
       }
@@ -1330,6 +1326,7 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
 
   builder.create<spirv::BranchOp>(loc, loopOp.getContinueBlock());
   builder.setInsertionPointToEnd(loopOp.getContinueBlock());
+  setBoolVar(continueStack.back(), false);
 
   if (inductionExpr) {
     inductionExpr->accept(this);

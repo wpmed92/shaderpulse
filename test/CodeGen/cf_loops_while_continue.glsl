@@ -10,13 +10,13 @@ void main() {
         int someVarBefore = 1;
 
         // CHECK: ^bb1:  // pred: ^bb0
-        // CHECK-NEXT: %true_3 = spirv.Constant true
-        // CHECK-NEXT: spirv.Store "Function" %1, %true_3 : i1
+        // CHECK-NEXT: %true_4 = spirv.Constant true
+        // CHECK-NEXT: spirv.Store "Function" %1, %true_4 : i1
         if (true) {
             continue;
         // CHECK: ^bb2:  // pred: ^bb0
-        // CHECK-NEXT: %true_4 = spirv.Constant true
-        // CHECK-NEXT: spirv.Store "Function" %0, %true_4 : i1
+        // CHECK-NEXT: %true_5 = spirv.Constant true
+        // CHECK-NEXT: spirv.Store "Function" %0, %true_5 : i1
         } else {
             break;
         }
@@ -29,12 +29,9 @@ void main() {
         // CHECK-NEXT: %4 = spirv.Load "Function" %0 : i1
         // CHECK-NEXT: spirv.BranchConditional %4, ^bb6, ^bb4
 
-        // Reset continue/break control vars
         // CHECK: ^bb4:  // pred: ^bb3
-        // CHECK-NEXT: %false = spirv.Constant false
-        // CHECK-NEXT: spirv.Store "Function" %0, %false : i1
-        // CHECK-NEXT: %false_1 = spirv.Constant false
-        // CHECK-NEXT: spirv.Store "Function" %1, %false_1 : i1
+        // CHECK-NEXT: %cst1_si32_2 = spirv.Constant 1 : si32
+        // CHECK-NEXT: %5 = spirv.Variable : !spirv.ptr<si32, Function>
         int someVarAfter = 1;
     }
 

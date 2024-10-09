@@ -10,8 +10,8 @@ void main() {
         int someVarBefore = 1;
 
         // CHECK: ^bb1:  // pred: ^bb0
-        // CHECK-NEXT: %true_2 = spirv.Constant true
-        // CHECK-NEXT: spirv.Store "Function" %0, %true_2 : i1
+        // CHECK-NEXT: %true_4 = spirv.Constant true
+        // CHECK-NEXT: spirv.Store "Function" %0, %true_4 : i1
         if (true) {
             break;
         }
@@ -22,12 +22,7 @@ void main() {
         // CHECK-NEXT: spirv.BranchConditional %3, ^bb5, ^bb3
 
         // CHECK: ^bb3:  // pred: ^bb2
-        // CHECK-NEXT: %false = spirv.Constant false
-
-        // Reset break control var
-
-        // CHECK-NEXT: spirv.Store "Function" %0, %false : i1
-        // CHECK-NEXT: %cst1_si32_1 = spirv.Constant 1 : si32
+        // CHECK-NEXT: %cst1_si32_2 = spirv.Constant 1 : si32
         // CHECK-NEXT: %4 = spirv.Variable : !spirv.ptr<si32, Function>
         int someVarAfter = 1;
     }

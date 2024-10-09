@@ -18,6 +18,8 @@ void main() {
     }
 
     // CHECK-NEXT: ^bb3:  // pred: ^bb2
+    // CHECK-NEXT:  %false_1 = spirv.Constant false
+    // CHECK-NEXT:  spirv.Store "Function" %3, %false_1 : i1
     // CHECK-NEXT:  spirv.Branch ^bb1
     // CHECK-NEXT: ^bb4:  // pred: ^bb1
     // CHECK-NEXT: spirv.mlir.merge
