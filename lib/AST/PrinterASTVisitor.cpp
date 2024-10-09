@@ -83,9 +83,11 @@ void PrinterASTVisitor::visit(WhileStatement *whileStmt) {
 void PrinterASTVisitor::visit(DoStatement *doStmt) {
   print("|-DoStatement " + loc(doStmt->getSourceLocation()));
 
-  doStmt->getCondition()->accept(this);
   indent();
   doStmt->getBody()->accept(this);
+  resetIndent();
+  indent();
+  doStmt->getCondition()->accept(this);
   resetIndent();
 }
 

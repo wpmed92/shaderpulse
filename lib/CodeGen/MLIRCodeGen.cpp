@@ -943,7 +943,7 @@ void MLIRCodeGen::visit(InterfaceBlock *interfaceBlock) {
 }
 
 void MLIRCodeGen::visit(DoStatement *doStmt) {
-  // TODO: implement me
+  generateLoop(nullptr, doStmt->getCondition(), nullptr, doStmt->getBody(), /*isDoWhile*/ true);
 }
 
 void MLIRCodeGen::visit(IfStatement *ifStmt) {
@@ -1230,7 +1230,7 @@ void MLIRCodeGen::visit(DefaultLabel *defaultLabel) {}
 
 void MLIRCodeGen::visit(CaseLabel *defaultLabel) {}
 
-void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, Expression* inductionExpr, Statement* bodyStmt) {
+void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, Expression* inductionExpr, Statement* bodyStmt, bool isDoWhile) {
   Block *restoreInsertionBlock = builder.getInsertionBlock();
   SymbolTableScopeT varScope(symbolTable);
 
@@ -1277,9 +1277,14 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
   builder.setInsertionPointToEnd(header);
   Block *merge = loopOp.getMergeBlock();
 
-  conditionExpr->accept(this);
-  auto conditionOp = load(popExpressionStack());
-  builder.create<spirv::BranchConditionalOp>(loc, conditionOp, body, ArrayRef<mlir::Value>(), merge, ArrayRef<mlir::Value>());
+  if (isDoWhile) {
+    builder.create<spirv::BranchOp>(loc, &*std::next(loopOp.getBody().begin(), 2));
+  } else {
+    conditionExpr->accept(this);
+    auto conditionOp = load(popExpressionStack());
+    builder.create<spirv::BranchConditionalOp>(loc, conditionOp, body, ArrayRef<mlir::Value>(), merge, ArrayRef<mlir::Value>());
+  }
+
 
   builder.setInsertionPointToStart(body);
 
@@ -1332,7 +1337,14 @@ void MLIRCodeGen::generateLoop(Statement* initStmt, Expression* conditionExpr, E
     inductionExpr->accept(this);
   }
 
-  builder.create<spirv::BranchOp>(loc, header);
+  if (isDoWhile) {
+    conditionExpr->accept(this);
+    auto conditionOp = load(popExpressionStack());
+    builder.create<spirv::BranchConditionalOp>(loc, conditionOp, header, ArrayRef<mlir::Value>(), merge, ArrayRef<mlir::Value>());
+  } else {
+    builder.create<spirv::BranchOp>(loc, header);
+  }
+
   builder.setInsertionPointToEnd(restoreInsertionBlock);
   breakStack.pop_back();
   continueStack.pop_back();
