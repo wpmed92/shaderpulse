@@ -119,7 +119,7 @@ private:
   mlir::Value currentBasePointer;
   mlir::Value convertOp(ConstructorExpression* constructorExp, mlir::Value val);
   mlir::Value buildBoolConst(bool val);
-  mlir::Value buildIntConst(uint32_t val, bool isUnsigned);
+  mlir::Value buildIntConst(uint32_t val, bool isSigned);
   mlir::Value buildFloatConst(double val, bool isDouble);
   mlir::Value buildVecConst(mlir::Value constant, mlir::Type type);
 };
