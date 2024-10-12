@@ -17,6 +17,7 @@
 #include <functional>
 #include <unordered_map>
 #include <filesystem>
+#include <stdint.h>
 
 using namespace mlir;
 
@@ -117,6 +118,10 @@ private:
   mlir::Value popExpressionStack();
   mlir::Value currentBasePointer;
   mlir::Value convertOp(ConstructorExpression* constructorExp, mlir::Value val);
+  mlir::Value buildBoolConst(bool val);
+  mlir::Value buildIntConst(uint32_t val, bool isUnsigned);
+  mlir::Value buildFloatConst(double val, bool isDouble);
+  mlir::Value buildVecConst(mlir::Value constant, mlir::Type type);
 };
 
 }; // namespace codegen
